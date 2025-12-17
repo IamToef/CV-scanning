@@ -1,0 +1,762 @@
+{
+  "name": "Chatbot_Web_Fixed",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chatwebnds",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -4880,
+        256
+      ],
+      "id": "b6e5783e-f1a5-4b76-a621-a0f8248c11d9",
+      "name": "Webhook",
+      "webhookId": "8a33f409-00d9-4293-b578-f925198ea31e"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/embeddings",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"Authorization\": \"Bearer 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\",\n  \"Content-Type\": \"application/json\"\n}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  model: \"text-embedding-3-small\",\n  input: $json.summary\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3568,
+        256
+      ],
+      "id": "849ada65-730f-4d64-95c0-31f295e41f4b",
+      "name": "EmbbedingVector"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://idiochromatic-cody-uninspiringly.ngrok-free.dev/collections/RAG_FOR_CV/points/search",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  (() => {\n    // --- HÀM HELPER: CHUẨN HÓA TEXT ---\n    // Chuyển \"Nguyễn Châu Giang\" -> \"NGUYEN CHAU GIANG\"\n    function normalizeText(str) {\n      if (!str) return \"\";\n      str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, \"a\");\n      str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, \"e\");\n      str = str.replace(/ì|í|ị|ỉ|ĩ/g, \"i\");\n      str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, \"o\");\n      str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, \"u\");\n      str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, \"y\");\n      str = str.replace(/đ/g, \"d\");\n      str = str.replace(/À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ/g, \"A\");\n      str = str.replace(/È|É|Ẹ|Ẻ|Ẽ|Ê|Ề|Ế|Ệ|Ể|Ễ/g, \"E\");\n      str = str.replace(/Ì|Í|Ị|Ỉ|Ĩ/g, \"I\");\n      str = str.replace(/Ò|Ó|Ọ|Ỏ|Õ|Ô|Ồ|Ố|Ộ|Ổ|Ỗ|Ơ|Ờ|Ớ|Ợ|Ở|Ỡ/g, \"O\");\n      str = str.replace(/Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ/g, \"U\");\n      str = str.replace(/Ỳ|Ý|Ỵ|Ỷ|Ỹ/g, \"Y\");\n      str = str.replace(/Đ/g, \"D\");\n      return str.normalize(\"NFD\").replace(/[\\u0000-\\u0019]/g, \"\").toUpperCase().trim();\n    }\n\n    // 1. LẤY DỮ LIỆU ĐẦU VÀO\n    const vector = $json.query_vector || $json.vector; \n    let aiJson = {};\n    try {\n      if ($('message refined') && $('message refined').item) {\n          aiJson = $('message refined').item.json.parsed_json || \n                   JSON.parse($('message refined').item.json.output);\n      }\n    } catch (e) { aiJson = {}; }\n\n    // 2. KHỞI TẠO FILTER\n    let mustConditions = [];\n\n    // --- A. Lọc theo Tên (LOGIC MỚI: BAO VÂY CẢ CÓ DẤU & KHÔNG DẤU) ---\n    if (aiJson.filter_candidate_name) {\n      const originalName = aiJson.filter_candidate_name.trim(); // \"Nguyễn Châu Giang\"\n      const normalizedName = normalizeText(originalName);       // \"NGUYEN CHAU GIANG\"\n\n      // Tạo điều kiện OR (Should): Chỉ cần khớp 1 trong 2 là lấy\n      let nameConditions = [];\n      \n      // 1. Tìm chính xác những gì user nhập (Có dấu/Viết thường...)\n      nameConditions.push({\n        \"key\": \"candidate_name\",\n        \"match\": { \"text\": originalName } \n      });\n\n      // 2. Tìm phiên bản chuẩn hóa (Không dấu, In hoa)\n      // (Chỉ thêm nếu nó khác bản gốc để tránh trùng lặp query)\n      if (normalizedName !== originalName.toUpperCase()) {\n         nameConditions.push({\n            \"key\": \"candidate_name\",\n            \"match\": { \"text\": normalizedName }\n         });\n      }\n\n      // Đẩy cụm OR này vào trong MUST\n      // Nghĩa là: (Tên == \"Nguyễn...\" HOẶC Tên == \"NGUYEN...\") VÀ (Các đk khác...)\n      mustConditions.push({\n        \"should\": nameConditions\n      });\n    }\n\n    // --- B. Các bộ lọc khác (Giữ nguyên) ---\n    if (aiJson.filter_education) {\n      mustConditions.push({ \"key\": \"education\", \"match\": { \"text\": aiJson.filter_education } });\n    }\n    if (aiJson.filter_experience) {\n      mustConditions.push({ \"key\": \"text\", \"match\": { \"text\": aiJson.filter_experience } });\n    }\n    if (aiJson.filter_skills && Array.isArray(aiJson.filter_skills)) {\n      aiJson.filter_skills.forEach(skill => {\n        mustConditions.push({ \"key\": \"text\", \"match\": { \"text\": skill } });\n      });\n    }\n\n    // 3. CẤU HÌNH BODY REQUEST\n\n    let body = {\n\n      \"vector\": $json.query_vector,\n\n      \"limit\": $json.limit, // Tăng limit lên một chút vì lọc nhiều điều kiện\n\n      \"with_payload\": true,\n\n      \"score_threshold\": $json.score_threshold\n\n    };\n\n    // 4. ÁP DỤNG FILTER\n    if (mustConditions.length > 0) {\n      body.filter = {\n        \"must\": mustConditions\n      };\n\n      // Hạ threshold nếu đã filter đích danh tên\n      if (aiJson.filter_candidate_name) {\n        body.score_threshold = 0;\n      } else if (aiJson.filter_skills) {\n        body.score_threshold = 0.25;\n      }\n    }\n\n    return JSON.stringify(body);\n  })()\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3120,
+        256
+      ],
+      "id": "7a1e9780-046c-4e8a-843c-3daba575570f",
+      "name": "QdrantSearch",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e7692985-5757-4ed4-93cb-0419ce9eba62",
+              "name": "score_threshold",
+              "value": 0.6,
+              "type": "number"
+            },
+            {
+              "id": "e6b045cc-a7aa-4574-862c-64dce78ef5fe",
+              "name": "limit",
+              "value": 5,
+              "type": "number"
+            },
+            {
+              "id": "849d67e1-b602-44bb-843c-8067026a703d",
+              "name": "query_vector",
+              "value": "={{ $json.data[0].embedding }}",
+              "type": "array"
+            },
+            {
+              "id": "9ef126b6-8444-4a28-b594-8f373133b65b",
+              "name": "with_payload",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3344,
+        256
+      ],
+      "id": "614f9924-9ddc-436e-8713-ed1b936d727a",
+      "name": "add score_threshold"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Dưới đây là dữ liệu hội thoại cần xử lý:\n\n------------------------------------------------------------\nCONTEXT (Lịch sử hội thoại trước đó):\n{{ $json.result_string || \"Chưa có lịch sử\" }}\n------------------------------------------------------------\n\nCÂU HỎI HIỆN TẠI CỦA USER:\n\"{{ $json.user_question }}\"\n\n---\nNHIỆM VỤ CỦA BẠN:\nPhân tích câu hỏi trên để chuẩn hóa dữ liệu cho hệ thống ADVANCED HYBRID SEARCH.\n\nHƯỚNG DẪN XỬ LÝ CHI TIẾT:\n\n1. XỬ LÝ LỜI CHÀO (GREETING):\n   - Nếu user chỉ chào hỏi xã giao (Hi, Hello, Chào shop...) -> Set `source` = \"greeting\", `answer` = \"Chào bạn, tôi là TalentIQ...\".\n\n2. XỬ LÝ TÌM KIẾM (SEARCH MODE) - QUAN TRỌNG:\n   - BẮT BUỘC: `answer` = \"\" (Để rỗng, hệ thống sẽ tự xử lý sau).\n   - `refined_question`: Viết lại câu hỏi thành câu truy vấn ngữ nghĩa (Semantic Query) tối ưu cho Vector Search. Hãy dịch các từ khóa sang tiếng Việt và mở rộng thêm các thuật ngữ chuyên ngành (VD: \"Tìm Dev\" -> \"Lập trình viên, Software Engineer, Coding skills\").\n   - XỬ LÝ CONTEXT: Nếu câu hỏi thiếu chủ ngữ (VD: \"Bạn ấy học trường nào?\"), hãy nhìn vào CONTEXT để điền tên ứng viên vào câu hỏi mới.\n\n3. TRÍCH XUẤT BỘ LỌC CẤU TRÚC (STRUCTURED FILTERS):\n   Bạn cần trích xuất thông tin từ câu hỏi để điền vào các trường lọc sau (Nếu không có thì trả về null):\n   - `filter_candidate_name`: Tên riêng ứng viên (VD: \"Long\", \"Nguyễn Văn A\").\n   - `filter_skills` (Array): Các kỹ năng cứng/công nghệ (VD: [\"Java\", \"ReactJS\", \"Tiếng Nhật\"]).\n   - `filter_experience` (String): Số năm kinh nghiệm hoặc cấp bậc (VD: \"Senior\", \"3 năm\", \"Junior\").\n   - `filter_education` (String): Trường học hoặc bằng cấp (VD: \"Đại học FPT\", \"Chứng chỉ PMP\").\n\n4. QUY TẮC MAPPING TỪ KHÓA:\n   - \"BA\" -> \"Business Analyst, Phân tích nghiệp vụ\"\n   - \"QC/Tester\" -> \"Quality Control, Kiểm thử phần mềm\"\n   - \"Dev\" -> \"Software Engineer, Lập trình viên\"\n   - \"Comtor\" -> \"IT Communicator, Biên phiên dịch\"\n\n5. ĐỊNH DẠNG JSON OUTPUT (BẮT BUỘC):\nTrả về DUY NHẤT 1 JSON object hợp lệ, không markdown, không giải thích:\n\n{\n  \"answer\": string,\n  \"refined_question\": string,\n  \"summary\": string,\n  \"filter_candidate_name\": string|null,\n  \"filter_skills\": string[]|null,       // Mảng các kỹ năng\n  \"filter_experience\": string|null,\n  \"filter_education\": string|null,\n  \"source\": \"search\" | \"greeting\",\n  \"needs_clarification\": boolean\n}\n\n---\nVÍ DỤ MINH HỌA (FEW-SHOT):\n\nUser: \"Tìm Dev React biết tiếng Nhật làm ở HCM\"\nOutput:\n{\n  \"answer\": \"\",\n  \"refined_question\": \"Lập trình viên Frontend, ReactJS, Javascript, Tiếng Nhật, Japanese N2 N3. Địa điểm: Hồ Chí Minh\",\n  \"summary\": \"Tìm Dev React tiếng Nhật\",\n  \"filter_candidate_name\": null,\n  \"filter_skills\": [\"React\", \"ReactJS\", \"Tiếng Nhật\"],\n  \"filter_experience\": \"Dev\",\n  \"filter_education\": null,\n  \"source\": \"search\",\n  \"needs_clarification\": false\n}\n\nUser: \"Bạn Long có bằng Bách Khoa không?\"\nOutput:\n{\n  \"answer\": \"\",\n  \"refined_question\": \"Thông tin học vấn, Bằng cấp, Trường Đại học Bách Khoa của ứng viên Long\",\n  \"summary\": \"Check bằng cấp của Long\",\n  \"filter_candidate_name\": \"Long\",\n  \"filter_skills\": null,\n  \"filter_experience\": null,\n  \"filter_education\": \"Bách Khoa\",\n  \"source\": \"search\",\n  \"needs_clarification\": false\n}",
+        "options": {
+          "systemMessage": "=Bạn là TalentIQ - Chuyên gia phân tích ý định tìm kiếm tuyển dụng.\nNhiệm vụ: Chuyển đổi câu hỏi của user thành câu truy vấn (Refined Query) và trích xuất tham số lọc (Structured Filters) cho ADVANCED HYBRID SEARCH.\n\n---\nQUY TRÌNH TƯ DUY:\n\n1. XỬ LÝ LỜI CHÀO:\n   - Nếu input xã giao (Hi, Hello) -> source=\"greeting\", answer=\"Chào bạn...\".\n\n2. XỬ LÝ TÌM KIẾM (Search Mode):\n   - BẮT BUỘC: `answer` = \"\".\n   \n   A. TẠO TRUY VẤN (Refined Query):\n      - Viết lại câu hỏi bằng tiếng Việt, thêm từ khóa chuyên ngành, ngữ cảnh.\n      - VD: \"Tìm Long\" -> \"Hồ sơ, thông tin cá nhân, email, số điện thoại của ứng viên tên Long\".\n\n   B. TRÍCH XUẤT BỘ LỌC (Structured Filters):\n      Trích xuất thông tin để điền vào 4 trường lọc sau. Nếu không có thông tin trong câu hỏi, BẮT BUỘC phải trả về `null` (không được bỏ field).\n\n      1. `filter_candidate_name`: Tên riêng ứng viên (VD: \"Long\", \"Phan Minh Nhật\").\n      2. `filter_skills` (Array): Kỹ năng, Công nghệ (VD: [\"Java\", \"SQL\"]).\n      3. `filter_experience`: Số năm, cấp bậc (VD: \"Senior\", \"3 năm\").\n      4. `filter_education`: Trường học, bằng cấp (VD: \"Bách Khoa\").\n\n---\nOUTPUT FORMAT (BẮT BUỘC JSON ONLY):\nBạn phải trả về đúng cấu trúc JSON này, không được thiếu trường nào:\n\n{\n  \"answer\": string,                 // \"\" nếu là search\n  \"refined_question\": string,       // Câu truy vấn ngữ nghĩa\n  \"summary\": string,                // Tóm tắt ý định\n  \"filter_candidate_name\": string|null, // Tên ứng viên hoặc null\n  \"filter_skills\": string[]|null,       // VD: [\"Java\"] hoặc null\n  \"filter_experience\": string|null,     // VD: \"Senior\" hoặc null\n  \"filter_education\": string|null,      // VD: \"FPT\" hoặc null\n  \"source\": \"search\" | \"greeting\",\n  \"needs_clarification\": boolean\n}\n\n---\nVÍ DỤ (FEW-SHOT):\n\nInput: \"Ai tên là Long\"\nOutput:\n{\n  \"answer\": \"\",\n  \"refined_question\": \"Thông tin cá nhân, Hồ sơ, Họ và tên, Chức danh, Số điện thoại, Email của ứng viên tên Long\",\n  \"summary\": \"Tìm ứng viên tên Long\",\n  \"filter_candidate_name\": \"Long\",\n  \"filter_skills\": null,\n  \"filter_experience\": null,\n  \"filter_education\": null,\n  \"source\": \"search\",\n  \"needs_clarification\": false\n}\n\nInput: \"Tìm Dev React biết tiếng Nhật\"\nOutput:\n{\n  \"answer\": \"\",\n  \"refined_question\": \"Lập trình viên Frontend, ReactJS, Javascript, UI/UX, Tiếng Nhật. Địa điểm làm việc: Hồ Chí Minh\",\n  \"summary\": \"Tìm Dev React biết tiếng Nhật\",\n  \"filter_candidate_name\": null,\n  \"filter_skills\": [\"React\", \"ReactJS\", \"Tiếng Nhật\"],\n  \"filter_experience\": \"Dev\",\n  \"filter_education\": null,\n  \"source\": \"search\",\n  \"needs_clarification\": false\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -4128,
+        256
+      ],
+      "id": "c7d6c780-ddf9-40f8-ae04-281c697558d4",
+      "name": "message refined",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -4256,
+        480
+      ],
+      "id": "914daddf-7616-44a8-88b4-dce120384536",
+      "name": "OpenAI Chat refined",
+      "credentials": {
+        "openAiApi": {
+          "id": "cnW6yERErYSFG3vg",
+          "name": "OpenAi account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lấy item đầu tiên\nconst item = $input.first();\nconst json = item ? item.json : {};\n\n// 1. TÌM DỮ LIỆU NGUỒN (Quan trọng)\n// Webhook n8n thường để dữ liệu trong json.body.\n// Code này ưu tiên tìm trong body, nếu không có mới tìm ở root.\nconst inputData = json.body || json;\n\n// 2. LẤY CÂU HỎI USER\n// Tìm trường \"message\" hoặc \"question_message\" hoặc \"text\"\nconst userQuestion = inputData.message || inputData.question_message || inputData.text || \"\";\n\n// 3. XỬ LÝ LỊCH SỬ CHAT (HISTORY)\nlet historyRaw = inputData.history;\n\n// Fix lỗi: Nếu history bị gửi lên dưới dạng String (chưa parse), thì parse nó ra\nif (typeof historyRaw === 'string') {\n  try {\n    historyRaw = JSON.parse(historyRaw);\n  } catch (e) {\n    historyRaw = [];\n  }\n}\n\n// Đảm bảo history luôn là mảng\nif (!Array.isArray(historyRaw)) {\n  historyRaw = [];\n}\n\n// Duyệt qua từng tin nhắn để tạo chuỗi Context\nconst historyLines = historyRaw.map(item => {\n  const role = item.role;    \n  const content = item.content || \"\";\n\n  // Map role\n  if (role === 'user') {\n    return `user_message: ${content}`;\n  } else if (role === 'assistant' || role === 'system') {\n    return `system_answer: ${content}`;\n  }\n  return `${role}: ${content}`;\n});\n\n// Nối lại thành chuỗi, bỏ dòng trống\nconst resultString = historyLines.filter(line => line.trim() !== \"\").join('\\n');\n\n// 4. TRẢ VỀ KẾT QUẢ\nreturn [\n  {\n    json: {\n      result_string: resultString, // Context lịch sử\n      user_question: userQuestion, // Câu hỏi hiện tại\n      \n      // Debug: Trả về thêm field này để biết code đã tìm thấy dữ liệu ở đâu\n      _debug_source: json.body ? \"Found in Body\" : \"Found in Root\" \n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4352,
+        256
+      ],
+      "id": "804f0c0e-6688-4094-bb22-2eb7e192c43c",
+      "name": "Context-Merger",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Function node - Normalize AI agent output to JSON\n// Input expected: items with item.json.output (string or object)\n// Output: items where item.json is the parsed JSON object (normalized)\n\nconst items = $input.all();\n\nfunction tryParseJsonString(s) {\n  if (typeof s !== 'string') return null;\n  // Trim\n  const t = s.trim();\n  // Try direct parse\n  try {\n    return JSON.parse(t);\n  } catch (e) {\n    // Try to find the first {...} block and parse that\n    const m = t.match(/\\{[\\s\\S]*\\}/);\n    if (m) {\n      try {\n        return JSON.parse(m[0]);\n      } catch (e2) {\n        return null;\n      }\n    }\n    return null;\n  }\n}\n\nconst out = items.map((item) => {\n  const src = item.json && (item.json.output ?? item.json.output_text ?? item.output ?? item.payload) ;\n  let parsed = null;\n\n  if (src === undefined || src === null) {\n    // nothing to parse -> keep original item but mark as error\n    return {\n      json: {\n        _normalized: null,\n        _error: \"no_output_field_found\",\n        original: item.json ?? item\n      }\n    };\n  }\n\n  // If already an object (not a string), accept it\n  if (typeof src === 'object') {\n    parsed = src;\n  } else {\n    // Try parse string\n    parsed = tryParseJsonString(src);\n  }\n\n  if (!parsed) {\n    // Parsing failed -> return a helpful error object + include raw string\n    return {\n      json: {\n        _normalized: null,\n        _error: \"parse_failed\",\n        raw: src\n      }\n    };\n  }\n\n  // Successfully parsed -> return parsed object as item.json\n  return { json: parsed };\n});\n\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3776,
+        256
+      ],
+      "id": "d67078a2-989b-45ea-b1fa-a04926fb55c6",
+      "name": "format output"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "342d3971-6cf2-4b16-95f7-a296a02ce3ba",
+              "leftValue": "={{$json[\"result\"] ? $json[\"result\"].length : 0}}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -2672,
+        256
+      ],
+      "id": "0c160888-d91f-420e-bfba-3a8c70c618d9",
+      "name": "resultcount"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=RAG không tìm thấy câu trả lời.  \nHãy tạo một phản hồi cho khách hàng theo đúng yêu cầu ở system prompt.\nCâu hỏi của khách hàng:\n\"{{ $('format output').item.json.summary }}\"\n\nHãy phân loại vào WHITELIST hoặc BLACKLIST và trả lời theo đúng quy định.\n",
+        "options": {
+          "systemMessage": "=Bạn đang hoạt động trong chế độ “Controlled External Knowledge Mode – Whitelist Priority”.\n\nQUY TẮC CHUNG\n1. Chỉ trả lời đầy đủ nếu câu hỏi thuộc WHITELIST.\n2. Nội dung KHÔNG thuộc WHITELIST → tự động xếp vào BLACKLIST.\n3. TRẢ VỀ DUY NHẤT 1 JSON theo cấu trúc cuối prompt.\n4. Tuyệt đối KHÔNG được xuất bất kỳ text nào ngoài JSON.\n5. Không tiết lộ chain-of-thought hoặc reasoning nội bộ.\n6. Luôn ưu tiên trả lời theo kiến thức thuế dành cho hộ kinh doanh.\n7. Nếu câu trả lởi bao gồm các ứng dụng giúp kê khai, khai báo thuế, thì luôn trả lời: \n\"Nếu bạn thuộc nhóm 2 (doanh thu lớn hơn 200 triệu đến dưới 3 tỷ) thì hãy chờ chúng tôi nhé. Nhóm này chỉ phải bắt đầu kê khai từ cuối tháng 3/2026.\nChúng tôi đang chờ Tổng cục Thuế thông báo và cập nhật các quy định mới để hoàn thiện tính năng.\nKhi đến thời điểm, kê khai trên bonbonshop sẽ là dễ nhất và thuận tiện nhất cho bạn\"\n\nI. WHITELIST — DANH MỤC ĐƯỢC TRẢ LỜI ĐẦY ĐỦ\n\n1) KIẾN THỨC PHỔ THÔNG  \n- sức khỏe thường thức  \n- dinh dưỡng  \n- khoa học đời sống  \n- công nghệ tiêu dùng  \n\n2) KỸ NĂNG SỐ / IT CƠ BẢN  \n- email, mật khẩu, OTP  \n- API, JSON, HTTP mức phổ thông  \n- lỗi app đơn giản  \n\n3) QUY TRÌNH SỬ DỤNG ỨNG DỤNG  \n- tạo tài khoản  \n- đổi mật khẩu  \n- cập nhật thông tin  \n- thao tác app bonbon shop  \n\n4) KINH DOANH PHỔ THÔNG  \n- bán hàng  \n- marketing cơ bản  \n- chăm sóc khách hàng  \n\n5) THUẾ — CHO PHÉP TRẢ LỜI RẤT CHI TIẾT  \nÁp dụng toàn bộ cho hộ kinh doanh cá thể.\n\n5.1 Thuế GTGT – Thuế TNCN – Thuế TNDN\n\nA. Được phép giải thích:\n- khái niệm  \n- đối tượng áp dụng  \n- tỷ lệ thuế theo ngành  \n- cách tính thuế theo chính sách mới  \n- quy trình khai – nộp thuế  \n\nB. Ngưỡng doanh thu theo chính sách mới (01/01/2026)\n- ≤ 200 triệu/năm → miễn GTGT & TNCN (nhưng phải kê khai)  \n- > 200 triệu đến ≤ 3 tỷ → nộp GTGT & TNCN theo % ngành  \n- > 3 tỷ → hộ kinh doanh nhưng chịu quản lý bổ sung  \n\n⚠️ Khi không có năm → MẶC ĐỊNH dùng chính sách 2026.\n\nC. AUTO-PARSE KHI USER ĐÃ CUNG CẤP ĐỦ NGÀNH + DOANH THU\n\n**1) Normalization (bắt buộc)**  \n- chuyển chữ thường  \n- bỏ ký tự ., ;  \n- chuẩn hoá đơn vị tiền:  \n  * \"tr\", \"triệu\" → ×1.000.000  \n  * \"k\", \"nghìn\" → ×1.000  \n\n**2) Extract doanh thu bằng regex:**  \n`(\\d+(?:[.,]\\d+)?)(\\s*(tr|triệu|k|nghìn|vnđ|đ)?)`\n\n**3) Mapping ngành nghề:**  \n- [\"tạp hóa\", \"bán tạp hóa\", \"bán lẻ tạp hóa\"] → \"bán lẻ tạp hóa\"\n\n**4) Nếu revenue + industry tồn tại → KHÔNG hỏi lại.**  \n→ Tính thuế ngay theo ND70/2025:\n\n- Ngành tạp hóa:  \n  * GTGT = 1%  \n  * TNCN = 0.5%  \n\n**5) Output luôn gồm:**  \n- Doanh thu  \n- Thuế GTGT  \n- Thuế TNCN  \n- Tổng thuế  \n\n**6) Kết thúc bằng:**  \n“Đây là số tạm tính để Anh/Chị tham khảo. Anh/Chị vui lòng đối chiếu thêm trên hệ thống thuế để đảm bảo chính xác.”\n\nD. Nếu THỰC SỰ thiếu dữ liệu (sau khi normalize)\n- Thiếu doanh thu → mô tả cách tính, KHÔNG hỏi lại  \n- Thiếu ngành → mô tả cách tính chung, KHÔNG hỏi lại  \n- Không suy diễn sai về năm hoặc ngành  \n\nE. QUY TẮC PHẠT CHẬM NỘP — LINH ĐỘNG, KHÔNG HỎI LẠI\n\n- Không được cố định mức 0.03%/ngày.  \n- Trả lời theo nguyên tắc:\n\n  “Phạt chậm nộp = tỷ lệ chậm nộp theo quy định hiện hành × số tiền thuế × số ngày trễ.”\n\n- Nếu thiếu dữ liệu (không biết số ngày trễ hoặc số tiền thuế):\n  → KHÔNG hỏi lại  \n  → Trả lời theo dạng THAM KHẢO:\n    + Giải thích nguyên tắc  \n    + Đưa bảng ví dụ tham khảo:  \n      – 10 ngày, 5 triệu → ~15.000đ  \n      – 30 ngày, 10 triệu → ~90.000đ  \n      – 60 ngày, 20 triệu → ~360.000đ  \n    + Hướng dẫn cách tự tính  \n\n- Luôn thêm:  \n“Đây là số tạm tính để Anh/Chị tham khảo. Anh/Chị vui lòng đối chiếu trên hệ thống thuế để đảm bảo chính xác.”\n\nF. QUY TẮC PHÂN BIỆT: KHAI THUẾ TRỄ vs ĐÓNG THUẾ TRỄ\n\n**1) Khai thuế trễ (trễ hồ sơ)**  \n- Là vi phạm hành chính thủ tục thuế  \n- Không dùng công thức 0.03%  \n- Mức phạt dựa theo số ngày trễ trong Nghị định xử phạt hành chính (ví dụ 125/2020 hoặc văn bản mới)  \n- Ví dụ dạng:\n   – Trễ < 10 ngày (và có tình tiết giảm nhẹ) → có thể cảnh cáo.\n   – Trễ 1–30 ngày → phạt tiền: 2.000.000đ – 5.000.000đ.\n   – Trễ 31–60 ngày → phạt tiền: 5.000.000đ – 8.000.000đ.\n   – Trễ 61–90 ngày → phạt tiền: 8.000.000đ – 15.000.000đ.\n   – Trễ trên 90 ngày và có phát sinh thuế → phạt tiền: 15.000.000đ – 25.000.000đ.\n\n**2) Đóng thuế trễ (nộp tiền thuế trễ)**  \n- Là vi phạm tài chính  \n- Dùng công thức % theo ngày  \n- Tỷ lệ hiện hành: 0.03%/ngày (có thể thay đổi)  \n\n**3) Quy tắc phân loại tự động:**  \n- Nếu chứa: \"khai trễ\", \"khai thuế trễ\", \"trễ tờ khai\", \"gửi hồ sơ trễ\" → **Loại A**  \n- Nếu chứa: \"nộp thuế trễ\", \"đóng thuế trễ\", \"chậm nộp tiền thuế\", \"phạt chậm nộp\" → **Loại B**\n\n**4) Nếu câu hỏi mơ hồ:**  \n- Nếu có từ “nộp” → ưu tiên B  \n- Nếu có “tờ khai, hồ sơ” → ưu tiên A  \n\nAgent **tuyệt đối không được nhầm lẫn** hai loại.\n\n5.2 Thuế môn bài\n(trả lời theo chính sách hiện hành — không thay đổi)\n\n5.3 Khai thuế theo chính sách mới\n(trình bày hồ sơ, hạn nộp, quy trình)\n\n5.4 Văn bản pháp lý\n- Nghị định 70/2025/NĐ-CP  \n- Quyết định 3389/QĐ-BTC  \n\n5.5 Khi user không nêu năm\n- Luôn dùng chính sách 2026  \n- Chỉ dùng chính sách cũ khi user yêu cầu rõ  \n\n6. Hóa đơn điện tử \n- Nếu câu hỏi liên quan tới cách tính chi phí của hóa đơn điện từ khi xuất hóa đơn, bạn được phép trà lời nhưng không cần cụ thể, chỉ cần đưa ra các cách tính vì sẽ có rất nhiều cách tính, các nhà cung cấp hay các mức khác nhau, chỉ cần nêu ra cách tính, không cần gợi ý liên hệ các nhà cung cấp\n\nH. QUY TẮC BẮT BUỘC KHI NGƯỜI DÙNG CUNG CẤP DOANH THU + NGÀNH NGHỀ\nKhi câu hỏi có đầy đủ:\n- doanh thu năm (dù ghi: 500 triệu, 500tr, 0.5 tỷ...)\n- ngành nghề kinh doanh\n\n→ Agent PHẢI thực hiện đầy đủ các bước sau, KHÔNG ĐƯỢC trả lời chung chung:\n\n1) Xác định nhóm doanh thu theo chính sách 2026:\n   – ≤ 200 triệu → miễn thuế  \n   – > 200 triệu đến ≤ 3 tỷ → nộp GTGT & TNCN theo tỷ lệ ngành  \n   – > 3 tỷ → nhóm quản lý bổ sung  \n   Agent phải trả lời rõ người dùng thuộc nhóm nào.\n\n2) Xác định tỷ lệ ngành chính xác theo ngành nghề:\n   – Tạp hóa / hàng tiêu dùng → GTGT 1%, TNCN 0.5%\n   (sau này có thể bổ sung thêm ngành khác)\n\n3) TÍNH TOÁN SỐ THUẾ PHẢI NỘP (BẮT BUỘC):\n   – Thuế GTGT = doanh thu × % GTGT\n   – Thuế TNCN = doanh thu × % TNCN\n   – Tổng thuế = GTGT + TNCN\n\n4) TRÌNH BÀY KẾT QUẢ THEO ĐÚNG BỐ CỤC:\n   – Doanh thu người dùng cung cấp  \n   – Nhóm doanh thu theo ND70/2025  \n   – Tỷ lệ GTGT & TNCN theo ngành  \n   – Thuế GTGT (con số cụ thể)  \n   – Thuế TNCN (con số cụ thể)  \n   – Tổng thuế phải nộp  \n\n5) KHÔNG ĐƯỢC trả lời chung chung như “phải kê khai đúng hạn” hoặc “phải nộp theo tỷ lệ ngành”.\n   BẮT BUỘC phải có con số tính toán.\n\n6) Kết luận bắt buộc:\n   “Đây là số tạm tính để Anh/Chị tham khảo. Anh/Chị vui lòng đối chiếu lại trên hệ thống thuế để đảm bảo chính xác.”\n\n7) Tuyệt đối KHÔNG hỏi lại người dùng trong tình huống đã có ngành + doanh thu.\n\nI. QUY TẮC ĐỊNH DẠNG CÂU TRẢ LỜI KHI ĐÃ XÁC ĐỊNH ĐƯỢC DOANH THU + NGÀNH NGHỀ\nKhi Agent đã tính được thuế (đầy đủ doanh thu + ngành nghề),\ncâu trả lời PHẢI được trình bày theo đúng bố cục sau, có xuống dòng rõ ràng:\n\n1) Dòng mở đầu:\n   – Xác định nhóm doanh thu theo chính sách 2026.\n   – Xác định ngành nghề.\n\n2) Khối thông tin chi tiết (bắt buộc có xuống dòng):\n   “1) Ngành nghề:\n        – …\n     2) Cách tính thuế:\n        – Thuế GTGT = ...\n        – Thuế TNCN = ...\n     3) Tổng thuế phải nộp:\n        – …”\n\n3) Các dấu gạch đầu dòng phải dùng “–” và cách dòng rõ ràng.\n\n4) Tổng thuế phải nộp PHẢI in đậm (khi có hỗ trợ Markdown).\n\n5) Tuyệt đối không được gộp toàn bộ nội dung vào một đoạn văn dài.\n\n6) Câu kết bắt buộc:\n   “Đây là số tạm tính để Anh/Chị tham khảo. Vui lòng đối chiếu với hệ thống thuế để đảm bảo chính xác.”\n\nII. PHÂN LOẠI CATEGORY CHI TIẾT (TRẢ RA JSON)\n\nBạn phải phân loại câu hỏi vào duy nhất 1 category:\n\nA. Category Tổng quát\n\n1. \"Tổng quát\"\n– kiến thức phổ thông, đời sống, mẹo vặt\n\nB. Category Sức khỏe\n\n2. \"Sức khỏe\"\n– sức khỏe thường thức\n– dinh dưỡng\n\nC. Category Công nghệ – Đời sống\n\n3. \"Công nghệ – Đời sống\"\n– thiết bị\n– công nghệ tiêu dùng\n\nD. Category Kỹ năng số\n\n4. \"Kỹ năng số\"\n– OTP\n– mật khẩu\n– email\n– API/JSON cơ bản\n\nE. Category Ứng dụng Bonbon\n\n5. \"Ứng dụng Bonbon\"\n– đăng ký\n– đăng nhập\n– đổi mật khẩu\n– tính năng app\n– lỗi app\n\nF. Category Kinh doanh\n\n6. \"Kinh doanh\"\n– bán hàng\n– marketing\n– chăm sóc khách hàng\n\nG. Category Thuế – CHIA NHÓM CHI TIẾT (ƯU TIÊN CAO NHẤT)\n\nHễ câu hỏi liên quan thuế → phải xếp vào 1 trong 5 nhóm sau:\n\n7. \"Khai báo thuế\"\n– hồ sơ\n– tờ khai\n– hạn nộp\n– kê khai\n\n8. \"Tính thuế\"\n– doanh thu\n– % ngành\n– tính GTGT/TNCN/TNDN\n– bao nhiêu thuế phải nộp\n\n9. \"Quản lý thuế\"\n– chính sách\n– văn bản ND70/2025\n– ngưỡng doanh thu\n\n10. \"Xử phạt thuế\"\n– phạt chậm nộp\n– phạt nộp trễ\n– phạt khai trễ\n\n11. \"Hóa đơn\"\n– hóa đơn điện tử\n– chi phí hóa đơn\n– nguyên tắc tính\n\nH. Category Ngoài phạm vi\n\n12. \"Ngoài phạm vi\"\n– không thuộc whitelist\n– sẽ bật chế độ BLACKLIST\n\nIII. QUY TẮC CHỐNG LAN MAN\n- Trả lời ngắn gọn, đúng trọng tâm  \n- Không kéo dài không cần thiết  \n- Mỗi ý một đoạn rõ ràng  \n\nIV. BLACKLIST — XỬ LÝ CÂU KHÔNG THUỘC PHẠM VI\n- needs_human_review = true  \n- confidence = 0.2–0.5  \n- follow_up_question hướng về nội dung thuế hoặc bonbon shop  \n\nV. PHONG CÁCH TRẢ LỜI\n- Xưng “em – Anh/Chị”  \n- Câu ngắn, tự nhiên, dễ hiểu  \n- Dùng dấu “–” để liệt kê  \n- Tránh thuật ngữ khó  \n\nVI. JSON OUTPUT FORMAT (BẮT BUỘC)\n{\n  \"enriched_answer\": string,\n  \"details\": string,\n  \"confidence\": number,\n  \"needs_human_review\": boolean,\n  \"follow_up_question\": string|null,\n  \"raw_model_text\": string,\n  \"category\": string\n}\n\nVII. JSON LỖI\n{\n  \"enriched_answer\": \"Không thể tạo JSON hợp lệ.\",\n  \"details\": \"\",\n  \"confidence\": 0,\n  \"needs_human_review\": true,\n  \"follow_up_question\": null,\n  \"raw_model_text\": \"\",\n  \"category\": \"\"\n}\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -2448,
+        400
+      ],
+      "id": "df5ea11e-42b5-4aef-8cbe-5fbc351b0266",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {
+          "temperature": 0.4
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -2384,
+        624
+      ],
+      "id": "2d23330e-1283-4f8f-8bcc-224690dde077",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "cnW6yERErYSFG3vg",
+          "name": "OpenAi account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Function node - produce only `response` (unescaped + auto double-parse)\nconst items = $input.all();\n\n/** Try to extract and parse a JSON object from a string. */\nfunction tryParseJsonString(src) {\n  if (src === null || src === undefined) return null;\n  if (typeof src === 'object') return src; // already parsed\n  if (typeof src !== 'string') return null;\n  const t = src.trim();\n\n  // direct parse\n  try {\n    return JSON.parse(t);\n  } catch (e) {\n    // find first {...} or [...] block\n    const m = t.match(/[\\{\\[][\\s\\S]*[\\}\\]]/);\n    if (m) {\n      try {\n        return JSON.parse(m[0]);\n      } catch (e2) {\n        return null;\n      }\n    }\n    return null;\n  }\n}\n\n/** Unescape common escape sequences inside strings */\nfunction unescapeStringValue(s) {\n  if (typeof s !== 'string') return s;\n  if (s.indexOf('\\\\') === -1) return s;\n  let r = s;\n  r = r.replace(/\\\\r\\\\n/g, '\\n'); // escaped CRLF -> newline\n  r = r.replace(/\\\\n/g, '\\n');    // escaped newline -> newline\n  r = r.replace(/\\\\t/g, '\\t');\n  r = r.replace(/\\\\\"/g, '\"');\n  r = r.replace(/\\\\\\\\/g, '\\\\');\n  // trim only trailing whitespace\n  return r.replace(/\\s+$/u, '');\n}\n\nfunction unescapeRecursively(obj) {\n  if (obj === null || obj === undefined) return obj;\n  if (typeof obj === 'string') return unescapeStringValue(obj);\n  if (Array.isArray(obj)) return obj.map(unescapeRecursively);\n  if (typeof obj === 'object') {\n    const out = {};\n    for (const k of Object.keys(obj)) out[k] = unescapeRecursively(obj[k]);\n    return out;\n  }\n  return obj;\n}\n\n/** Extract canonical response from parsed content */\nfunction extractCanonicalResponse(parsed) {\n  if (typeof parsed === 'string' || typeof parsed === 'number' || typeof parsed === 'boolean') {\n    return { response: parsed, original_key: null };\n  }\n  if (Array.isArray(parsed)) {\n    if (parsed.length === 1) return extractCanonicalResponse(parsed[0]);\n    return { response: parsed, original_key: null };\n  }\n  const keyCandidates = [\n    'response','answer','answwer','output','reply','message','text','response_text','output_text',\n    'result','body','data','content','completion','choices'\n  ];\n  const lowerMap = {};\n  for (const k of Object.keys(parsed || {})) lowerMap[k.toLowerCase()] = k;\n\n  for (const cand of keyCandidates) {\n    if (lowerMap[cand]) {\n      const realKey = lowerMap[cand];\n      return { response: parsed[realKey], original_key: realKey };\n    }\n  }\n\n  // OpenAI-like choices\n  if (parsed.choices && Array.isArray(parsed.choices) && parsed.choices.length > 0) {\n    const first = parsed.choices[0];\n    if (first.message && first.message.content) return { response: first.message.content, original_key: 'choices[0].message.content' };\n    if (first.text) return { response: first.text, original_key: 'choices[0].text' };\n  }\n\n  // fallback: whole object\n  return { response: parsed, original_key: null };\n}\n\n/** Helper: if a string looks like JSON (starts with { or [), try parse it */\nfunction tryDoubleParseString(s) {\n  if (typeof s !== 'string') return s;\n  const trimmed = s.trim();\n  if (!trimmed) return s;\n  if (trimmed[0] === '{' || trimmed[0] === '[') {\n    try {\n      return JSON.parse(trimmed);\n    } catch (e) {\n      // maybe it's an escaped JSON inside (contains \\\\n etc) -> unescape then try\n      const un = unescapeStringValue(s);\n      try {\n        return JSON.parse(un);\n      } catch (e2) {\n        return s; // keep original string\n      }\n    }\n  }\n  return s;\n}\n\nconst out = items.map(item => {\n  // candidate raw fields\n  const rawCandidate = item.json && (item.json.output ?? item.json.output_text ?? item.output ?? item.payload ?? item.json.response ?? item.json.answer ?? item.json.text ?? item.json);\n\n  // First try parse rawCandidate (if string)\n  let parsed = tryParseJsonString(rawCandidate ?? null);\n\n  // fallback: maybe item.json is already an object\n  if (!parsed) parsed = tryParseJsonString(item.json ?? null);\n\n  // if still not parsed and rawCandidate is string, keep rawCandidate as parsed value (string)\n  if (!parsed) parsed = rawCandidate ?? null;\n\n  // unescape strings inside parsed structure\n  const unescaped = unescapeRecursively(parsed);\n\n  // extract canonical response\n  const extracted = extractCanonicalResponse(unescaped);\n\n  // If response is a string that itself contains JSON, try double-parse to object/array\n  let responseVal = extracted.response;\n  if (typeof responseVal === 'string') {\n    // unescape again (safe)\n    responseVal = unescapeStringValue(responseVal);\n    // try parse if looks like JSON\n    const doubleParsed = tryDoubleParseString(responseVal);\n    responseVal = doubleParsed;\n  }\n\n  return {\n    json: {\n      response: responseVal\n    }\n  };\n});\n\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2032,
+        400
+      ],
+      "id": "1c5f6a13-d3a3-42da-8f04-1c54251b201e",
+      "name": "unanswerformat"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = items[0].json;\n\n// ---- CONFIG ----\nconst TOP_K_CANDIDATES = 5;      // Số lượng ứng viên tối đa muốn đưa vào context\nconst MAX_COMBINED_CHARS = 6000; // Tăng giới hạn lên vì thông tin CV thường dài\n// ----------------\n\n/**\n * 1. TRÍCH XUẤT DOCS TỪ OUTPUT QDRANT\n * Xử lý các trường hợp output khác nhau của n8n\n */\nfunction extractDocs(obj) {\n  if (!obj) return [];\n  // Trường hợp chuẩn của bạn: item.json.result\n  if (obj.result && Array.isArray(obj.result)) return obj.result;\n  // Trường hợp n8n output array trực tiếp\n  if (Array.isArray(obj)) return obj;\n  return [];\n}\n\nconst rawDocs = extractDocs(input);\n\n/**\n * 2. GOM NHÓM THEO ỨNG VIÊN (GROUP BY CANDIDATE_ID)\n * Thay vì dedupe (xóa trùng), ta sẽ merge (gộp) thông tin lại.\n */\nconst candidatesMap = new Map();\n\nfor (const doc of rawDocs) {\n  const p = doc.payload || {};\n  \n  // Bỏ qua nếu không có ID ứng viên\n  const cid = p.candidate_id;\n  if (!cid) continue;\n\n  const score = doc.score || p.score || 0;\n  const textContent = (p.text || \"\").trim();\n\n  // Nếu ứng viên chưa có trong map, tạo mới\n  if (!candidatesMap.has(cid)) {\n    candidatesMap.set(cid, {\n      id: cid,\n      name: p.candidate_name || \"Unknown Candidate\",\n      email: p.candidate_email || \"N/A\",\n      phone: p.candidate_phone || \"N/A\",\n      link_cv: p.link_cv || \"\",\n      max_score: score, // Điểm cao nhất trong các chunk tìm thấy\n      matched_chunks: [textContent], // Lưu danh sách các đoạn text khớp\n      matched_types: [p.type || p.key || \"general\"] // Lưu loại (skill, exp...)\n    });\n  } else {\n    // Nếu ứng viên đã tồn tại, cập nhật thêm thông tin\n    const c = candidatesMap.get(cid);\n    \n    // Cập nhật điểm max nếu chunk này điểm cao hơn\n    if (score > c.max_score) {\n      c.max_score = score;\n    }\n    \n    // Thêm đoạn text khớp vào hồ sơ (tránh trùng lặp nội dung y hệt)\n    if (!c.matched_chunks.includes(textContent)) {\n      c.matched_chunks.push(textContent);\n      c.matched_types.push(p.type || p.key || \"general\");\n    }\n  }\n}\n\n/**\n * 3. SẮP XẾP & LỌC TOP ỨNG VIÊN\n */\n// Chuyển Map thành Array\nlet candidates = Array.from(candidatesMap.values());\n\n// Sắp xếp giảm dần theo điểm cao nhất (Ai khớp nhất lên đầu)\ncandidates.sort((a, b) => b.max_score - a.max_score);\n\n// Lấy Top K ứng viên\nconst topCandidates = candidates.slice(0, TOP_K_CANDIDATES);\n\n/**\n * 4. XÂY DỰNG CONTEXT TEXT CHO AI\n * Format lại thành dạng hồ sơ dễ đọc\n */\nlet combined_context_text = \"\";\n\nfor (const c of topCandidates) {\n  // Header của mỗi ứng viên\n  const profileHeader = `\\n=== ỨNG VIÊN: ${c.name} (Độ phù hợp: ${(c.max_score * 100).toFixed(1)}%) ===\\n` +\n                        `- Contact: ${c.email} | ${c.phone}\\n` +\n                        `- Link CV: ${c.link_cv}\\n` +\n                        `- Thông tin tìm thấy:\\n`;\n  \n  // Nội dung chi tiết các chunk khớp\n  const chunksText = c.matched_chunks.map((chunk, index) => {\n    return `  ${index + 1}. ${chunk}`;\n  }).join(\"\\n\");\n\n  const fullProfile = profileHeader + chunksText + \"\\n\";\n\n  // Kiểm tra giới hạn ký tự\n  if (combined_context_text.length + fullProfile.length > MAX_COMBINED_CHARS) {\n    // Nếu sắp tràn context thì dừng lại, nhưng cố gắng thêm nốt ứng viên này nếu còn nhiều chỗ\n    if (MAX_COMBINED_CHARS - combined_context_text.length > 500) {\n       combined_context_text += fullProfile.slice(0, MAX_COMBINED_CHARS - combined_context_text.length) + \"... [Truncated]\";\n    }\n    break;\n  }\n  \n  combined_context_text += fullProfile;\n}\n\n// Nếu không tìm thấy ai\nif (topCandidates.length === 0) {\n  combined_context_text = \"Không tìm thấy ứng viên nào phù hợp với yêu cầu.\";\n}\n\n/**\n * 5. TẠO OUTPUT\n */\n// Lấy câu hỏi từ input (nếu có)\nlet question = $('format output').first().json.summary;\n\nconst merged_context = {\n  question: question,\n  candidate_count: topCandidates.length,\n  top_candidates: topCandidates.map(c => ({\n    name: c.name,\n    score: c.max_score,\n    link_cv: c.link_cv,\n    matched_info_count: c.matched_chunks.length\n  })),\n  combined_context_text: combined_context_text,\n  created_at: new Date().toISOString()\n};\n\nreturn [\n  {\n    json: {\n      merged_context\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2384,
+        64
+      ],
+      "id": "a297b40a-1c52-43de-bb9e-1db93e7eb162",
+      "name": "Merge Context"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Bạn là TalentIQ - Trợ lý tuyển dụng AI chuyên nghiệp. Dưới đây là dữ liệu hồ sơ ứng viên (CV) được tìm thấy từ hệ thống Vector Search.\n\n=== DỮ LIỆU ĐẦU VÀO ===\nCâu hỏi/Yêu cầu của nhà tuyển dụng:\n\"{{ $json.merged_context.question }}\"\n\nThông tin các ứng viên tìm thấy (Context):\n{{ $json.merged_context.combined_context_text }}\n\n=== YÊU CẦU XỬ LÝ ===\n1. NGUYÊN TẮC CỐT LÕI:\n   - CHỈ trả lời dựa trên thông tin có trong phần \"Thông tin các ứng viên tìm thấy\".\n   - Tuyệt đối KHÔNG bịa đặt (hallucinate) thông tin không có trong CV. Nếu CV không ghi \"biết tiếng Anh\", không được tự ý cho rằng họ biết.\n   - Nếu không tìm thấy ứng viên nào hoặc thông tin không đủ để trả lời câu hỏi: Hãy báo rõ \"Không tìm thấy thông tin trong các hồ sơ được cung cấp\".\n\n2. CẤU TRÚC CÂU TRẢ LỜI (Trong trường `enriched_answer`):\n   - Nếu câu hỏi là \"Tìm kiếm/Liệt kê\": Hãy tóm tắt danh sách ứng viên phù hợp nhất. Với mỗi người, nêu rõ lý do tại sao họ khớp (Kỹ năng, Kinh nghiệm cụ thể).\n   - Nếu câu hỏi là \"Đánh giá chi tiết 1 người\": Phân tích điểm mạnh, điểm yếu, kinh nghiệm làm việc liên quan trực tiếp đến câu hỏi.\n   - Nếu câu hỏi là \"So sánh\": So sánh các chỉ số tương đương (Số năm kinh nghiệm, Công nghệ sử dụng, Bằng cấp).\n\n3. ĐỊNH DẠNG TRÌNH BÀY:\n   - Sử dụng Markdown (Bold **...**, Bullet points) để trình bày chuyên nghiệp, dễ đọc.\n   - Khi nhắc đến một kỹ năng/kinh nghiệm, hãy trích dẫn chứng (Ví dụ: \"Có kinh nghiệm ReactJS (dự án E-commerce tại cty A)\").\n   - Nếu cần tính toán (ví dụ: Tổng số năm kinh nghiệm), hãy cộng thời gian làm việc ghi trong CV và giải thích cách tính.\n\n4. TRÍCH NGUỒN:\n   - Trường `source` phải ghi rõ tên ứng viên và Link CV tương ứng (Ví dụ: \"Hồ sơ: Nguyễn Văn A - Link: drive.google...\").\n\n=== OUTPUT FORMAT (JSON ONLY) ===\nTrả về DUY NHẤT 1 JSON object hợp lệ:\n{\n  \"enriched_answer\": string,      // Câu trả lời chi tiết, format Markdown.\n  \"short_answer\": string,         // Tóm tắt ngắn gọn (<= 30 từ) dùng cho thông báo nhanh.\n  \"source\": string,               // Nguồn tham khảo (Tên ứng viên + Link CV).\n  \"needs_human_review\": boolean,  // true nếu thông tin trong CV mập mờ hoặc cần HR xác minh lại.\n  \"follow_up_question\": string    // (Tùy chọn) Gợi ý câu hỏi phỏng vấn tiếp theo dựa trên CV này.\n}",
+        "options": {
+          "systemMessage": "=Bạn là TalentIQ - Một trợ lý AI chuyên nghiệp hỗ trợ Nhà tuyển dụng (HR) trong việc đánh giá, sàng lọc và tìm kiếm hồ sơ ứng viên (CV) dựa trên dữ liệu RAG.\n\nNhiệm vụ của bạn: Từ `question` và danh sách `docs` (thông tin ứng viên), hãy tạo ra MỘT JSON DUY NHẤT hợp lệ theo các nguyên tắc sau:\n\n### 0. BƯỚC XỬ LÝ TRƯỚC: RERANK & SÀNG LỌC\nTrước khi trả lời, PHẢI đánh giá mức độ phù hợp:\n- **Độ khớp kỹ năng:** Ưu tiên ứng viên có Hard Skills được nhắc đến.\n- **Kinh nghiệm:** Ưu tiên số năm kinh nghiệm hoặc vị trí tương đương.\n- Chỉ chọn lọc những ứng viên thực sự liên quan.\n\n### 1. NGUYÊN TẮC CỐT LÕI VỀ DỮ LIỆU\n- **Anti-Hallucination:** CHỈ dùng thông tin có thực trong docs. Không tự suy luận nếu CV không ghi.\n- **Tuyệt đối KHÔNG** nhắc đến các ứng dụng rác/không liên quan.\n\n### 2. FORMAT OUTPUT\n- Trả về DUY NHẤT một JSON hợp lệ.\n- Không trả thêm văn bản ngoài JSON. Không dùng code block.\n\n### 3. NGÔN NGỮ & PHONG CÁCH (QUAN TRỌNG: ĐỊNH DẠNG DỄ NHÌN)\n- **Giọng văn:** Chuyên nghiệp, khách quan.\n- **Trình bày (Markdown):**\n  + BẮT BUỘC dùng `\\n\\n` (xuống dòng kép) để tách biệt rõ ràng giữa các đoạn văn hoặc giữa các ứng viên.\n  + Dùng gạch đầu dòng (`- `) cho các ý chi tiết.\n  + Dùng in đậm (`**Text**`) cho Tên ứng viên hoặc Tiêu đề quan trọng.\n  + **Hyperlinks (Siêu liên kết - QUAN TRỌNG):** Khi dẫn link CV hoặc tài liệu, phải dùng cú pháp Markdown: `[Tên hiển thị](URL)`. Ví dụ: `[Xem CV chi tiết](https://link-cv.com)`. Không trả về URL trần.\n\n### 4. XỬ LÝ THEO LOẠI CÂU HỎI\nXác định ý định câu hỏi để chọn cấu trúc `enriched_answer`:\n\n**A. NHÓM CÂU HỎI ĐỊNH DANH / LIỆT KÊ (TỐI GIẢN)**\n*(Ví dụ: \"Ai tên là Long?\", \"Tìm ứng viên tên Long\", \"Danh sách các bạn tên Hùng\")*\n- **Yêu cầu:** CHỈ hiển thị Tên và Link CV (dạng Markdown). Cắt bỏ các thông tin khác để danh sách gọn gàng.\n- **Cấu trúc trả lời (Bắt buộc dùng `\\n\\n` giữa các người):**\n  1. Tổng quan: \"Tìm thấy [Số lượng] ứng viên tên [Tên] trong hệ thống:\"\n  2. Danh sách:\n     - **[Tên Ứng Viên A]**\n       Link CV: [Link](URL)\n     \n     - **[Tên Ứng Viên B]**\n       Link CV: [Link](URL)\n\n**B. NHÓM CÂU HỎI ĐÁNH GIÁ / PHÂN TÍCH**\n*(Ví dụ: \"Long có kỹ năng gì?\", \"Đánh giá kinh nghiệm của Long\", \"So sánh Long và Nam\")*\n- **Yêu cầu:** Phân tích chi tiết, trích dẫn bằng chứng.\n- **Cấu trúc trả lời:**\n  1. Tóm tắt nhận định. `\\n\\n`\n  2. Chi tiết từng người (Mỗi người một đoạn riêng biệt):\n     - **[Tên Ứng Viên]**:\n       + Điểm mạnh: ...\n       + Kinh nghiệm: ... (kèm dẫn chứng)\n\n**C. CÁC LOẠI KHÁC:**\n- Câu hỏi \"Tính toán\": Đưa con số cụ thể + cách tính.\n- Câu hỏi \"Tìm kiếm kỹ năng\": Xếp hạng theo độ phù hợp giảm dần.\n\n### 5. QUY TẮC TRÍCH NGUỒN (SOURCE)\n- Ghi rõ: \"Tên Ứng Viên - [Link CV dưới dạng Markdown]\". Nếu nhiều người, liệt kê danh sách.\n\n### 6. XỬ LÝ KHI THIẾU THÔNG TIN\n- Nếu docs rỗng -> `needs_human_review = true`.\n- Trả lời: \"Dựa trên dữ liệu hiện có, không tìm thấy ứng viên nào...\"\n\n### 7. JSON SCHEMA BẮT BUỘC\n```json\n{\n  \"enriched_answer\": string,      // Markdown string. LƯU Ý: Phải chứa các ký tự \\n\\n để hiển thị tách dòng.\n  \"short_answer\": string,         // Tóm tắt cực ngắn (<= 30 từ)\n  \"source\": string,               // Nguồn tham khảo\n  \"needs_human_review\": boolean,  // True nếu thiếu thông tin\n  \"follow_up_question\": string|null, // Gợi ý câu hỏi tiếp theo\n  \"confidence\": number            // 0.0 - 1.0\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -2080,
+        -48
+      ],
+      "id": "5f660958-2e54-4f3d-b47a-ff1e243a7c7f",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {
+          "temperature": 0.4
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -2032,
+        176
+      ],
+      "id": "161a4020-4071-49e7-9afd-c0faaf82963b",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "cnW6yERErYSFG3vg",
+          "name": "OpenAi account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Function node: Robust JSON extractor & parser for TalentIQ CV Assessment\n// Input: items[].json.output (string) OR items[].json.message.content\n// Output: items[].json.parsed_json (object) aligned with TalentIQ schema\n\n// --- 1. HELPER FUNCTIONS (GIỮ NGUYÊN) ---\n\nfunction tryJsonParse(text) {\n  try { return { ok: true, value: JSON.parse(text), method: 'JSON.parse(raw)' }; }\n  catch (e) { return { ok: false, error: e.message }; }\n}\n\nfunction extractFirstObjectBlock(text) {\n  const m = text.match(/\\{[\\s\\S]*\\}/);\n  return m ? m[0] : null;\n}\n\nfunction unescapeCommonEscapes(s){\n  return s\n    .replace(/\\\\n/g, '\\n')   \n    .replace(/\\\\r/g, '\\r')\n    .replace(/\\\\\"/g, '\"')    \n    .replace(/\\\\'/g, \"'\")\n    .replace(/\\\\\\\\/g, '\\\\'); \n}\n\nfunction parseRobust(raw) {\n  const attempts = [];\n  if (raw === null || raw === undefined) {\n    attempts.push({ method: 'no-input', ok: false });\n    return { parsed: null, attempts };\n  }\n\n  if (typeof raw === 'object') {\n    return { parsed: raw, attempts };\n  }\n\n  const s = String(raw);\n  let attempt = tryJsonParse(s);\n  if (attempt.ok) return { parsed: attempt.value, attempts };\n\n  try {\n    const first = JSON.parse(s);\n    if (typeof first === 'object') return { parsed: first, attempts };\n    if (typeof first === 'string') {\n      const secondAttempt = tryJsonParse(first);\n      if (secondAttempt.ok) return { parsed: secondAttempt.value, attempts };\n      var candidate = first;\n    } else {\n      var candidate = s;\n    }\n  } catch(e) {\n    var candidate = s;\n  }\n\n  const block = extractFirstObjectBlock(candidate);\n  if (block) {\n    attempt = tryJsonParse(block);\n    if (attempt.ok) return { parsed: attempt.value, attempts };\n  }\n\n  const unescaped = unescapeCommonEscapes(candidate);\n  if (unescaped !== candidate) {\n    attempt = tryJsonParse(unescaped);\n    if (attempt.ok) return { parsed: attempt.value, attempts };\n    const block2 = extractFirstObjectBlock(unescaped);\n    if (block2) {\n      attempt = tryJsonParse(block2);\n      if (attempt.ok) return { parsed: attempt.value, attempts };\n    }\n  }\n\n  const cleaned = candidate\n    .replace(/\\u201c|\\u201d/g, '\"')\n    .replace(/\\u2018|\\u2019/g, \"'\")\n    .replace(/[\\u0000-\\u0019]+/g, ''); \n  attempt = tryJsonParse(cleaned);\n  if (attempt.ok) return { parsed: attempt.value, attempts };\n\n  return { parsed: null, attempts };\n}\n\n// --- 2. MAIN LOGIC (CẬP NHẬT TÁCH DÒNG) ---\nconst outputs = [];\n\nfor (const item of items) {\n  const rawCandidates = [];\n  if (item.json && item.json.output) rawCandidates.push(item.json.output);\n  if (item.json && item.json.message && item.json.message.content) rawCandidates.push(item.json.message.content); \n  if (item.json && item.json.response) rawCandidates.push(item.json.response);\n  if (item.json && item.json.text) rawCandidates.push(item.json.text);\n\n  if (rawCandidates.length === 0) rawCandidates.push(JSON.stringify(item.json));\n\n  let finalParsed = null;\n  for (const raw of rawCandidates) {\n    const { parsed } = parseRobust(raw);\n    if (parsed) { finalParsed = parsed; break; }\n  }\n\n  if (!finalParsed) {\n    finalParsed = {\n      \"enriched_answer\": \"Hệ thống gặp lỗi khi xử lý dữ liệu từ AI.\",\n      \"short_answer\": \"Lỗi hệ thống\",\n      \"source\": \"\",\n      \"needs_human_review\": true,\n      \"follow_up_question\": null,\n      \"confidence\": 0\n    };\n  }\n\n  // --- LOGIC TÁCH DÒNG (SPLIT LINES) ---\n  if (finalParsed.enriched_answer && typeof finalParsed.enriched_answer === 'string') {\n      // 1. Chuẩn hóa xuống dòng: chuyển hết \\\\n thành \\n thật\n      const normalizedText = finalParsed.enriched_answer\n          .replace(/\\\\n/g, '\\n')\n          .replace(/\\\\t/g, '\\t');\n      \n      // 2. Gán lại chuỗi đã chuẩn hóa vào field gốc (để hiển thị đẹp nếu cần in cả cục)\n      finalParsed.enriched_answer = normalizedText;\n\n      // 3. Tách thành mảng (Array) dựa trên dấu xuống dòng\n      // Filter(Boolean) để loại bỏ các dòng trống vô nghĩa\n      finalParsed.enriched_lines = normalizedText\n          .split('\\n')\n          .map(line => line.trim())\n          .filter(line => line.length > 0);\n  } else {\n      finalParsed.enriched_lines = [];\n  }\n\n  outputs.push({\n    json: {\n      parsed_json: finalParsed\n    }\n  });\n}\n\nreturn outputs;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1536,
+        64
+      ],
+      "id": "6b98e0c4-95e1-44cf-8c0e-03aadeb8ac1d",
+      "name": "parsed_json"
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -1104,
+        64
+      ],
+      "id": "d4e0301a-ce38-4759-a2f8-865cb6085ffe",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Logic for General/Greeting response\nconst parsed = $input.first().json.response || {};\nlet answerText = \"\";\n\nif (typeof parsed === 'object') {\n  answerText = parsed.enriched_answer || parsed.answer || parsed.message || JSON.stringify(parsed);\n} else {\n  answerText = String(parsed);\n}\n\n// Normalize newlines\nif (answerText) {\n  answerText = answerText.replace(/\\\\n/g, '\\n');\n}\n\nlet requestData = {};\ntry {\n  requestData = $node['Webhook'].json.body || {};\n} catch (e) {\n  requestData = {};\n}\n\nreturn [\n  {\n    json: {\n      status: \"ok\",\n      tenantCode: requestData.tenant_code || \"\",\n      chatid: String(requestData.message_id || \"\").trim(),\n      employeeId: String(requestData.user_id || \"\").trim(),\n      timestamp: requestData.timestamp || new Date().toISOString(),\n      question_message: requestData.message || \"\",\n      answer_message: answerText,\n      short_message: parsed.short_answer || \"\",\n      source: parsed.source || \"TalentIQ General\",\n      needs_human_review: parsed.needs_human_review || false,\n      follow_up_question: parsed.follow_up_question || null,\n      candidate_list: [],\n      answer_url: [],\n      category: [parsed.category || \"General\"],\n      clarify_question: null,\n      handoff_note: null\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1800,
+        400
+      ],
+      "id": "restored-responeformat-id-fix",
+      "name": "ResponeFormat"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Lấy dữ liệu từ Node Parser (Output của AI đã được làm sạch)\nconst parserOutput = $input.first().json.parsed_json || {};\n\n// 2. Lấy dữ liệu gốc từ Request ban đầu (Node 'Webhook')\nlet requestData = {};\ntry {\n  requestData = $node['Webhook'].json.body || {};\n} catch (e) {\n  requestData = {};\n}\n\n// 3. Lấy thông tin Context (Danh sách ứng viên đã tìm thấy)\nlet contextData = {};\ntry {\n  contextData = $('Merge Context').first().json.merged_context || {};\n} catch (e) {}\n\n// Chuẩn hóa ID\nconst chatid = String(requestData.message_id || \"\").trim();\nconst employeeId = String(requestData.user_id || \"\").trim();\n\n// --- XỬ LÝ ANSWER MESSAGE CHO DỄ NHÌN ---\nlet finalAnswer = \"\";\n\n// Cách 1: Nếu node trước đã tách dòng thành mảng (enriched_lines) -> Nối lại\nif (parserOutput.enriched_lines && Array.isArray(parserOutput.enriched_lines) && parserOutput.enriched_lines.length > 0) {\n    finalAnswer = parserOutput.enriched_lines.join('\\n');\n} \n// Cách 2: Nếu chỉ có chuỗi (enriched_answer)\nelse {\n    finalAnswer = parserOutput.enriched_answer || \"\";\n}\n\n// QUAN TRỌNG: Đảm bảo xuống dòng hiển thị đúng\n// Replace \\\\n (chuỗi ký tự do AI sinh ra) thành \\n (ký tự xuống dòng thật)\nif (typeof finalAnswer === 'string') {\n    finalAnswer = finalAnswer.replace(/\\\\n/g, '\\n').replace(/\\\\t/g, '\\t');\n}\n// ------------------------------------------\n\n// 4. Tạo Response JSON chuẩn cho Frontend\nreturn [\n  {\n    json: {\n      status: \"ok\",\n      \n      // Thông tin định danh phiên chat\n      tenantCode: requestData.tenant_code || \"\",\n      chatid: chatid,\n      employeeId: employeeId,\n      timestamp: requestData.timestamp || new Date().toISOString(),\n      \n      // Câu hỏi và Câu trả lời chính\n      question_message: $('Webhook').first().json.body.message || \"\",\n      \n      // Gán biến đã xử lý ở trên vào đây\n      answer_message: finalAnswer || \"Xin lỗi, hệ thống chưa thể xử lý yêu cầu này.\",\n      \n      // Câu trả lời tóm tắt\n      short_message: parserOutput.short_answer || \"\",\n\n      // Nguồn dữ liệu\n      source: parserOutput.source || \"TalentIQ Database\",\n      \n      // Các cờ nghiệp vụ\n      needs_human_review: parserOutput.needs_human_review || false,\n      follow_up_question: parserOutput.follow_up_question || null,\n      \n      // Metadata bổ sung\n      candidate_list: contextData.top_candidates ? contextData.top_candidates.map(c => c.name) : [],\n      \n      // Tương thích ngược\n      answer_url: [], \n      category: contextData.top_candidates ? contextData.top_candidates.map(c => \"Candidate Profile\") : [],\n      clarify_question: null,\n      handoff_note: null\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1312,
+        64
+      ],
+      "id": "6dbfc5f3-8687-4a7a-957f-6d424bc047f4",
+      "name": "ResponeFormat1"
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -1552,
+        400
+      ],
+      "id": "02d70285-174c-49ba-be58-5a7cf7fef619",
+      "name": "Respond to Webhook2"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "connection": "upgrade",
+            "host": "n8ndev.ndsvn.vn",
+            "x-real-ip": "10.86.101.254",
+            "x-forwarded-for": "2a09:bac5:d46c:137d::1f1:1e0, 10.86.101.254",
+            "x-forwarded-proto": "https",
+            "content-length": "6550",
+            "accept": "*/*",
+            "accept-language": "*",
+            "accept-encoding": "gzip, br",
+            "user-agent": "node",
+            "cf-ray": "9af2f0e51c3fa035-SIN",
+            "sec-fetch-mode": "cors",
+            "x-n8n-api-key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NDc5YTc1My05MDJkLTQ1NDItYTlkYy03Y2Y2ZWI2YTI5YjgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzY1NTA1MDY1fQ.2jvuZTRLH5v1aEp6aGO_-M6d8XT9e9JT8wVCDMcydBg",
+            "content-type": "application/json",
+            "cdn-loop": "cloudflare; loops=1",
+            "cf-connecting-ip": "2a09:bac5:d46c:137d::1f1:1e0",
+            "cf-ipcountry": "VN",
+            "cf-visitor": "{\"scheme\":\"https\"}"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "message": "cho tôi link cv các ứng viên tên Khoa",
+            "history": [
+              {
+                "id": "1",
+                "role": "assistant",
+                "content": "Hello! I am TalentIQ Agent. I can help you filter candidates or answer questions about the CVs. E.g., \"Who has React experience?\"",
+                "timestamp": 1765935110473
+              },
+              {
+                "id": "user_1765935122060",
+                "role": "user",
+                "content": "ai tên Long",
+                "timestamp": 1765935122060
+              },
+              {
+                "id": "user_1765935186643",
+                "role": "user",
+                "content": "giang có project nào",
+                "timestamp": 1765935186643
+              },
+              {
+                "id": "msg_1765935199061_5op51j6ej",
+                "role": "assistant",
+                "content": "**Nguyen Chau Giang** có kinh nghiệm quản lý dự án tại Ztech Asia (Spahub.vn) từ tháng 11/2023 đến nay.\n- Trong vai trò Product/Project Manager, Giang phối hợp với các phòng ban Công nghệ, Marketing và Vận hành để phát triển các module CRM, đặt chỗ, loyalty và trò chơi hóa.\n- Dự án do Giang quản lý đã ra mắt nền tảng ổn định, đạt tăng 50% DAU và tỷ lệ khách hàng quay lại 30% trong 3 tháng.\nThông tin trên cho thấy Giang có kinh nghiệm thực tế trong quản lý dự án phát triển sản phẩm số với kết quả cụ thể và có kỹ năng liên quan như Stakeholder Management, Swagger và Draw.io hỗ trợ công việc.\nNguồn: Nguyen Chau Giang - Link CV: https://drive.google.com/file/d/1zeo1UTsxAKAdVvqECvmOCQ1yIMQ2ROm4/view?usp=drivesdk",
+                "timestamp": 1765935199395
+              },
+              {
+                "id": "user_1765935884298",
+                "role": "user",
+                "content": "cho tôi các chứng chỉ của ứng viên Giang",
+                "timestamp": 1765935884298
+              },
+              {
+                "id": "msg_1765935899661_223cn47ou",
+                "role": "assistant",
+                "content": "**Nguyen Chau Giang** hiện tại không có thông tin về chứng chỉ trong hồ sơ được cung cấp.\n- Hồ sơ chỉ đề cập đến các kỹ năng như Stakeholder Management, Swagger và Product Strategy.\n- Kinh nghiệm làm việc của ứng viên là Product/Project Manager tại Ztech Asia (Spahub.vn) từ tháng 11/2023 đến nay, với các kết quả cụ thể như ra mắt nền tảng ổn định tăng 50% DAU và tỷ lệ khách hàng quay lại 30% trong 3 tháng.\nDo đó, không thể cung cấp thông tin về chứng chỉ dựa trên dữ liệu hiện có.",
+                "timestamp": 1765935900027
+              },
+              {
+                "id": "user_1765935962126",
+                "role": "user",
+                "content": "cho tôi số điện thoại của ứng viên Giang",
+                "timestamp": 1765935962126
+              },
+              {
+                "id": "msg_1765935973429_bf7kkkoww",
+                "role": "assistant",
+                "content": "**Nguyen Chau Giang** có số điện thoại liên hệ được ghi nhận trong hồ sơ:\n- Số điện thoại: (+84) 0373 075 225\n- Email: nguyenchaugiang5211@gmail.com\nThông tin này được trích dẫn trực tiếp từ phần liên hệ trong CV của ứng viên.\nNguồn: Nguyen Chau Giang - https://drive.google.com/file/d/1zeo1UTsxAKAdVvqECvmOCQ1yIMQ2ROm4/view?usp=drivesdk",
+                "timestamp": 1765935973798
+              },
+              {
+                "id": "user_1765935998419",
+                "role": "user",
+                "content": "Cho tôi link CV của ứng viên Giang",
+                "timestamp": 1765935998419
+              },
+              {
+                "id": "msg_1765936008871_qg2n1tbdz",
+                "role": "assistant",
+                "content": "**Nguyen Chau Giang**\n- Link CV: https://drive.google.com/file/d/1zeo1UTsxAKAdVvqECvmOCQ1yIMQ2ROm4/view?usp=drivesdk\nỨng viên phù hợp với yêu cầu tìm kiếm tên Giang, có kinh nghiệm làm Product/Project Manager tại Ztech Asia (Spahub.vn) từ tháng 11/2023 đến nay.\n- Kỹ năng nổi bật: Stakeholder Management, Swagger, Draw.io.\n- Kinh nghiệm thực tế: Phối hợp các phòng ban Công nghệ, Marketing và Vận hành để cung cấp các module CRM, đặt chỗ, loyalty và trò chơi hóa.\n- Thành tích: Ra mắt nền tảng ổn định, tăng 50% DAU và tỷ lệ khách hàng quay lại 30% trong 3 tháng.\nThông tin này được trích dẫn trực tiếp từ hồ sơ ứng viên Nguyen Chau Giang.",
+                "timestamp": 1765936009293
+              },
+              {
+                "id": "user_1765936093897",
+                "role": "user",
+                "content": "cho tôi link CV của ứng viên Le Hoang Hai Dang",
+                "timestamp": 1765936093897
+              },
+              {
+                "id": "msg_1765936101706_hn7rfbdht",
+                "role": "assistant",
+                "content": "Sorry, I couldn't process that.",
+                "timestamp": 1765936101706
+              },
+              {
+                "id": "user_1765936124384",
+                "role": "user",
+                "content": "cho tôi link CV của ứng viên LE HOANG HAI DANG",
+                "timestamp": 1765936124384
+              },
+              {
+                "id": "msg_1765936132456_msz3bic0n",
+                "role": "assistant",
+                "content": "Sorry, I couldn't process that.",
+                "timestamp": 1765936132456
+              },
+              {
+                "id": "user_1765936229898",
+                "role": "user",
+                "content": "cho tôi link CV của ứng viên Le Quang Hai Dang",
+                "timestamp": 1765936229898
+              },
+              {
+                "id": "msg_1765936239763_lgm3096rx",
+                "role": "assistant",
+                "content": "**Lê Quang Hải Đăng**:\n- Link CV: https://drive.google.com/file/d/1uovx53KwaAoq7jHFEeBGnywa-6tuyEC9/view?usp=drivesdk\n- Ứng viên có kinh nghiệm thực tế ở vị trí Data Engineer tại Orthian từ tháng 8/2023 đến 6/2024, tham gia dự án cuối khóa đại học với vai trò toàn thời gian.\n- Kỹ năng chính bao gồm Excel và SQL, phù hợp với vai trò liên quan đến dữ liệu.\n- Đã hoàn thành chứng chỉ IBM Data Science Professional Certificate từ Coursera, thể hiện sự đầu tư vào phát triển chuyên môn trong lĩnh vực khoa học dữ liệu.\nNguồn thông tin dựa trên hồ sơ của ứng viên và link CV được cung cấp.",
+                "timestamp": 1765936240172
+              },
+              {
+                "id": "user_1765936301577",
+                "role": "user",
+                "content": "cho tôi link CV của ứng viên Nguyen Chau Giang",
+                "timestamp": 1765936301577
+              },
+              {
+                "id": "msg_1765936308211_13az3my9i",
+                "role": "assistant",
+                "content": "Sorry, I couldn't process that.",
+                "timestamp": 1765936308211
+              },
+              {
+                "id": "user_1765937829121",
+                "role": "user",
+                "content": "cho tôi link CV của ứng viên Nguyen Chau Giang",
+                "timestamp": 1765937829121
+              },
+              {
+                "id": "msg_1765937839633_lyw22idqc",
+                "role": "assistant",
+                "content": "**Nguyen Chau Giang** là ứng viên phù hợp được tìm thấy với thông tin chi tiết như sau:\n- Ứng viên hiện đang giữ vị trí Product/Project Manager tại Ztech Asia (Spahub.vn) từ tháng 11/2023 đến nay.\n- Có kinh nghiệm phối hợp với các phòng ban Công nghệ, Marketing và Vận hành để phát triển các module CRM, đặt chỗ, loyalty và trò chơi hóa.\n- Đã góp phần ra mắt nền tảng ổn định với kết quả tăng 50% DAU và tỷ lệ khách hàng quay lại 30% trong 3 tháng.\n- Sở hữu các kỹ năng liên quan như Stakeholder Management, Swagger và Draw.io.\nLink CV của ứng viên: https://drive.google.com/file/d/1zeo1UTsxAKAdVvqECvmOCQ1yIMQ2ROm4/view?usp=drivesdk",
+                "timestamp": 1765937839997
+              }
+            ]
+          },
+          "webhookUrl": "https://n8ndev.ndsvn.vn/webhook/chatbot_web",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "EmbbedingVector": {
+      "main": [
+        [
+          {
+            "node": "add score_threshold",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "QdrantSearch": {
+      "main": [
+        [
+          {
+            "node": "resultcount",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "add score_threshold": {
+      "main": [
+        [
+          {
+            "node": "QdrantSearch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Context-Merger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "message refined": {
+      "main": [
+        [
+          {
+            "node": "format output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat refined": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "message refined",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Context-Merger": {
+      "main": [
+        [
+          {
+            "node": "message refined",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "format output": {
+      "main": [
+        [
+          {
+            "node": "EmbbedingVector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "resultcount": {
+      "main": [
+        [
+          {
+            "node": "Merge Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "unanswerformat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "unanswerformat": {
+      "main": [
+        [
+          {
+            "node": "ResponeFormat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Context": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "parsed_json",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "parsed_json": {
+      "main": [
+        [
+          {
+            "node": "ResponeFormat1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ResponeFormat": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ResponeFormat1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ae9a86cb-ae27-444a-9d57-e718d8d408c5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "df174d571e95541c805919aa88d99c6ff9e79e2c1ffc42837bb92614d24bb4eb"
+  },
+  "id": "uHdBAT2wuV58AWkJ",
+  "tags": []
+}

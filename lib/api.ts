@@ -152,7 +152,40 @@ export async function sendChatMessage(message: string, history: ChatMessage[] = 
     });
 
     if (!res.ok) {
-        throw new Error('Failed to send message');
+        const errorData = await res.json().catch(() => ({}));
+        console.error('[Chat API] Error response:', errorData);
+        throw new Error(`Failed to send message: ${res.status} ${res.statusText}${errorData.details ? ` - ${errorData.details}` : ''}`);
     }
-    return res.json();
+
+    const data = await res.json();
+    console.log('[API] Chat response:', data);
+
+    // Parse AI Agent response structure
+    // n8n AI Agent typically returns: { output: "message text" } or { text: "message" }
+    let content = '';
+    if (typeof data === 'string') {
+        content = data;
+    } else if (data.answer_message) {
+        content = data.answer_message;
+    } else if (data.output) {
+        content = data.output;
+    } else if (data.text) {
+        content = data.text;
+    } else if (data.message) {
+        content = data.message;
+    } else if (Array.isArray(data) && data.length > 0) {
+        // Handle array response
+        const firstItem = data[0];
+        content = firstItem.answer_message || firstItem.output || firstItem.text || firstItem.message || JSON.stringify(firstItem);
+    } else {
+        // Fallback to stringifying the entire response
+        content = JSON.stringify(data);
+    }
+
+    return {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content,
+        timestamp: Date.now()
+    };
 }

@@ -9,13 +9,15 @@ import { Send, Bot, User, Loader2 } from "lucide-react"
 import { ChatMessage } from "@/types"
 import { sendChatMessage } from "@/lib/api"
 import { toast } from "sonner"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 
 export function ChatInterface() {
     const [messages, setMessages] = useState<ChatMessage[]>([
         {
             id: '1',
             role: 'assistant',
-            content: 'Hello! I am TalentIQ Agent. I can help you filter candidates or answer questions about the CVs. E.g., "Who has React experience?"',
+            content: 'Xin chào! Tôi là TalentIQ Agent. Tôi có thể giúp bạn lọc ứng viên hoặc trả lời câu hỏi về CV. Ví dụ: "Ai có kinh nghiệm React?"',
             timestamp: Date.now()
         }
     ])
@@ -61,13 +63,13 @@ export function ChatInterface() {
     }
 
     return (
-        <Card className="flex flex-col h-[600px] shadow-md border-muted">
+        <Card className="flex flex-col h-full border-0 shadow-none">
             <CardHeader>
                 <div className="flex items-center gap-2">
                     <Bot className="h-5 w-5 text-primary" />
-                    <CardTitle>Talent Chat (RAG)</CardTitle>
+                    <CardTitle>Trò chuyện với AI (RAG)</CardTitle>
                 </div>
-                <CardDescription>Ask questions about your candidate pool.</CardDescription>
+                <CardDescription>Đặt câu hỏi về ứng viên của bạn.</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 overflow-hidden p-0 relative">
                 <ScrollArea className="h-full p-4" ref={scrollRef}>
@@ -79,11 +81,31 @@ export function ChatInterface() {
                                         <Bot className="h-4 w-4 text-primary" />
                                     </div>
                                 )}
-                                <div className={`max-w-[80%] rounded-lg p-3 text-sm ${msg.role === 'user'
+                                <div
+                                    className={`max-w-[80%] rounded-lg p-3 text-sm overflow-hidden break-words ${msg.role === 'user'
                                         ? 'bg-primary text-primary-foreground ml-10'
                                         : 'bg-muted mr-10'
-                                    }`}>
-                                    {msg.content}
+                                        }`}
+                                >
+                                    <ReactMarkdown
+                                        remarkPlugins={[remarkGfm]}
+                                        components={{
+                                            a: ({ node, ...props }) => (
+                                                <a
+                                                    {...props}
+                                                    className="text-blue-500 underline hover:text-blue-600 font-medium break-all"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                />
+                                            ),
+                                            p: ({ node, ...props }) => <p {...props} className="mb-1 last:mb-0 leading-relaxed" />,
+                                            ul: ({ node, ...props }) => <ul {...props} className="list-disc ml-4 mb-1" />,
+                                            ol: ({ node, ...props }) => <ol {...props} className="list-decimal ml-4 mb-1" />,
+                                            li: ({ node, ...props }) => <li {...props} className="mb-0.5" />
+                                        }}
+                                    >
+                                        {msg.content}
+                                    </ReactMarkdown>
                                 </div>
                                 {msg.role === 'user' && (
                                     <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center shrink-0">
@@ -99,19 +121,19 @@ export function ChatInterface() {
                                 </div>
                                 <div className="bg-muted rounded-lg p-3 flex items-center">
                                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                    <span className="text-sm">Thinking...</span>
+                                    <span className="text-sm">Đang suy nghĩ...</span>
                                 </div>
                             </div>
                         )}
                     </div>
                 </ScrollArea>
             </CardContent>
-            <CardFooter className="p-4 pt-2 border-t">
+            <CardFooter className="p-4 border-t">
                 <form onSubmit={(e) => { e.preventDefault(); handleSend() }} className="flex w-full gap-2">
                     <Input
                         value={input}
                         onChange={e => setInput(e.target.value)}
-                        placeholder="Search candidates by skill, exp..."
+                        placeholder="Tìm ứng viên theo kỹ năng, kinh nghiệm..."
                         disabled={isLoading}
                     />
                     <Button type="submit" size="icon" disabled={isLoading}>

@@ -414,30 +414,37 @@
     },
     {
       "parameters": {
-        "method": "PUT",
-        "url": "https://idiochromatic-cody-uninspiringly.ngrok-free.dev/collections/nds-chatbot-1536/points",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
+        "operation": "upsert",
+        "collectionId": {
+          "__rl": true,
+          "value": "nds-chatbot-1536",
+          "mode": "list",
+          "cachedResultName": "nds-chatbot-1536"
+        },
+        "points": {
+          "values": [
             {
-              "name": "Content-Type",
-              "value": "application/json"
+              "id": "={{ Math.floor(Math.random() * 1000000000) }}",
+              "vector": "={{ $json.data[0].embedding }}",
+              "payload": "={{ $('Prepare RAG Sections').item.json.payload }}"
             }
           ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"points\": [\n    {\n      \"id\": {{ Math.floor(Math.random() * 1000000000) }},\n      \"vector\": {{ JSON.stringify($json.data[0].embedding) }},\n      \"payload\": {{ JSON.stringify($('Prepare RAG Sections').item.json.payload) }}\n    }\n  ]\n}",
-        "options": {}
+        }
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
+      "type": "n8n-nodes-base.qdrant",
+      "typeVersion": 1,
       "position": [
         -2400,
         1068
       ],
       "id": "ce4caeb3-1d4c-489c-a71d-4b7b4650e204",
-      "name": "Qdrant Upsert1"
+      "name": "Qdrant Upsert1",
+      "credentials": {
+        "qdrantApi": {
+          "id": "lhRCxHraobSyUGUW",
+          "name": "QdrantApi account 8"
+        }
+      }
     },
     {
       "name": "Prepare RAG Sections",

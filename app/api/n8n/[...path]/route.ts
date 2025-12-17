@@ -25,7 +25,9 @@ export async function POST(
         targetUrl = `${n8nBase.replace(/\/$/, '')}/${pathString}`;
     }
 
-    console.log(`[Proxy] Forwarding to: ${targetUrl}`);
+    console.log(`[Proxy] Target URL: ${targetUrl}`);
+    console.log(`[Proxy] N8N_CHAT_WEBHOOK_URL: ${process.env.N8N_CHAT_WEBHOOK_URL}`);
+    console.log(`[Proxy] N8N_API_KEY exists: ${!!process.env.N8N_API_KEY}`);
 
     try {
         const contentType = req.headers.get('content-type') || '';
@@ -55,9 +57,11 @@ export async function POST(
         });
 
         if (!response.ok) {
+            const errorBody = await response.text();
             console.error(`[Proxy] n8n responded with ${response.status} at ${targetUrl}`);
+            console.error(`[Proxy] Error body:`, errorBody);
             return NextResponse.json(
-                { error: `Upstream error: ${response.statusText} at ${targetUrl}` },
+                { error: `Upstream error: ${response.statusText}`, details: errorBody },
                 { status: response.status }
             );
         }
