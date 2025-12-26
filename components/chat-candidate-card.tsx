@@ -32,12 +32,24 @@ export function ChatCandidateCard({ candidate }: ChatCandidateCardProps) {
 
     // Normalize data fields
     const rawScore = candidate.score || candidate.max_score || 0;
-    const normalizedScore = rawScore > 1 ? rawScore / 10 : rawScore;
-    const percentage = Math.round(normalizedScore * 100);
+
+    let calculatedPercentage = 0;
+    if (rawScore > 10) {
+        // Assume 0-100 scale (e.g. 85, 66)
+        calculatedPercentage = rawScore;
+    } else if (rawScore > 1) {
+        // Assume 0-10 scale (e.g. 8.5, 6.6)
+        calculatedPercentage = rawScore * 10;
+    } else {
+        // Assume 0-1 scale (e.g. 0.85, 0.66)
+        calculatedPercentage = rawScore * 100;
+    }
+
+    const percentage = Math.min(Math.round(calculatedPercentage), 100);
 
     // Determine colors based on score
-    const scoreColor = percentage >= 80 ? "bg-green-500" : percentage >= 50 ? "bg-yellow-500" : "bg-red-500";
-    const scoreTextColor = percentage >= 80 ? "text-green-600" : percentage >= 50 ? "text-yellow-600" : "text-red-600";
+    const scoreColor = percentage >= 80 ? "bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500" : percentage >= 50 ? "bg-yellow-500" : "bg-red-500";
+    const scoreTextColor = percentage >= 80 ? "text-purple-600" : percentage >= 50 ? "text-yellow-600" : "text-red-600";
 
     const summary = candidate.summary || candidate.highlight || "";
 
@@ -108,7 +120,7 @@ export function ChatCandidateCard({ candidate }: ChatCandidateCardProps) {
                             <span className="text-sm font-medium text-slate-700">Độ phù hợp</span>
                             <span className="text-sm font-bold text-slate-900">{percentage}%</span>
                         </div>
-                        <Progress value={percentage} className="h-2 bg-slate-100" indicatorClassName={scoreColor} />
+                        <Progress value={percentage} className="h-2.5 bg-slate-100" indicatorClassName={scoreColor} />
                     </div>
 
                     {/* Collapsible AI Summary Section */}
@@ -136,8 +148,8 @@ export function ChatCandidateCard({ candidate }: ChatCandidateCardProps) {
                             onClick={() => setIsExpanded(!isExpanded)}
                         >
                             <div className="flex items-center gap-2">
-                                <Sparkles className="h-3.5 w-3.5 text-purple-500" />
-                                <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">Tóm tắt AI</span>
+                                <Sparkles className="h-3.5 w-3.5 text-purple-600" />
+                                <span className="text-xs font-bold text-slate-900 uppercase tracking-wide bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">Tóm tắt AI</span>
                             </div>
                             {isExpanded ? <ChevronUp className="h-3 w-3 text-slate-400" /> : <ChevronDown className="h-3 w-3 text-slate-400" />}
                         </div>
@@ -153,12 +165,12 @@ export function ChatCandidateCard({ candidate }: ChatCandidateCardProps) {
                                 {candidate.strengths && candidate.strengths.length > 0 && (
                                     <div className="space-y-1.5">
                                         <div className="flex items-center gap-1.5">
-                                            <span className="text-xs font-bold text-green-700 uppercase tracking-wide">Điểm mạnh</span>
+                                            <span className="text-xs font-bold text-purple-700 uppercase tracking-wide">Điểm mạnh</span>
                                         </div>
                                         <div className="space-y-1 pl-1">
                                             {candidate.strengths.map((str: string, i: number) => (
                                                 <div key={i} className="flex items-start gap-2 text-sm text-slate-600">
-                                                    <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0 mt-0.5" />
+                                                    <CheckCircle2 className="h-3.5 w-3.5 text-purple-500 shrink-0 mt-0.5" />
                                                     <span>{str}</span>
                                                 </div>
                                             ))}
@@ -170,7 +182,7 @@ export function ChatCandidateCard({ candidate }: ChatCandidateCardProps) {
                                 {(!candidate.strengths || candidate.strengths.length === 0) && (
                                     <div className="space-y-1 pl-1">
                                         <div className="flex items-center gap-2 text-sm text-slate-600">
-                                            <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                                            <CheckCircle2 className="h-3.5 w-3.5 text-purple-500 shrink-0" />
                                             <span>Kinh nghiệm {candidate.experience_years ? `${candidate.experience_years} năm` : "phù hợp"}</span>
                                         </div>
                                     </div>
@@ -180,11 +192,11 @@ export function ChatCandidateCard({ candidate }: ChatCandidateCardProps) {
                                 {candidate.skills_found && candidate.skills_found.length > 0 && (
                                     <div className="space-y-1.5 pt-1">
                                         <div className="flex items-center gap-1.5">
-                                            <span className="text-xs font-bold text-blue-700 uppercase tracking-wide">Kỹ năng</span>
+                                            <span className="text-xs font-bold text-pink-600 uppercase tracking-wide">Kỹ năng</span>
                                         </div>
                                         <div className="flex flex-wrap gap-1.5">
                                             {candidate.skills_found.map((skill: string, idx: number) => (
-                                                <Badge key={idx} variant="secondary" className="px-1.5 py-0 h-5 text-[10px] bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100">
+                                                <Badge key={idx} variant="secondary" className="px-1.5 py-0 h-5 text-[10px] bg-pink-50 text-pink-700 hover:bg-pink-100 border-pink-100">
                                                     {skill}
                                                 </Badge>
                                             ))}
@@ -201,7 +213,7 @@ export function ChatCandidateCard({ candidate }: ChatCandidateCardProps) {
                     <Button
                         variant="default"
                         size="sm"
-                        className="bg-slate-900 hover:bg-slate-800 text-white text-xs h-8 px-0"
+                        className="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 hover:from-purple-700 hover:via-pink-700 hover:to-orange-600 text-white text-xs h-8 px-0 border-0 transition-all duration-300"
                         onClick={() => initiateAction('contact')}
                         disabled={isRejected}
                     >

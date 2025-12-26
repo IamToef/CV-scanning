@@ -17,6 +17,7 @@ interface CandidateContextType {
     setNumericFilters: (filters: Record<string, { operator: 'gt' | 'gte' | 'lt' | 'lte' | 'eq', value: number } | null>) => void
     isInitialized: boolean
     resetData: () => void
+    updateCandidateStatus: (id: string, status: 'shortlisted' | 'rejected' | 'new') => void
 }
 
 const CandidateContext = createContext<CandidateContextType | undefined>(undefined)
@@ -121,6 +122,12 @@ export function CandidateProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem('sortConfig')
     }
 
+    const updateCandidateStatus = (id: string, status: 'shortlisted' | 'rejected' | 'new') => {
+        setCandidates(prev => prev.map(c =>
+            c.id === id ? { ...c, status } : c
+        ))
+    }
+
     return (
         <CandidateContext.Provider value={{
             candidates,
@@ -134,7 +141,8 @@ export function CandidateProvider({ children }: { children: ReactNode }) {
             numericFilters,
             setNumericFilters,
             isInitialized,
-            resetData
+            resetData,
+            updateCandidateStatus
         }}>
             {children}
         </CandidateContext.Provider>

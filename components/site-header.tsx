@@ -44,7 +44,7 @@ export function SiteHeader() {
         <header className="sticky top-0 z-50 w-full border-b backdrop-blur bg-background/95 supports-[backdrop-filter]:bg-background/60">
             <div className="container px-4 h-14 flex items-center justify-between">
                 <div className="flex items-center space-x-8">
-                    <Link href="/" className="flex items-center space-x-2 font-bold text-xl">
+                    <Link href="/" className="flex items-center space-x-2 font-bold text-xl bg-gradient-to-r from-purple-600 via-pink-500 to-orange-500 bg-clip-text text-transparent">
                         RecruitPRO
                     </Link>
                     <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
@@ -55,8 +55,8 @@ export function SiteHeader() {
                                 className={cn(
                                     "flex items-center space-x-2 transition-colors",
                                     pathname === item.href
-                                        ? "text-primary font-bold"
-                                        : "text-muted-foreground hover:text-foreground"
+                                        ? "text-purple-600 font-bold"
+                                        : "text-muted-foreground hover:text-purple-600 transition-colors"
                                 )}
                             >
                                 <item.icon className="h-4 w-4" />
