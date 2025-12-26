@@ -1,0 +1,606 @@
+{
+  "name": "Chatbot_Web_Fixed",
+  "nodes": [
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -160,
+        672
+      ],
+      "id": "0132a2de-7e68-44e0-987d-29f1a81c1d40",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Lấy dữ liệu từ Node Parser (Output của AI đã được làm sạch)\nconst parserOutput = $input.first().json.parsed_json || {};\n\n// 2. Lấy dữ liệu gốc từ Request ban đầu (Node 'Webhook')\nlet requestData = {};\ntry {\n  requestData = $node['Webhook'].json.body || {};\n} catch (e) {\n  requestData = {};\n}\n\n// 3. Lấy thông tin Context (Danh sách ứng viên đã tìm thấy)\nlet contextData = {};\ntry {\n  contextData = $('Merge Context').first().json.merged_context || {};\n} catch (e) {}\n\n// Chuẩn hóa ID\nconst chatid = String(requestData.message_id || \"\").trim();\nconst employeeId = String(requestData.user_id || \"\").trim();\n\n// --- XỬ LÝ ANSWER MESSAGE CHO DỄ NHÌN ---\nlet finalAnswer = \"\";\n\n// Cách 1: Nếu node trước đã tách dòng thành mảng (enriched_lines) -> Nối lại\nif (parserOutput.enriched_lines && Array.isArray(parserOutput.enriched_lines) && parserOutput.enriched_lines.length > 0) {\n    finalAnswer = parserOutput.enriched_lines.join('\\n');\n} \n// Cách 2: Nếu chỉ có chuỗi (enriched_answer)\nelse {\n    finalAnswer = parserOutput.enriched_answer || \"\";\n}\n\n// QUAN TRỌNG: Đảm bảo xuống dòng hiển thị đúng\n// Replace \\\\n (chuỗi ký tự do AI sinh ra) thành \\n (ký tự xuống dòng thật)\nif (typeof finalAnswer === 'string') {\n    finalAnswer = finalAnswer.replace(/\\\\n/g, '\\n').replace(/\\\\t/g, '\\t');\n}\n// ------------------------------------------\n\n// 4. Tạo Response JSON chuẩn cho Frontend\nreturn [\n  {\n    json: {\n      status: \"ok\",\n      \n      // Thông tin định danh phiên chat\n      tenantCode: requestData.tenant_code || \"\",\n      chatid: chatid,\n      employeeId: employeeId,\n      timestamp: requestData.timestamp || new Date().toISOString(),\n      \n      // Câu hỏi và Câu trả lời chính\n      question_message: $('Webhook').first().json.body.message || \"\",\n      \n      // Gán biến đã xử lý ở trên vào đây\n      answer_message: finalAnswer || \"Xin lỗi, hệ thống chưa thể xử lý yêu cầu này.\",\n      \n      // Câu trả lời tóm tắt\n      short_message: parserOutput.short_answer || \"\",\n\n      // Nguồn dữ liệu\n      source: parserOutput.source || \"TalentIQ Database\",\n      \n      // Các cờ nghiệp vụ\n      needs_human_review: parserOutput.needs_human_review || false,\n      follow_up_question: parserOutput.follow_up_question || null,\n      \n      // Metadata bổ sung\n      candidate_list: contextData.top_candidates ? contextData.top_candidates.map(c => c.name) : [],\n      \n      // Tương thích ngược\n      answer_url: [], \n      category: contextData.top_candidates ? contextData.top_candidates.map(c => \"Candidate Profile\") : [],\n      clarify_question: null,\n      handoff_note: null\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        384
+      ],
+      "id": "cc418d04-e54a-480e-88f8-c272b7b588bc",
+      "name": "ResponeFormat1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lấy item từ node Webhook\nconst data = $node['Webhook'].json;\n\n// Chuẩn hóa khoảng trắng cho chatid và employeeId\nconst chatid = String(data.body.message_id || \"\").trim();\nconst employeeId = String(data.body.user_id || \"\").trim();\n\n// Tạo response JSON\nreturn [\n  {\n    json: {\n      status: \"ok\",\n      tenantCode: data.body.tenant_code || \"\",\n      chatid,\n      question_message: data.body.question_message || \"\",\n      answer_message: $input.first().json.response.enriched_answer,\n      answer_url: data.body.answer_url || [],\n      source: \"UN_ANSWER\",\n      category: $input.first().json.response.category,\n      needs_clarification: data.body.needs_clarification ?? false,\n      clarify_question: data.body.clarify_question ?? null,\n      handoff_note: data.body.handoff_note ?? null,\n      employeeId,\n      timestamp: data.body.timestamp || new Date().toISOString()\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -384,
+        672
+      ],
+      "id": "3c8a0ecf-6fbf-4cb9-b249-a1c4db2b5c00",
+      "name": "ResponeFormat",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        64,
+        384
+      ],
+      "id": "dfada617-7462-4698-85cc-349bb7528704",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Function node: Robust JSON extractor & parser for TalentIQ CV Assessment\n// Input: items[].json.output (string) OR items[].json.message.content\n// Output: items[].json.parsed_json (object) aligned with TalentIQ schema\n\n// --- 1. HELPER FUNCTIONS (GIỮ NGUYÊN) ---\n\nfunction tryJsonParse(text) {\n  try { return { ok: true, value: JSON.parse(text), method: 'JSON.parse(raw)' }; }\n  catch (e) { return { ok: false, error: e.message }; }\n}\n\nfunction extractFirstObjectBlock(text) {\n  const m = text.match(/\\{[\\s\\S]*\\}/);\n  return m ? m[0] : null;\n}\n\nfunction unescapeCommonEscapes(s){\n  return s\n    .replace(/\\\\n/g, '\\n')   \n    .replace(/\\\\r/g, '\\r')\n    .replace(/\\\\\"/g, '\"')    \n    .replace(/\\\\'/g, \"'\")\n    .replace(/\\\\\\\\/g, '\\\\'); \n}\n\nfunction parseRobust(raw) {\n  const attempts = [];\n  if (raw === null || raw === undefined) {\n    attempts.push({ method: 'no-input', ok: false });\n    return { parsed: null, attempts };\n  }\n\n  if (typeof raw === 'object') {\n    return { parsed: raw, attempts };\n  }\n\n  const s = String(raw);\n  let attempt = tryJsonParse(s);\n  if (attempt.ok) return { parsed: attempt.value, attempts };\n\n  try {\n    const first = JSON.parse(s);\n    if (typeof first === 'object') return { parsed: first, attempts };\n    if (typeof first === 'string') {\n      const secondAttempt = tryJsonParse(first);\n      if (secondAttempt.ok) return { parsed: secondAttempt.value, attempts };\n      var candidate = first;\n    } else {\n      var candidate = s;\n    }\n  } catch(e) {\n    var candidate = s;\n  }\n\n  const block = extractFirstObjectBlock(candidate);\n  if (block) {\n    attempt = tryJsonParse(block);\n    if (attempt.ok) return { parsed: attempt.value, attempts };\n  }\n\n  const unescaped = unescapeCommonEscapes(candidate);\n  if (unescaped !== candidate) {\n    attempt = tryJsonParse(unescaped);\n    if (attempt.ok) return { parsed: attempt.value, attempts };\n    const block2 = extractFirstObjectBlock(unescaped);\n    if (block2) {\n      attempt = tryJsonParse(block2);\n      if (attempt.ok) return { parsed: attempt.value, attempts };\n    }\n  }\n\n  const cleaned = candidate\n    .replace(/\\u201c|\\u201d/g, '\"')\n    .replace(/\\u2018|\\u2019/g, \"'\")\n    .replace(/[\\u0000-\\u0019]+/g, ''); \n  attempt = tryJsonParse(cleaned);\n  if (attempt.ok) return { parsed: attempt.value, attempts };\n\n  return { parsed: null, attempts };\n}\n\n// --- 2. MAIN LOGIC (CẬP NHẬT TÁCH DÒNG) ---\nconst outputs = [];\n\nfor (const item of items) {\n  const rawCandidates = [];\n  if (item.json && item.json.output) rawCandidates.push(item.json.output);\n  if (item.json && item.json.message && item.json.message.content) rawCandidates.push(item.json.message.content); \n  if (item.json && item.json.response) rawCandidates.push(item.json.response);\n  if (item.json && item.json.text) rawCandidates.push(item.json.text);\n\n  if (rawCandidates.length === 0) rawCandidates.push(JSON.stringify(item.json));\n\n  let finalParsed = null;\n  for (const raw of rawCandidates) {\n    const { parsed } = parseRobust(raw);\n    if (parsed) { finalParsed = parsed; break; }\n  }\n\n  if (!finalParsed) {\n    finalParsed = {\n      \"enriched_answer\": \"Hệ thống gặp lỗi khi xử lý dữ liệu từ AI.\",\n      \"short_answer\": \"Lỗi hệ thống\",\n      \"source\": \"\",\n      \"needs_human_review\": true,\n      \"follow_up_question\": null,\n      \"confidence\": 0\n    };\n  }\n\n  // --- LOGIC TÁCH DÒNG (SPLIT LINES) ---\n  if (finalParsed.enriched_answer && typeof finalParsed.enriched_answer === 'string') {\n      // 1. Chuẩn hóa xuống dòng: chuyển hết \\\\n thành \\n thật\n      const normalizedText = finalParsed.enriched_answer\n          .replace(/\\\\n/g, '\\n')\n          .replace(/\\\\t/g, '\\t');\n      \n      // 2. Gán lại chuỗi đã chuẩn hóa vào field gốc (để hiển thị đẹp nếu cần in cả cục)\n      finalParsed.enriched_answer = normalizedText;\n\n      // 3. Tách thành mảng (Array) dựa trên dấu xuống dòng\n      // Filter(Boolean) để loại bỏ các dòng trống vô nghĩa\n      finalParsed.enriched_lines = normalizedText\n          .split('\\n')\n          .map(line => line.trim())\n          .filter(line => line.length > 0);\n  } else {\n      finalParsed.enriched_lines = [];\n  }\n\n  outputs.push({\n    json: {\n      parsed_json: finalParsed\n    }\n  });\n}\n\nreturn outputs;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -384,
+        384
+      ],
+      "id": "f7a754c1-f43b-41d5-9745-6b63050c408a",
+      "name": "parsed_json"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {
+          "temperature": 0.4
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -672,
+        496
+      ],
+      "id": "ece6255a-af7a-4d52-b5ec-c3bfee5d9f91",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "iCiSJp2rt9yhPy3g",
+          "name": "OpenAi account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Bạn là TalentIQ - Trợ lý tuyển dụng AI chuyên nghiệp. Dưới đây là dữ liệu hồ sơ ứng viên (CV) được tìm thấy từ hệ thống Vector Search.\n\n=== DỮ LIỆU ĐẦU VÀO ===\nCâu hỏi/Yêu cầu của nhà tuyển dụng:\n\"{{ $json.merged_context.question }}\"\n\nThông tin các ứng viên tìm thấy (Context):\n{{ $json.merged_context.combined_context_text }}",
+        "options": {
+          "systemMessage": "=## VAI TRÒ\nBạn là TalentIQ, trợ lý AI tuyển dụng chuyên nghiệp. Nhiệm vụ của bạn là trích xuất thông tin ứng viên từ dữ liệu được cung cấp (đặc biệt là field `combined_context_text`).\n\n## NGUỒN DỮ LIỆU (RẤT QUAN TRỌNG)\n- Thông tin chi tiết (Email, Số điện thoại, Kinh nghiệm cụ thể) nằm trong biến văn bản `combined_context_text`.\n- Bạn PHẢI đọc kỹ `combined_context_text` để lấy Email và SĐT chính xác cho từng người.\n- Nếu `combined_context_text` không có thông tin, tuyệt đối không được bịa đặt.\n\n## QUY TẮC PHẢN HỒI\n\n### 1. CHẾ ĐỘ TÌM KIẾM & LIỆT KÊ (MẶC ĐỊNH)\nKhi người dùng yêu cầu tìm kiếm hoặc hỏi thông tin danh sách (VD: \"Tìm dev java\", \"Cho xin email/sđt của ứng viên\", \"Danh sách hồ sơ\"):\n\n- **Cấu trúc hiển thị bắt buộc:**\n  Mỗi ứng viên là một khối thông tin, cách nhau bởi `\\n\\n`.\n\n  **[Tên Ứng Viên]** – [Link CV](URL_THỰC_TẾ)\n  - [Thông tin phụ nến user hỏi: Email | SĐT | Kinh nghiệm...]\n\n- **Yêu cầu về Link:** - Text hiển thị hyperlink BẮT BUỘC là chữ \"Link CV\".\n  - URL phải lấy chính xác từ dữ liệu.\n  - Ví dụ ĐÚNG: `[Link CV](https://drive.google.com/file/d/xyz...)`\n\n- **Xử lý câu hỏi \"Thông tin liên hệ/Email/Phone\":**\n  - Nếu user hỏi contact, BẮT BUỘC phải thêm dòng gạch đầu dòng thứ 2 chứa Email và SĐT trích xuất được.\n\n### 2. CHẾ ĐỘ PHÂN TÍCH CHI TIẾT\nKhi và CHỈ KHI người dùng hỏi sâu về một người cụ thể (VD: \"Đánh giá chi tiết bạn Tuan\", \"Điểm mạnh yếu của Khoa\"):\n- Lúc này mới được viết đoạn văn dài, phân tích sâu, trích dẫn chi tiết từ CV.\n\n## OUTPUT FORMAT (JSON ONLY)\nBạn chỉ được trả về DUY NHẤT một JSON object, không được bọc trong markdown (```json ... ```), theo schema sau:\n\n{\n  \"enriched_answer\": string, // Nội dung text đã format ở trên (dùng \\n để xuống dòng)\n  \"short_answer\": string,    // Câu trả lời ngắn gọn (VD: \"Tìm thấy 5 ứng viên có kinh nghiệm trên 4 năm kèm thông tin liên hệ.\")\n  \"source\": string,          // Danh sách nguồn dạng: \"Tên A - Link; Tên B - Link\"\n  \"needs_human_review\": boolean, // True nếu không tìm thấy thông tin quan trọng\n  \"confidence\": number       // Từ 0.0 đến 1.0\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -736,
+        272
+      ],
+      "id": "00353bf0-9dce-4895-a5f5-fc7d7c9950b9",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = items[0].json;\n\n// ---- CONFIG ----\nconst TOP_K_CANDIDATES = 5;      // Số lượng ứng viên tối đa muốn đưa vào context\nconst MAX_COMBINED_CHARS = 10000; // Tăng giới hạn lên vì thông tin CV thường dài\n// ----------------\n\n/**\n * 1. TRÍCH XUẤT DOCS TỪ OUTPUT QDRANT\n * Xử lý các trường hợp output khác nhau của n8n\n */\nfunction extractDocs(obj) {\n  if (!obj) return [];\n  // Trường hợp chuẩn của bạn: item.json.result\n  if (obj.result && Array.isArray(obj.result)) return obj.result;\n  // Trường hợp n8n output array trực tiếp\n  if (Array.isArray(obj)) return obj;\n  return [];\n}\n\nconst rawDocs = extractDocs(input);\n\n/**\n * 2. GOM NHÓM THEO ỨNG VIÊN (GROUP BY CANDIDATE_ID)\n * Thay vì dedupe (xóa trùng), ta sẽ merge (gộp) thông tin lại.\n */\nconst candidatesMap = new Map();\n\nfor (const doc of rawDocs) {\n  const p = doc.payload || {};\n  \n  // Bỏ qua nếu không có ID ứng viên\n  const cid = p.candidate_id;\n  if (!cid) continue;\n\n  const score = doc.score || p.score || 0;\n  const textContent = (p.text || \"\").trim();\n\n  // Nếu ứng viên chưa có trong map, tạo mới\n  if (!candidatesMap.has(cid)) {\n    candidatesMap.set(cid, {\n      id: cid,\n      name: p.candidate_name || \"Unknown Candidate\",\n      email: p.candidate_email || \"N/A\",\n      phone: p.candidate_phone || \"N/A\",\n      link_cv: p.link_cv || \"\",\n      max_score: score, // Điểm cao nhất trong các chunk tìm thấy\n      matched_chunks: [textContent], // Lưu danh sách các đoạn text khớp\n      matched_types: [p.type || p.key || \"general\"] // Lưu loại (skill, exp...)\n    });\n  } else {\n    // Nếu ứng viên đã tồn tại, cập nhật thêm thông tin\n    const c = candidatesMap.get(cid);\n    \n    // Cập nhật điểm max nếu chunk này điểm cao hơn\n    if (score > c.max_score) {\n      c.max_score = score;\n    }\n    \n    // Thêm đoạn text khớp vào hồ sơ (tránh trùng lặp nội dung y hệt)\n    if (!c.matched_chunks.includes(textContent)) {\n      c.matched_chunks.push(textContent);\n      c.matched_types.push(p.type || p.key || \"general\");\n    }\n  }\n}\n\n/**\n * 3. SẮP XẾP & LỌC TOP ỨNG VIÊN\n */\n// Chuyển Map thành Array\nlet candidates = Array.from(candidatesMap.values());\n\n// Sắp xếp giảm dần theo điểm cao nhất (Ai khớp nhất lên đầu)\ncandidates.sort((a, b) => b.max_score - a.max_score);\n\n// Lấy Top K ứng viên\nconst topCandidates = candidates.slice(0, TOP_K_CANDIDATES);\n\n/**\n * 4. XÂY DỰNG CONTEXT TEXT CHO AI\n * Format lại thành dạng hồ sơ dễ đọc\n */\nlet combined_context_text = \"\";\n\nfor (const c of topCandidates) {\n  // Header của mỗi ứng viên\n  const profileHeader = `\\n=== ỨNG VIÊN: ${c.name} (Độ phù hợp: ${(c.max_score * 100).toFixed(1)}%) ===\\n` +\n                        `- Contact: ${c.email} | ${c.phone}\\n` +\n                        `- Link CV: ${c.link_cv}\\n` +\n                        `- Thông tin tìm thấy:\\n`;\n  \n  // Nội dung chi tiết các chunk khớp\n  const chunksText = c.matched_chunks.map((chunk, index) => {\n    return `  ${index + 1}. ${chunk}`;\n  }).join(\"\\n\");\n\n  const fullProfile = profileHeader + chunksText + \"\\n\";\n\n  // Kiểm tra giới hạn ký tự\n  if (combined_context_text.length + fullProfile.length > MAX_COMBINED_CHARS) {\n    // Nếu sắp tràn context thì dừng lại, nhưng cố gắng thêm nốt ứng viên này nếu còn nhiều chỗ\n    if (MAX_COMBINED_CHARS - combined_context_text.length > 500) {\n       combined_context_text += fullProfile.slice(0, MAX_COMBINED_CHARS - combined_context_text.length) + \"... [Truncated]\";\n    }\n    break;\n  }\n  \n  combined_context_text += fullProfile;\n}\n\n// Nếu không tìm thấy ai\nif (topCandidates.length === 0) {\n  combined_context_text = \"Không tìm thấy ứng viên nào phù hợp với yêu cầu.\";\n}\n\n/**\n * 5. TẠO OUTPUT\n */\n// Lấy câu hỏi từ input (nếu có)\nlet question = $('format output').first().json.refined_question;\n\nconst merged_context = {\n  question: question,\n  candidate_count: topCandidates.length,\n  top_candidates: topCandidates.map(c => ({\n    name: c.name,\n    score: c.max_score,\n    link_cv: c.link_cv,\n    matched_info_count: c.matched_chunks.length\n  })),\n  combined_context_text: combined_context_text,\n  created_at: new Date().toISOString()\n};\n\nreturn [\n  {\n    json: {\n      merged_context\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1024,
+        384
+      ],
+      "id": "829e25b2-b986-4c52-9df6-162a802db687",
+      "name": "Merge Context"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Function node - produce only `response` (unescaped + auto double-parse)\nconst items = $input.all();\n\n/** Try to extract and parse a JSON object from a string. */\nfunction tryParseJsonString(src) {\n  if (src === null || src === undefined) return null;\n  if (typeof src === 'object') return src; // already parsed\n  if (typeof src !== 'string') return null;\n  const t = src.trim();\n\n  // direct parse\n  try {\n    return JSON.parse(t);\n  } catch (e) {\n    // find first {...} or [...] block\n    const m = t.match(/[\\{\\[][\\s\\S]*[\\}\\]]/);\n    if (m) {\n      try {\n        return JSON.parse(m[0]);\n      } catch (e2) {\n        return null;\n      }\n    }\n    return null;\n  }\n}\n\n/** Unescape common escape sequences inside strings */\nfunction unescapeStringValue(s) {\n  if (typeof s !== 'string') return s;\n  if (s.indexOf('\\\\') === -1) return s;\n  let r = s;\n  r = r.replace(/\\\\r\\\\n/g, '\\n'); // escaped CRLF -> newline\n  r = r.replace(/\\\\n/g, '\\n');    // escaped newline -> newline\n  r = r.replace(/\\\\t/g, '\\t');\n  r = r.replace(/\\\\\"/g, '\"');\n  r = r.replace(/\\\\\\\\/g, '\\\\');\n  // trim only trailing whitespace\n  return r.replace(/\\s+$/u, '');\n}\n\nfunction unescapeRecursively(obj) {\n  if (obj === null || obj === undefined) return obj;\n  if (typeof obj === 'string') return unescapeStringValue(obj);\n  if (Array.isArray(obj)) return obj.map(unescapeRecursively);\n  if (typeof obj === 'object') {\n    const out = {};\n    for (const k of Object.keys(obj)) out[k] = unescapeRecursively(obj[k]);\n    return out;\n  }\n  return obj;\n}\n\n/** Extract canonical response from parsed content */\nfunction extractCanonicalResponse(parsed) {\n  if (typeof parsed === 'string' || typeof parsed === 'number' || typeof parsed === 'boolean') {\n    return { response: parsed, original_key: null };\n  }\n  if (Array.isArray(parsed)) {\n    if (parsed.length === 1) return extractCanonicalResponse(parsed[0]);\n    return { response: parsed, original_key: null };\n  }\n  const keyCandidates = [\n    'response','answer','answwer','output','reply','message','text','response_text','output_text',\n    'result','body','data','content','completion','choices'\n  ];\n  const lowerMap = {};\n  for (const k of Object.keys(parsed || {})) lowerMap[k.toLowerCase()] = k;\n\n  for (const cand of keyCandidates) {\n    if (lowerMap[cand]) {\n      const realKey = lowerMap[cand];\n      return { response: parsed[realKey], original_key: realKey };\n    }\n  }\n\n  // OpenAI-like choices\n  if (parsed.choices && Array.isArray(parsed.choices) && parsed.choices.length > 0) {\n    const first = parsed.choices[0];\n    if (first.message && first.message.content) return { response: first.message.content, original_key: 'choices[0].message.content' };\n    if (first.text) return { response: first.text, original_key: 'choices[0].text' };\n  }\n\n  // fallback: whole object\n  return { response: parsed, original_key: null };\n}\n\n/** Helper: if a string looks like JSON (starts with { or [), try parse it */\nfunction tryDoubleParseString(s) {\n  if (typeof s !== 'string') return s;\n  const trimmed = s.trim();\n  if (!trimmed) return s;\n  if (trimmed[0] === '{' || trimmed[0] === '[') {\n    try {\n      return JSON.parse(trimmed);\n    } catch (e) {\n      // maybe it's an escaped JSON inside (contains \\\\n etc) -> unescape then try\n      const un = unescapeStringValue(s);\n      try {\n        return JSON.parse(un);\n      } catch (e2) {\n        return s; // keep original string\n      }\n    }\n  }\n  return s;\n}\n\nconst out = items.map(item => {\n  // candidate raw fields\n  const rawCandidate = item.json && (item.json.output ?? item.json.output_text ?? item.output ?? item.payload ?? item.json.response ?? item.json.answer ?? item.json.text ?? item.json);\n\n  // First try parse rawCandidate (if string)\n  let parsed = tryParseJsonString(rawCandidate ?? null);\n\n  // fallback: maybe item.json is already an object\n  if (!parsed) parsed = tryParseJsonString(item.json ?? null);\n\n  // if still not parsed and rawCandidate is string, keep rawCandidate as parsed value (string)\n  if (!parsed) parsed = rawCandidate ?? null;\n\n  // unescape strings inside parsed structure\n  const unescaped = unescapeRecursively(parsed);\n\n  // extract canonical response\n  const extracted = extractCanonicalResponse(unescaped);\n\n  // If response is a string that itself contains JSON, try double-parse to object/array\n  let responseVal = extracted.response;\n  if (typeof responseVal === 'string') {\n    // unescape again (safe)\n    responseVal = unescapeStringValue(responseVal);\n    // try parse if looks like JSON\n    const doubleParsed = tryDoubleParseString(responseVal);\n    responseVal = doubleParsed;\n  }\n\n  return {\n    json: {\n      response: responseVal\n    }\n  };\n});\n\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -672,
+        672
+      ],
+      "id": "88d3108a-d1a8-4c12-83c0-012ada20f471",
+      "name": "unanswerformat"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {
+          "temperature": 0.4
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -1024,
+        896
+      ],
+      "id": "062d29ab-8904-4674-96ce-a338eb50b443",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "iCiSJp2rt9yhPy3g",
+          "name": "OpenAi account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=RAG không tìm thấy câu trả lời.  \nHãy tạo một phản hồi cho khách hàng theo đúng yêu cầu ở system prompt.\nCâu hỏi của khách hàng:\n\"{{ $('format output').item.json.refined_question }}\"\n\nHãy phân loại vào WHITELIST hoặc BLACKLIST và trả lời theo đúng quy định.\n",
+        "options": {
+          "systemMessage": "=### VAI TRÒ\nBạn là một trợ lý tuyển dụng AI chuyên nghiệp. Bạn đang hỗ trợ người dùng tìm kiếm ứng viên trong cơ sở dữ liệu hồ sơ (CV).\n\n### NGỮ CẢNH HIỆN TẠI\nHệ thống truy vấn dữ liệu (Vector Store/Qdrant) đã trả về kết quả RỖNG. Điều này có nghĩa là không có bất kỳ hồ sơ nào khớp với từ khóa hoặc tiêu chí mà người dùng vừa yêu cầu.\n\n### NHIỆM VỤ CỦA BẠN\n1. **Thông báo:** Báo cho người dùng biết rằng hiện tại không tìm thấy hồ sơ nào phù hợp.\n2. **Gợi ý:** Đề xuất người dùng thử tìm lại bằng cách:\n   - Dùng từ khóa phổ thông hơn.\n   - Giảm bớt các yêu cầu về kỹ năng phụ hoặc số năm kinh nghiệm.\n3. **Thái độ:** Lịch sự, chuyên nghiệp, hỗ trợ. Tuyệt đối KHÔNG tự bịa ra thông tin ứng viên.\n\n### ĐỊNH DẠNG TRẢ LỜI\nHãy viết câu trả lời ngắn gọn, súc tích.\nBẮT BUỘC kết thúc câu trả lời bằng nguyên văn câu hỏi sau:\n\"Bạn có muốn tôi thử tìm kiếm lại với tiêu chí mở rộng hơn (ví dụ: giảm yêu cầu số năm kinh nghiệm) không?\"\n\nOutput bắt buộc theo cấu trúc JSON như sau:\n{\n  \"message\": \"Lời thông báo lịch sự rằng không tìm thấy hồ sơ phù hợp. Đưa ra 1-2 lý do có thể (do từ khóa quá hẹp, yêu cầu quá cao...).\",\n  \"follow_up\": \"Bạn có muốn tôi thử tìm kiếm lại với tiêu chí mở rộng hơn (ví dụ: giảm yêu cầu số năm kinh nghiệm) không?\",\n  \"suggested_actions\": [\"Tìm với từ khóa rộng hơn\", \"Giảm yêu cầu kinh nghiệm\", \"Bỏ bớt kỹ năng phụ\"]\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -1088,
+        672
+      ],
+      "id": "449e5196-2718-4b48-8c64-574082331301",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "342d3971-6cf2-4b16-95f7-a296a02ce3ba",
+              "leftValue": "={{$json[\"result\"] ? $json[\"result\"].length : 0}}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1312,
+        528
+      ],
+      "id": "f0649f11-10ef-44a8-8cec-58f1729f86fe",
+      "name": "resultcount"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Function node - Normalize AI agent output to JSON & Sanitize Skills\n// Input expected: items with item.json.output (string or object)\n// Output: items where item.json is the parsed JSON object with STRICT ARRAYS\n\nconst items = $input.all();\n\n// --- HELPER 1: Parse JSON an toàn ---\nfunction tryParseJsonString(s) {\n  if (typeof s !== 'string') return null;\n  const t = s.trim();\n  try {\n    return JSON.parse(t);\n  } catch (e) {\n    // Cố gắng tìm block JSON {...} đầu tiên\n    const m = t.match(/\\{[\\s\\S]*\\}/);\n    if (m) {\n      try { return JSON.parse(m[0]); } catch (e2) { return null; }\n    }\n    return null;\n  }\n}\n\n// --- HELPER 2: Chuẩn hóa danh sách (Quan trọng cho RAG) ---\n// Biến \"Skill A, Skill B\" -> [\"Skill A\", \"Skill B\"]\nfunction normalizeList(input) {\n    if (!input) return [];\n    \n    // Nếu là chuỗi (VD: \"Java, Python, SQL\") -> Tách thành mảng\n    if (typeof input === 'string') {\n        // Tách bằng dấu phẩy (,) hoặc chấm phẩy (;)\n        return input.split(/,|;/).map(s => s.trim()).filter(s => s.length > 0);\n    }\n    \n    // Nếu đã là mảng -> Lọc rác\n    if (Array.isArray(input)) {\n        return input.map(s => String(s).trim()).filter(s => s.length > 0);\n    }\n    \n    return [];\n}\n\nconst out = items.map((item) => {\n  // Lấy dữ liệu nguồn từ nhiều trường tiềm năng\n  const src = item.json && (\n      item.json.parsed_json ?? \n      item.json.output ?? \n      item.json.output_text ?? \n      item.output ?? \n      item.payload\n  );\n\n  let parsed = null;\n\n  if (src === undefined || src === null) {\n    return {\n      json: {\n        _normalized: null,\n        _error: \"no_output_field_found\",\n        original: item.json ?? item\n      }\n    };\n  }\n\n  // 1. PARSE DỮ LIỆU\n  if (typeof src === 'object') {\n    parsed = src;\n  } else {\n    parsed = tryParseJsonString(src);\n  }\n\n  if (!parsed) {\n    return {\n      json: {\n        _normalized: null,\n        _error: \"parse_failed\",\n        raw: src\n      }\n    };\n  }\n\n  // 2. [QUAN TRỌNG] CHUẨN HÓA DỮ LIỆU CHO RAG\n  // Đảm bảo filter_skills luôn là Mảng (Array) để Qdrant Search không bị lỗi\n  if (parsed.filter_skills) {\n      parsed.filter_skills = normalizeList(parsed.filter_skills);\n  } else if (parsed.skills) {\n      // Fallback: Nếu AI lỡ đặt tên key là \"skills\" thay vì \"filter_skills\"\n      parsed.filter_skills = normalizeList(parsed.skills);\n  }\n\n  // Chuẩn hóa luôn education nếu có\n  if (parsed.filter_education) {\n      parsed.filter_education = normalizeList(parsed.filter_education);\n  }\n\n  // 3. Trả về kết quả sạch đẹp\n  return { json: parsed };\n});\n\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2208,
+        528
+      ],
+      "id": "011db098-90f0-4342-ac8e-6f3de285c79e",
+      "name": "format output"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lấy item đầu tiên\nconst item = $input.first();\nconst json = item ? item.json : {};\n\n// 1. TÌM DỮ LIỆU NGUỒN (Quan trọng)\n// Webhook n8n thường để dữ liệu trong json.body.\n// Code này ưu tiên tìm trong body, nếu không có mới tìm ở root.\nconst inputData = json.body || json;\n\n// 2. LẤY CÂU HỎI USER\n// Tìm trường \"message\" hoặc \"question_message\" hoặc \"text\"\nconst userQuestion = inputData.message || inputData.question_message || inputData.text || \"\";\n\n// 3. XỬ LÝ LỊCH SỬ CHAT (HISTORY)\nlet historyRaw = inputData.history;\n\n// Fix lỗi: Nếu history bị gửi lên dưới dạng String (chưa parse), thì parse nó ra\nif (typeof historyRaw === 'string') {\n  try {\n    historyRaw = JSON.parse(historyRaw);\n  } catch (e) {\n    historyRaw = [];\n  }\n}\n\n// Đảm bảo history luôn là mảng\nif (!Array.isArray(historyRaw)) {\n  historyRaw = [];\n}\n\n// Duyệt qua từng tin nhắn để tạo chuỗi Context\nconst historyLines = historyRaw.map(item => {\n  const role = item.role;    \n  const content = item.content || \"\";\n\n  // Map role\n  if (role === 'user') {\n    return `user_message: ${content}`;\n  } else if (role === 'assistant' || role === 'system') {\n    return `system_answer: ${content}`;\n  }\n  return `${role}: ${content}`;\n});\n\n// Nối lại thành chuỗi, bỏ dòng trống\nconst resultString = historyLines.filter(line => line.trim() !== \"\").join('\\n');\n\n// 4. TRẢ VỀ KẾT QUẢ\nreturn [\n  {\n    json: {\n      result_string: resultString, // Context lịch sử\n      user_question: userQuestion, // Câu hỏi hiện tại\n      \n      // Debug: Trả về thêm field này để biết code đã tìm thấy dữ liệu ở đâu\n      _debug_source: json.body ? \"Found in Body\" : \"Found in Root\" \n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2784,
+        528
+      ],
+      "id": "e22de40a-ca05-48a6-9d5b-c158453d6fa7",
+      "name": "Context-Merger",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -2496,
+        752
+      ],
+      "id": "e3944211-23d1-4c4e-b65d-e031197c1761",
+      "name": "OpenAI Chat refined",
+      "credentials": {
+        "openAiApi": {
+          "id": "iCiSJp2rt9yhPy3g",
+          "name": "OpenAi account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Dưới đây là dữ liệu hội thoại cần xử lý:\n\n------------------------------------------------------------\nCONTEXT (Lịch sử hội thoại trước đó):\n{{ $json.result_string || \"Chưa có lịch sử\" }}\n------------------------------------------------------------\n\nCÂU HỎI HIỆN TẠI CỦA USER:\n\"{{ $json.user_question }}\"",
+        "options": {
+          "systemMessage": "=Bạn là TalentIQ - Chuyên gia phân tích ý định tìm kiếm tuyển dụng.\nNhiệm vụ: Chuyển đổi câu hỏi của user thành câu truy vấn (Refined Query) và trích xuất tham số lọc (Structured Filters) cho ADVANCED HYBRID SEARCH.\n\n---\nQUY TRÌNH TƯ DUY:\n\n1. XỬ LÝ LỜI CHÀO:\n   - Nếu input là lời chào xã giao -> source=\"greeting\", answer=\"Chào bạn...\".\n\n2. XỬ LÝ TÌM KIẾM (Search Mode):\n   - BẮT BUỘC: `answer` = \"\".\n   \n   A. TẠO TRUY VẤN (Refined Query):\n      - Viết lại câu hỏi bằng tiếng Việt, thêm từ khóa chuyên ngành, ngữ cảnh.\n      - VD: \"Tìm Long\" -> \"Hồ sơ, thông tin cá nhân, email, số điện thoại của ứng viên tên Long\".\n\n   B. TRÍCH XUẤT BỘ LỌC (Structured Filters):\n      Trích xuất thông tin để điền vào 4 trường lọc sau. Nếu không có thông tin, BẮT BUỘC trả về `null`.\n\n      1. `filter_candidate_name`: Tên riêng ứng viên (không dấu, viết hoa chữ cái đầu).\n      \n      2. `filter_skills` (Array[String]): Danh sách Kỹ năng, Công nghệ.\n         - QUAN TRỌNG: Giữ nguyên cụm từ ghép, TUYỆT ĐỐI KHÔNG tách nhỏ các kỹ năng dài.\n         - Ví dụ đúng: [\"Project Planning & Execution\", \"Java Spring Boot\"]\n         - Ví dụ sai: [\"Project\", \"Planning\", \"Execution\", \"Java\", \"Spring\", \"Boot\"]\n         - Giữ nguyên tiếng Anh hoặc thuật ngữ chuyên ngành.\n\n      3. `filter_experience`: Số năm, cấp bậc (VD: \"Senior\", \"3 năm\").\n      \n      4. `filter_education`: Trường học, bằng cấp (VD: \"Bách Khoa\").\n\n---\nOUTPUT FORMAT (BẮT BUỘC JSON ONLY):\nBạn phải trả về DUY NHẤT chuỗi JSON này, không markdown, không giải thích thêm:\n\n{\n  \"answer\": string,                 // \"\" nếu là search\n  \"refined_question\": string,       // Câu truy vấn ngữ nghĩa\n  \"filter_candidate_name\": string|null,\n  \"filter_skills\": string[]|null,   // Luôn là mảng chuỗi hoặc null\n  \"filter_experience\": string|null,\n  \"filter_education\": string|null,\n  \"source\": \"search\" | \"greeting\",\n  \"needs_clarification\": boolean\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -2560,
+        528
+      ],
+      "id": "687c483a-20cc-491f-a010-26bbca9267c0",
+      "name": "message refined",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e7692985-5757-4ed4-93cb-0419ce9eba62",
+              "name": "score_threshold",
+              "value": 0,
+              "type": "number"
+            },
+            {
+              "id": "e6b045cc-a7aa-4574-862c-64dce78ef5fe",
+              "name": "limit",
+              "value": 10,
+              "type": "number"
+            },
+            {
+              "id": "849d67e1-b602-44bb-843c-8067026a703d",
+              "name": "query_vector",
+              "value": "={{ $json.data[0].embedding }}",
+              "type": "array"
+            },
+            {
+              "id": "9ef126b6-8444-4a28-b594-8f373133b65b",
+              "name": "with_payload",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1760,
+        528
+      ],
+      "id": "6fc4f519-737d-4ed8-aafc-a9133741527b",
+      "name": "add score_threshold"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://idiochromatic-cody-uninspiringly.ngrok-free.dev/collections/RAG_FOR_CV/points/search",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n\n  (() => {\n\n    // --- HELPER 1: Chuẩn hóa text ---\n\n    function removeAccents(str) {\n\n      if (!str) return \"\";\n\n      return str.normalize(\"NFD\")\n\n                .replace(/[\\u0300-\\u036f]/g, \"\")\n\n                .replace(/đ/g, \"d\").replace(/Đ/g, \"D\")\n\n                .trim();\n\n    }\n\n\n\n    // --- HELPER 2: Lấy số năm từ filter ---\n\n    function extractYearsFromFilter(str) {\n\n      if (!str) return null;\n\n      const match = str.match(/(\\d+([.,]\\d+)?)/);\n\n      return match ? parseFloat(match[0].replace(',', '.')) : null;\n\n    }\n\n\n\n    // 1. LẤY DỮ LIỆU INPUT & XỬ LÝ VECTOR\n\n    let vector = $json.query_vector || $json.vector;\n\n    // [FIX] Tạo dummy vector nếu không có vector input\n\n    if (!vector || vector.length === 0) {\n\n        vector = new Array(1536).fill(0); \n\n    }\n\n\n\n    let aiJson = {};\n\n    try {\n\n      if ($('message refined') && $('message refined').item) {\n\n          aiJson = $('message refined').item.json.parsed_json || \n\n                   JSON.parse($('message refined').item.json.output);\n\n      }\n\n    } catch (e) { aiJson = {}; }\n\n\n\n    let mustConditions = [];\n\n    \n\n    // ====================================================\n\n    // A. LỌC THEO TÊN (Nếu có)\n\n    // ====================================================\n\n    if (aiJson.filter_candidate_name) {\n\n      const rawName = aiJson.filter_candidate_name.trim();\n\n      const noAccentName = removeAccents(rawName);\n\n\n\n      mustConditions.push({\n\n          \"should\": [\n\n              { \"key\": \"candidate_name\", \"match\": { \"text\": rawName } },\n\n              { \"key\": \"candidate_name\", \"match\": { \"text\": noAccentName } }\n\n          ]\n\n      });\n\n    }\n\n\n\n    // ====================================================\n\n    // [QUAN TRỌNG] ĐÃ BỎ LOGIC \"if (!isSearchingByName)\"\n\n    // Bây giờ bộ lọc Kinh nghiệm & Kỹ năng sẽ LUÔN ĐƯỢC CHẠY\n\n    // nếu người dùng có yêu cầu, bất kể có tìm tên hay không.\n\n    // ====================================================\n\n\n\n    // B. LỌC THEO KINH NGHIỆM (Chặn cứng số năm)\n\n    if (aiJson.filter_experience) {\n\n        const expRequest = aiJson.filter_experience.toLowerCase();\n\n        const yearsRequested = extractYearsFromFilter(expRequest);\n\n\n\n        // Chỉ thêm điều kiện nếu lấy được con số cụ thể\n\n        if (yearsRequested !== null) {\n\n            mustConditions.push({\n\n                \"key\": \"experience_years\",\n\n                \"range\": { \n\n                    \"gte\": yearsRequested // Lớn hơn hoặc bằng\n\n                }\n\n            });\n\n        }\n\n    }\n\n\n\n    // C. LỌC THEO KỸ NĂNG\n\n    if (aiJson.filter_skills && Array.isArray(aiJson.filter_skills)) {\n\n        aiJson.filter_skills.forEach(skill => {\n\n            if (skill && skill.length < 50) {\n\n                mustConditions.push({\n\n                    \"should\": [\n\n                        { \"key\": \"skills_list\", \"match\": { \"text\": skill } },\n\n                        { \"key\": \"text\", \"match\": { \"text\": skill } }\n\n                    ]\n\n                });\n\n            }\n\n        });\n\n    }\n\n\n\n    // D. LỌC THEO HỌC VẤN\n\n    if (aiJson.filter_education) {\n\n       const eduList = Array.isArray(aiJson.filter_education) ? aiJson.filter_education : [aiJson.filter_education];\n\n       eduList.forEach(edu => {\n\n           if(edu && edu.length > 2) {\n\n               mustConditions.push({\n\n                   \"should\": [\n\n                       { \"key\": \"school\", \"match\": { \"text\": edu } },\n\n                       { \"key\": \"major\", \"match\": { \"text\": edu } },\n\n                       { \"key\": \"text\", \"match\": { \"text\": edu } }\n\n                   ]\n\n               });\n\n           }\n\n       });\n\n    }\n\n\n\n    // 2. CẤU HÌNH QUERY BODY\n\n    // Nếu có lọc theo tên -> Lấy ít (5). Không thì lấy 15.\n\n    let limit = aiJson.filter_candidate_name ? 5 : ($json.limit || 15);\n\n    if (mustConditions.length === 0) limit = 30;\n\n\n\n    let body = {\n\n      \"vector\": vector,\n\n      \"limit\": limit,\n\n      \"with_payload\": true,\n\n      \"score_threshold\": 0 \n\n    };\n\n\n\n    if (mustConditions.length > 0) {\n\n      body.filter = {\n\n        \"must\": mustConditions\n\n      };\n\n    }\n\n\n\n    return JSON.stringify(body);\n\n  })()\n\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1536,
+        528
+      ],
+      "id": "d5bef272-63d9-4b9e-a674-2c42ac159618",
+      "name": "QdrantSearch",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/embeddings",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"Authorization\": \"Bearer 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\",\n  \"Content-Type\": \"application/json\"\n}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  model: \"text-embedding-3-small\",\n  input: $json.refined_question\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1984,
+        528
+      ],
+      "id": "ea3c8680-67bf-493e-9efa-f6fa0722c4d3",
+      "name": "EmbbedingVector"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chatwebnds",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -3008,
+        528
+      ],
+      "id": "d2fb121e-aaea-42c4-9c97-2f41bf5da546",
+      "name": "Webhook",
+      "webhookId": "8a33f409-00d9-4293-b578-f925198ea31e"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "ResponeFormat": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ResponeFormat1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "parsed_json": {
+      "main": [
+        [
+          {
+            "node": "ResponeFormat1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "parsed_json",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Context": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "unanswerformat": {
+      "main": [
+        [
+          {
+            "node": "ResponeFormat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "unanswerformat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "resultcount": {
+      "main": [
+        [
+          {
+            "node": "Merge Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "format output": {
+      "main": [
+        [
+          {
+            "node": "EmbbedingVector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Context-Merger": {
+      "main": [
+        [
+          {
+            "node": "message refined",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat refined": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "message refined",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "message refined": {
+      "main": [
+        [
+          {
+            "node": "format output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "add score_threshold": {
+      "main": [
+        [
+          {
+            "node": "QdrantSearch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "QdrantSearch": {
+      "main": [
+        [
+          {
+            "node": "resultcount",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EmbbedingVector": {
+      "main": [
+        [
+          {
+            "node": "add score_threshold",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Context-Merger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ec9420bf-b09e-43ed-9a78-b52cca8d58bd",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "df174d571e95541c805919aa88d99c6ff9e79e2c1ffc42837bb92614d24bb4eb"
+  },
+  "id": "jhC2y4uOOiWfUWVx",
+  "tags": []
+}

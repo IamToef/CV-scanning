@@ -1,0 +1,112 @@
+{
+    "name": "JD_Extraction",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "jd-extraction",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                0,
+                0
+            ],
+            "id": "webhook-jd-extraction",
+            "name": "Webhook"
+        },
+        {
+            "parameters": {
+                "model": {
+                    "__rl": true,
+                    "value": "gpt-4o-mini",
+                    "mode": "list",
+                    "cachedResultName": "gpt-4o-mini"
+                },
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+            "typeVersion": 1.2,
+            "position": [
+                220,
+                150
+            ],
+            "id": "openai-chat-model",
+            "name": "OpenAI Chat Model",
+            "credentials": {
+                "openAiApi": {
+                    "id": "cnW6yERErYSFG3vg",
+                    "name": "OpenAi account 4"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "text": "={{ $json.body.message }}",
+                "options": {
+                    "systemMessage": "Bạn là một trợ lý nhân sự (HR) chuyên nghiệp. Nhiệm vụ của bạn là trích xuất các yêu cầu quan trọng từ Bản mô tả công việc (JD) được cung cấp.\n\nHãy tập trung vào:\n1. Kỹ năng chuyên môn (Technical Skills)\n2. Số năm kinh nghiệm\n3. Học vấn / Bằng cấp\n4. Kỹ năng mềm (Soft Skills)\n\nĐịnh dạng kết quả trả về dưới dạng danh sách gạch đầu dòng (Markdown bullet list) bằng TIẾNG VIỆT. Bỏ qua các phần giới thiệu công ty hay quyền lợi, chỉ tập trung vào YÊU CẦU ứng viên."
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 1,
+            "position": [
+                460,
+                0
+            ],
+            "id": "ai-agent",
+            "name": "AI Agent"
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ { output: $json.output } }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                800,
+                0
+            ],
+            "id": "respond-to-webhook",
+            "name": "Respond to Webhook"
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenAI Chat Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AI Agent": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

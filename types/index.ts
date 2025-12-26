@@ -3,10 +3,19 @@ export interface Candidate {
     name: string;
     email: string;
     phone?: string;
-    score: number; // 0-10
+    score: number; // 0-100
     match_level?: string;
     status: 'new' | 'analyzed' | 'shortlisted' | 'rejected';
     summary: string;
+    pros?: string[]; // Ưu điểm
+    cons?: string[]; // Nhược điểm
+    scoring_reason?: string; // Lý do chấm điểm
+    score_details?: {
+        experience_score: number;
+        skills_score: number;
+        education_score: number;
+        potential_score: number;
+    };
     strengths: string[]; // Keep for backward compatibility or simple list
     weaknesses: string[]; // Keep for backward compatibility or simple list
     risk_analysis?: {
@@ -22,13 +31,13 @@ export interface Candidate {
     experience_years: number;
     applied_role?: string;
     file_url?: string;
+    link_cv?: string;
     reasoning?: {
         experience_score?: number;
         skills_score?: number;
         education_score?: number;
         potential_score?: number;
     };
-    question_asked?: string;
 }
 
 export interface ChatMessage {
@@ -37,7 +46,22 @@ export interface ChatMessage {
     content: string;
     timestamp: number;
     sources?: Candidate[]; // For RAG citations
+    candidates?: any[]; // Simplified candidate info from chat
 }
+
+export interface SortConfig {
+    column: string;
+    direction: 'asc' | 'desc';
+}
+
+export type FilterState = Record<string, Set<string>>;
+
+export interface NumericFilterCondition {
+    operator: 'gt' | 'gte' | 'lt' | 'lte' | 'eq';
+    value: number;
+}
+
+export type NumericFilterState = Record<string, NumericFilterCondition | null>;
 
 export interface AnalysisResult {
     candidates: Candidate[];

@@ -4,7 +4,7 @@
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "chatwebnds",
+        "path": "chatbot_web",
         "responseMode": "responseNode",
         "options": {}
       },
@@ -45,7 +45,7 @@
         "url": "https://idiochromatic-cody-uninspiringly.ngrok-free.dev/collections/RAG_FOR_CV/points/search",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{\n  (() => {\n    // --- HÀM HELPER: CHUẨN HÓA TEXT ---\n    // Chuyển \"Nguyễn Châu Giang\" -> \"NGUYEN CHAU GIANG\"\n    function normalizeText(str) {\n      if (!str) return \"\";\n      str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, \"a\");\n      str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, \"e\");\n      str = str.replace(/ì|í|ị|ỉ|ĩ/g, \"i\");\n      str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, \"o\");\n      str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, \"u\");\n      str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, \"y\");\n      str = str.replace(/đ/g, \"d\");\n      str = str.replace(/À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ/g, \"A\");\n      str = str.replace(/È|É|Ẹ|Ẻ|Ẽ|Ê|Ề|Ế|Ệ|Ể|Ễ/g, \"E\");\n      str = str.replace(/Ì|Í|Ị|Ỉ|Ĩ/g, \"I\");\n      str = str.replace(/Ò|Ó|Ọ|Ỏ|Õ|Ô|Ồ|Ố|Ộ|Ổ|Ỗ|Ơ|Ờ|Ớ|Ợ|Ở|Ỡ/g, \"O\");\n      str = str.replace(/Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ/g, \"U\");\n      str = str.replace(/Ỳ|Ý|Ỵ|Ỷ|Ỹ/g, \"Y\");\n      str = str.replace(/Đ/g, \"D\");\n      return str.normalize(\"NFD\").replace(/[\\u0000-\\u0019]/g, \"\").toUpperCase().trim();\n    }\n\n    // 1. LẤY DỮ LIỆU ĐẦU VÀO\n    const vector = $json.query_vector || $json.vector; \n    let aiJson = {};\n    try {\n      if ($('message refined') && $('message refined').item) {\n          aiJson = $('message refined').item.json.parsed_json || \n                   JSON.parse($('message refined').item.json.output);\n      }\n    } catch (e) { aiJson = {}; }\n\n    // 2. KHỞI TẠO FILTER\n    let mustConditions = [];\n\n    // --- A. Lọc theo Tên (LOGIC MỚI: BAO VÂY CẢ CÓ DẤU & KHÔNG DẤU) ---\n    if (aiJson.filter_candidate_name) {\n      const originalName = aiJson.filter_candidate_name.trim(); // \"Nguyễn Châu Giang\"\n      const normalizedName = normalizeText(originalName);       // \"NGUYEN CHAU GIANG\"\n\n      // Tạo điều kiện OR (Should): Chỉ cần khớp 1 trong 2 là lấy\n      let nameConditions = [];\n      \n      // 1. Tìm chính xác những gì user nhập (Có dấu/Viết thường...)\n      nameConditions.push({\n        \"key\": \"candidate_name\",\n        \"match\": { \"text\": originalName } \n      });\n\n      // 2. Tìm phiên bản chuẩn hóa (Không dấu, In hoa)\n      // (Chỉ thêm nếu nó khác bản gốc để tránh trùng lặp query)\n      if (normalizedName !== originalName.toUpperCase()) {\n         nameConditions.push({\n            \"key\": \"candidate_name\",\n            \"match\": { \"text\": normalizedName }\n         });\n      }\n\n      // Đẩy cụm OR này vào trong MUST\n      // Nghĩa là: (Tên == \"Nguyễn...\" HOẶC Tên == \"NGUYEN...\") VÀ (Các đk khác...)\n      mustConditions.push({\n        \"should\": nameConditions\n      });\n    }\n\n    // --- B. Các bộ lọc khác (Giữ nguyên) ---\n    if (aiJson.filter_education) {\n      mustConditions.push({ \"key\": \"education\", \"match\": { \"text\": aiJson.filter_education } });\n    }\n    if (aiJson.filter_experience) {\n      mustConditions.push({ \"key\": \"text\", \"match\": { \"text\": aiJson.filter_experience } });\n    }\n    if (aiJson.filter_skills && Array.isArray(aiJson.filter_skills)) {\n      aiJson.filter_skills.forEach(skill => {\n        mustConditions.push({ \"key\": \"text\", \"match\": { \"text\": skill } });\n      });\n    }\n\n    // 3. CẤU HÌNH BODY REQUEST\n\n    let body = {\n\n      \"vector\": $json.query_vector,\n\n      \"limit\": $json.limit, // Tăng limit lên một chút vì lọc nhiều điều kiện\n\n      \"with_payload\": true,\n\n      \"score_threshold\": $json.score_threshold\n\n    };\n\n    // 4. ÁP DỤNG FILTER\n    if (mustConditions.length > 0) {\n      body.filter = {\n        \"must\": mustConditions\n      };\n\n      // Hạ threshold nếu đã filter đích danh tên\n      if (aiJson.filter_candidate_name) {\n        body.score_threshold = 0;\n      } else if (aiJson.filter_skills) {\n        body.score_threshold = 0.25;\n      }\n    }\n\n    return JSON.stringify(body);\n  })()\n}}",
+        "jsonBody": "={{\n  (() => {\n    // --- HELPER 1: Chuẩn hóa text ---\n    function normalizeText(str) {\n      if (!str) return \"\";\n      return str.normalize(\"NFD\").replace(/[\\u0300-\\u036f]/g, \"\").toUpperCase().trim();\n    }\n\n    // --- HELPER 2: Lấy số năm từ filter (VD: \"4 năm\" -> 4) ---\n    function extractYearsFromFilter(str) {\n      if (!str) return null;\n      const match = str.match(/(\\d+([.,]\\d+)?)/);\n      return match ? parseFloat(match[0].replace(',', '.')) : null;\n    }\n\n    // 1. LẤY DỮ LIỆU INPUT TỪ AI\n    const vector = $json.query_vector || $json.vector; \n    let aiJson = {};\n    try {\n      // Cố gắng lấy JSON output từ node AI trước đó\n      if ($('message refined') && $('message refined').item) {\n          aiJson = $('message refined').item.json.parsed_json || \n                   JSON.parse($('message refined').item.json.output);\n      }\n    } catch (e) { aiJson = {}; }\n\n    // KHỞI TẠO MẢNG ĐIỀU KIỆN \"BẮT BUỘC\" (AND LOGIC)\n    let mustConditions = [];\n\n    // ====================================================\n    // A. LỌC THEO TÊN (CANDIDATE NAME)\n    // ====================================================\n    if (aiJson.filter_candidate_name) {\n      const nameStr = aiJson.filter_candidate_name.trim();\n      // Tìm chính xác hoặc tìm gần đúng tên\n      mustConditions.push({ \n          \"should\": [\n              { \"key\": \"candidate_name\", \"match\": { \"text\": nameStr } },\n              { \"key\": \"text\", \"match\": { \"text\": nameStr } } // Dự phòng nếu tên nằm trong text\n          ]\n      });\n    }\n\n    // ====================================================\n    // B. LỌC THEO KINH NGHIỆM (EXPERIENCE)\n    // ====================================================\n    if (aiJson.filter_experience) {\n        const expRequest = aiJson.filter_experience.toLowerCase();\n        const yearsRequested = extractYearsFromFilter(expRequest);\n\n        if (yearsRequested !== null) {\n            // Yêu cầu bạn đã có trường 'experience_years' (số thực) trong payload\n            mustConditions.push({\n                \"key\": \"experience_years\",\n                \"range\": {\n                    \"gte\": yearsRequested  // Lớn hơn hoặc bằng\n                }\n            });\n        }\n    }\n\n    // ====================================================\n    // C. LỌC THEO KỸ NĂNG (SKILLS)\n    // ====================================================\n    if (aiJson.filter_skills && Array.isArray(aiJson.filter_skills)) {\n      aiJson.filter_skills.forEach(skill => {\n        if (skill && skill.length < 50) { // Bỏ qua skill quá dài/rác\n            mustConditions.push({\n                \"should\": [\n                    { \"key\": \"skills_list\", \"match\": { \"text\": skill } }, // Tìm trong mảng payload\n                    { \"key\": \"text\", \"match\": { \"text\": skill } }         // Tìm trong nội dung text\n                ]\n            });\n        }\n      });\n    }\n\n    // ====================================================\n    // D. LỌC THEO HỌC VẤN (EDUCATION) - MỚI\n    // ====================================================\n    if (aiJson.filter_education) {\n       // Hỗ trợ cả string đơn lẻ hoặc mảng\n       const eduList = Array.isArray(aiJson.filter_education) ? aiJson.filter_education : [aiJson.filter_education];\n\n       eduList.forEach(edu => {\n           if(edu && edu.length > 2) {\n               // Tìm trường học hoặc bằng cấp trong payload hoặc text\n               mustConditions.push({\n                   \"should\": [\n                       { \"key\": \"school\", \"match\": { \"text\": edu } }, // Nếu bạn lưu trường school\n                       { \"key\": \"major\", \"match\": { \"text\": edu } },  // Nếu bạn lưu trường major\n                       { \"key\": \"text\", \"match\": { \"text\": edu } }    // Tìm trong nội dung chung\n                   ]\n               });\n           }\n       });\n    }\n\n    // 2. CẤU HÌNH QUERY BODY\n    let limit = $json.limit || 15;\n    \n    // Nếu không có filter nào cả -> Search rộng (30)\n    // Nếu có filter -> Search cô đọng (15)\n    if (mustConditions.length === 0) limit = 30;\n\n    let body = {\n      \"vector\": $json.query_vector,\n      \"limit\": limit,\n      \"with_payload\": true,\n      \n      // Quan trọng: Khi kết hợp nhiều trường (AND), khả năng vector score cao là thấp\n      // Nhưng độ chính xác logic (Filter) lại tuyệt đối.\n      // Nên set threshold = 0 để không lỡ mất ứng viên đúng tiêu chí.\n      \"score_threshold\": 0 \n    };\n\n    // 3. NHÚNG FILTER VÀO BODY\n    if (mustConditions.length > 0) {\n      body.filter = {\n        \"must\": mustConditions // Bắt buộc thỏa mãn TẤT CẢ điều kiện trên\n      };\n    }\n\n    return JSON.stringify(body);\n  })()\n}}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -65,13 +65,13 @@
             {
               "id": "e7692985-5757-4ed4-93cb-0419ce9eba62",
               "name": "score_threshold",
-              "value": 0.6,
+              "value": 0,
               "type": "number"
             },
             {
               "id": "e6b045cc-a7aa-4574-862c-64dce78ef5fe",
               "name": "limit",
-              "value": 5,
+              "value": 6,
               "type": "number"
             },
             {
@@ -104,7 +104,7 @@
         "promptType": "define",
         "text": "=Dưới đây là dữ liệu hội thoại cần xử lý:\n\n------------------------------------------------------------\nCONTEXT (Lịch sử hội thoại trước đó):\n{{ $json.result_string || \"Chưa có lịch sử\" }}\n------------------------------------------------------------\n\nCÂU HỎI HIỆN TẠI CỦA USER:\n\"{{ $json.user_question }}\"\n\n---\nNHIỆM VỤ CỦA BẠN:\nPhân tích câu hỏi trên để chuẩn hóa dữ liệu cho hệ thống ADVANCED HYBRID SEARCH.\n\nHƯỚNG DẪN XỬ LÝ CHI TIẾT:\n\n1. XỬ LÝ LỜI CHÀO (GREETING):\n   - Nếu user chỉ chào hỏi xã giao (Hi, Hello, Chào shop...) -> Set `source` = \"greeting\", `answer` = \"Chào bạn, tôi là TalentIQ...\".\n\n2. XỬ LÝ TÌM KIẾM (SEARCH MODE) - QUAN TRỌNG:\n   - BẮT BUỘC: `answer` = \"\" (Để rỗng, hệ thống sẽ tự xử lý sau).\n   - `refined_question`: Viết lại câu hỏi thành câu truy vấn ngữ nghĩa (Semantic Query) tối ưu cho Vector Search. Hãy dịch các từ khóa sang tiếng Việt và mở rộng thêm các thuật ngữ chuyên ngành (VD: \"Tìm Dev\" -> \"Lập trình viên, Software Engineer, Coding skills\").\n   - XỬ LÝ CONTEXT: Nếu câu hỏi thiếu chủ ngữ (VD: \"Bạn ấy học trường nào?\"), hãy nhìn vào CONTEXT để điền tên ứng viên vào câu hỏi mới.\n\n3. TRÍCH XUẤT BỘ LỌC CẤU TRÚC (STRUCTURED FILTERS):\n   Bạn cần trích xuất thông tin từ câu hỏi để điền vào các trường lọc sau (Nếu không có thì trả về null):\n   - `filter_candidate_name`: Tên riêng ứng viên (VD: \"Long\", \"Nguyễn Văn A\").\n   - `filter_skills` (Array): Các kỹ năng cứng/công nghệ (VD: [\"Java\", \"ReactJS\", \"Tiếng Nhật\"]).\n   - `filter_experience` (String): Số năm kinh nghiệm hoặc cấp bậc (VD: \"Senior\", \"3 năm\", \"Junior\").\n   - `filter_education` (String): Trường học hoặc bằng cấp (VD: \"Đại học FPT\", \"Chứng chỉ PMP\").\n\n4. QUY TẮC MAPPING TỪ KHÓA:\n   - \"BA\" -> \"Business Analyst, Phân tích nghiệp vụ\"\n   - \"QC/Tester\" -> \"Quality Control, Kiểm thử phần mềm\"\n   - \"Dev\" -> \"Software Engineer, Lập trình viên\"\n   - \"Comtor\" -> \"IT Communicator, Biên phiên dịch\"\n\n5. ĐỊNH DẠNG JSON OUTPUT (BẮT BUỘC):\nTrả về DUY NHẤT 1 JSON object hợp lệ, không markdown, không giải thích:\n\n{\n  \"answer\": string,\n  \"refined_question\": string,\n  \"summary\": string,\n  \"filter_candidate_name\": string|null,\n  \"filter_skills\": string[]|null,       // Mảng các kỹ năng\n  \"filter_experience\": string|null,\n  \"filter_education\": string|null,\n  \"source\": \"search\" | \"greeting\",\n  \"needs_clarification\": boolean\n}\n\n---\nVÍ DỤ MINH HỌA (FEW-SHOT):\n\nUser: \"Tìm Dev React biết tiếng Nhật làm ở HCM\"\nOutput:\n{\n  \"answer\": \"\",\n  \"refined_question\": \"Lập trình viên Frontend, ReactJS, Javascript, Tiếng Nhật, Japanese N2 N3. Địa điểm: Hồ Chí Minh\",\n  \"summary\": \"Tìm Dev React tiếng Nhật\",\n  \"filter_candidate_name\": null,\n  \"filter_skills\": [\"React\", \"ReactJS\", \"Tiếng Nhật\"],\n  \"filter_experience\": \"Dev\",\n  \"filter_education\": null,\n  \"source\": \"search\",\n  \"needs_clarification\": false\n}\n\nUser: \"Bạn Long có bằng Bách Khoa không?\"\nOutput:\n{\n  \"answer\": \"\",\n  \"refined_question\": \"Thông tin học vấn, Bằng cấp, Trường Đại học Bách Khoa của ứng viên Long\",\n  \"summary\": \"Check bằng cấp của Long\",\n  \"filter_candidate_name\": \"Long\",\n  \"filter_skills\": null,\n  \"filter_experience\": null,\n  \"filter_education\": \"Bách Khoa\",\n  \"source\": \"search\",\n  \"needs_clarification\": false\n}",
         "options": {
-          "systemMessage": "=Bạn là TalentIQ - Chuyên gia phân tích ý định tìm kiếm tuyển dụng.\nNhiệm vụ: Chuyển đổi câu hỏi của user thành câu truy vấn (Refined Query) và trích xuất tham số lọc (Structured Filters) cho ADVANCED HYBRID SEARCH.\n\n---\nQUY TRÌNH TƯ DUY:\n\n1. XỬ LÝ LỜI CHÀO:\n   - Nếu input xã giao (Hi, Hello) -> source=\"greeting\", answer=\"Chào bạn...\".\n\n2. XỬ LÝ TÌM KIẾM (Search Mode):\n   - BẮT BUỘC: `answer` = \"\".\n   \n   A. TẠO TRUY VẤN (Refined Query):\n      - Viết lại câu hỏi bằng tiếng Việt, thêm từ khóa chuyên ngành, ngữ cảnh.\n      - VD: \"Tìm Long\" -> \"Hồ sơ, thông tin cá nhân, email, số điện thoại của ứng viên tên Long\".\n\n   B. TRÍCH XUẤT BỘ LỌC (Structured Filters):\n      Trích xuất thông tin để điền vào 4 trường lọc sau. Nếu không có thông tin trong câu hỏi, BẮT BUỘC phải trả về `null` (không được bỏ field).\n\n      1. `filter_candidate_name`: Tên riêng ứng viên (VD: \"Long\", \"Phan Minh Nhật\").\n      2. `filter_skills` (Array): Kỹ năng, Công nghệ (VD: [\"Java\", \"SQL\"]).\n      3. `filter_experience`: Số năm, cấp bậc (VD: \"Senior\", \"3 năm\").\n      4. `filter_education`: Trường học, bằng cấp (VD: \"Bách Khoa\").\n\n---\nOUTPUT FORMAT (BẮT BUỘC JSON ONLY):\nBạn phải trả về đúng cấu trúc JSON này, không được thiếu trường nào:\n\n{\n  \"answer\": string,                 // \"\" nếu là search\n  \"refined_question\": string,       // Câu truy vấn ngữ nghĩa\n  \"summary\": string,                // Tóm tắt ý định\n  \"filter_candidate_name\": string|null, // Tên ứng viên hoặc null\n  \"filter_skills\": string[]|null,       // VD: [\"Java\"] hoặc null\n  \"filter_experience\": string|null,     // VD: \"Senior\" hoặc null\n  \"filter_education\": string|null,      // VD: \"FPT\" hoặc null\n  \"source\": \"search\" | \"greeting\",\n  \"needs_clarification\": boolean\n}\n\n---\nVÍ DỤ (FEW-SHOT):\n\nInput: \"Ai tên là Long\"\nOutput:\n{\n  \"answer\": \"\",\n  \"refined_question\": \"Thông tin cá nhân, Hồ sơ, Họ và tên, Chức danh, Số điện thoại, Email của ứng viên tên Long\",\n  \"summary\": \"Tìm ứng viên tên Long\",\n  \"filter_candidate_name\": \"Long\",\n  \"filter_skills\": null,\n  \"filter_experience\": null,\n  \"filter_education\": null,\n  \"source\": \"search\",\n  \"needs_clarification\": false\n}\n\nInput: \"Tìm Dev React biết tiếng Nhật\"\nOutput:\n{\n  \"answer\": \"\",\n  \"refined_question\": \"Lập trình viên Frontend, ReactJS, Javascript, UI/UX, Tiếng Nhật. Địa điểm làm việc: Hồ Chí Minh\",\n  \"summary\": \"Tìm Dev React biết tiếng Nhật\",\n  \"filter_candidate_name\": null,\n  \"filter_skills\": [\"React\", \"ReactJS\", \"Tiếng Nhật\"],\n  \"filter_experience\": \"Dev\",\n  \"filter_education\": null,\n  \"source\": \"search\",\n  \"needs_clarification\": false\n}"
+          "systemMessage": "=Bạn là TalentIQ - Chuyên gia phân tích ý định tìm kiếm tuyển dụng.\nNhiệm vụ: Chuyển đổi câu hỏi của user thành câu truy vấn (Refined Query) và trích xuất tham số lọc (Structured Filters) cho ADVANCED HYBRID SEARCH.\n\n---\nQUY TRÌNH TƯ DUY:\n\n1. XỬ LÝ LỜI CHÀO:\n   - Nếu input xã giao (Hi, Hello) -> source=\"greeting\", answer=\"Chào bạn...\".\n\n2. XỬ LÝ TÌM KIẾM (Search Mode):\n   - BẮT BUỘC: `answer` = \"\".\n   \n   A. TẠO TRUY VẤN (Refined Query):\n      - Viết lại câu hỏi bằng tiếng Việt, thêm từ khóa chuyên ngành, ngữ cảnh.\n      - VD: \"Tìm Long\" -> \"Hồ sơ, thông tin cá nhân, email, số điện thoại của ứng viên tên Long\".\n\n   B. TRÍCH XUẤT BỘ LỌC (Structured Filters):\n      Trích xuất thông tin để điền vào 4 trường lọc sau. Nếu không có thông tin trong câu hỏi, BẮT BUỘC phải trả về `null` (không được bỏ field).\n\n      1. `filter_candidate_name`: Tên riêng ứng viên (VD: \"Long\", \"Phan Minh Nhật\").\n      2. `filter_skills` (Array): Kỹ năng  (VD: [\"Java\", \"SQL\"]) lấy chính xác không tự sinh thêm kĩ năng tương tự.\n      3. `filter_experience`: Số năm, cấp bậc (VD: \"Senior\", \"3 năm\").\n      4. `filter_education`: Trường học, bằng cấp (VD: \"Bách Khoa\").\n\n---\nOUTPUT FORMAT (BẮT BUỘC JSON ONLY):\nBạn phải trả về đúng cấu trúc JSON này, không được thiếu trường nào:\n\n{\n  \"answer\": string,                 // \"\" nếu là search\n  \"refined_question\": string,       // Câu truy vấn ngữ nghĩa\n  \"summary\": string,                // Tóm tắt ý định\n  \"filter_candidate_name\": string|null, // Tên ứng viên hoặc null\n  \"filter_skills\": string[]|null,       // VD: [\"Java\"] hoặc null\n  \"filter_experience\": string|null,     // VD: \"Senior\" hoặc null\n  \"filter_education\": string|null,      // VD: \"FPT\" hoặc null\n  \"source\": \"search\" | \"greeting\",\n  \"needs_clarification\": boolean\n}\n\n---\nVÍ DỤ (FEW-SHOT):\n\nInput: \"Ai tên là Long\"\nOutput:\n{\n  \"answer\": \"\",\n  \"refined_question\": \"Thông tin cá nhân, Hồ sơ, Họ và tên, Chức danh, Số điện thoại, Email của ứng viên tên Long\",\n  \"summary\": \"Tìm ứng viên tên Long\",\n  \"filter_candidate_name\": \"Long\",\n  \"filter_skills\": null,\n  \"filter_experience\": null,\n  \"filter_education\": null,\n  \"source\": \"search\",\n  \"needs_clarification\": false\n}\n\nInput: \"Tìm Dev React biết tiếng Nhật\"\nOutput:\n{\n  \"answer\": \"\",\n  \"refined_question\": \"Lập trình viên Frontend, ReactJS, Javascript, UI/UX, Tiếng Nhật. Địa điểm làm việc: Hồ Chí Minh\",\n  \"summary\": \"Tìm Dev React biết tiếng Nhật\",\n  \"filter_candidate_name\": null,\n  \"filter_skills\": [\"React\", \"ReactJS\", \"Tiếng Nhật\"],\n  \"filter_experience\": \"Dev\",\n  \"filter_education\": null,\n  \"source\": \"search\",\n  \"needs_clarification\": false\n}"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
@@ -196,7 +196,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -2672,
+        -2256,
         256
       ],
       "id": "0c160888-d91f-420e-bfba-3a8c70c618d9",
@@ -213,7 +213,7 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 2.2,
       "position": [
-        -2448,
+        -2032,
         400
       ],
       "id": "df5ea11e-42b5-4aef-8cbe-5fbc351b0266",
@@ -234,7 +234,7 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
-        -2384,
+        -1968,
         624
       ],
       "id": "2d23330e-1283-4f8f-8bcc-224690dde077",
@@ -253,7 +253,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2032,
+        -1616,
         400
       ],
       "id": "1c5f6a13-d3a3-42da-8f04-1c54251b201e",
@@ -266,7 +266,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2384,
+        -1968,
         64
       ],
       "id": "a297b40a-1c52-43de-bb9e-1db93e7eb162",
@@ -277,13 +277,13 @@
         "promptType": "define",
         "text": "=Bạn là TalentIQ - Trợ lý tuyển dụng AI chuyên nghiệp. Dưới đây là dữ liệu hồ sơ ứng viên (CV) được tìm thấy từ hệ thống Vector Search.\n\n=== DỮ LIỆU ĐẦU VÀO ===\nCâu hỏi/Yêu cầu của nhà tuyển dụng:\n\"{{ $json.merged_context.question }}\"\n\nThông tin các ứng viên tìm thấy (Context):\n{{ $json.merged_context.combined_context_text }}\n\n=== YÊU CẦU XỬ LÝ ===\n1. NGUYÊN TẮC CỐT LÕI:\n   - CHỈ trả lời dựa trên thông tin có trong phần \"Thông tin các ứng viên tìm thấy\".\n   - Tuyệt đối KHÔNG bịa đặt (hallucinate) thông tin không có trong CV. Nếu CV không ghi \"biết tiếng Anh\", không được tự ý cho rằng họ biết.\n   - Nếu không tìm thấy ứng viên nào hoặc thông tin không đủ để trả lời câu hỏi: Hãy báo rõ \"Không tìm thấy thông tin trong các hồ sơ được cung cấp\".\n\n2. CẤU TRÚC CÂU TRẢ LỜI (Trong trường `enriched_answer`):\n   - Nếu câu hỏi là \"Tìm kiếm/Liệt kê\": Hãy tóm tắt danh sách ứng viên phù hợp nhất. Với mỗi người, nêu rõ lý do tại sao họ khớp (Kỹ năng, Kinh nghiệm cụ thể).\n   - Nếu câu hỏi là \"Đánh giá chi tiết 1 người\": Phân tích điểm mạnh, điểm yếu, kinh nghiệm làm việc liên quan trực tiếp đến câu hỏi.\n   - Nếu câu hỏi là \"So sánh\": So sánh các chỉ số tương đương (Số năm kinh nghiệm, Công nghệ sử dụng, Bằng cấp).\n\n3. ĐỊNH DẠNG TRÌNH BÀY:\n   - Sử dụng Markdown (Bold **...**, Bullet points) để trình bày chuyên nghiệp, dễ đọc.\n   - Khi nhắc đến một kỹ năng/kinh nghiệm, hãy trích dẫn chứng (Ví dụ: \"Có kinh nghiệm ReactJS (dự án E-commerce tại cty A)\").\n   - Nếu cần tính toán (ví dụ: Tổng số năm kinh nghiệm), hãy cộng thời gian làm việc ghi trong CV và giải thích cách tính.\n\n4. TRÍCH NGUỒN:\n   - Trường `source` phải ghi rõ tên ứng viên và Link CV tương ứng (Ví dụ: \"Hồ sơ: Nguyễn Văn A - Link: drive.google...\").\n\n=== OUTPUT FORMAT (JSON ONLY) ===\nTrả về DUY NHẤT 1 JSON object hợp lệ:\n{\n  \"enriched_answer\": string,      // Câu trả lời chi tiết, format Markdown.\n  \"short_answer\": string,         // Tóm tắt ngắn gọn (<= 30 từ) dùng cho thông báo nhanh.\n  \"source\": string,               // Nguồn tham khảo (Tên ứng viên + Link CV).\n  \"needs_human_review\": boolean,  // true nếu thông tin trong CV mập mờ hoặc cần HR xác minh lại.\n  \"follow_up_question\": string    // (Tùy chọn) Gợi ý câu hỏi phỏng vấn tiếp theo dựa trên CV này.\n}",
         "options": {
-          "systemMessage": "=Bạn là TalentIQ - Một trợ lý AI chuyên nghiệp hỗ trợ Nhà tuyển dụng (HR) trong việc đánh giá, sàng lọc và tìm kiếm hồ sơ ứng viên (CV) dựa trên dữ liệu RAG.\n\nNhiệm vụ của bạn: Từ `question` và danh sách `docs` (thông tin ứng viên), hãy tạo ra MỘT JSON DUY NHẤT hợp lệ theo các nguyên tắc sau:\n\n### 0. BƯỚC XỬ LÝ TRƯỚC: RERANK & SÀNG LỌC\nTrước khi trả lời, PHẢI đánh giá mức độ phù hợp:\n- **Độ khớp kỹ năng:** Ưu tiên ứng viên có Hard Skills được nhắc đến.\n- **Kinh nghiệm:** Ưu tiên số năm kinh nghiệm hoặc vị trí tương đương.\n- Chỉ chọn lọc những ứng viên thực sự liên quan.\n\n### 1. NGUYÊN TẮC CỐT LÕI VỀ DỮ LIỆU\n- **Anti-Hallucination:** CHỈ dùng thông tin có thực trong docs. Không tự suy luận nếu CV không ghi.\n- **Tuyệt đối KHÔNG** nhắc đến các ứng dụng rác/không liên quan.\n\n### 2. FORMAT OUTPUT\n- Trả về DUY NHẤT một JSON hợp lệ.\n- Không trả thêm văn bản ngoài JSON. Không dùng code block.\n\n### 3. NGÔN NGỮ & PHONG CÁCH (QUAN TRỌNG: ĐỊNH DẠNG DỄ NHÌN)\n- **Giọng văn:** Chuyên nghiệp, khách quan.\n- **Trình bày (Markdown):**\n  + BẮT BUỘC dùng `\\n\\n` (xuống dòng kép) để tách biệt rõ ràng giữa các đoạn văn hoặc giữa các ứng viên.\n  + Dùng gạch đầu dòng (`- `) cho các ý chi tiết.\n  + Dùng in đậm (`**Text**`) cho Tên ứng viên hoặc Tiêu đề quan trọng.\n  + **Hyperlinks (Siêu liên kết - QUAN TRỌNG):** Khi dẫn link CV hoặc tài liệu, phải dùng cú pháp Markdown: `[Tên hiển thị](URL)`. Ví dụ: `[Xem CV chi tiết](https://link-cv.com)`. Không trả về URL trần.\n\n### 4. XỬ LÝ THEO LOẠI CÂU HỎI\nXác định ý định câu hỏi để chọn cấu trúc `enriched_answer`:\n\n**A. NHÓM CÂU HỎI ĐỊNH DANH / LIỆT KÊ (TỐI GIẢN)**\n*(Ví dụ: \"Ai tên là Long?\", \"Tìm ứng viên tên Long\", \"Danh sách các bạn tên Hùng\")*\n- **Yêu cầu:** CHỈ hiển thị Tên và Link CV (dạng Markdown). Cắt bỏ các thông tin khác để danh sách gọn gàng.\n- **Cấu trúc trả lời (Bắt buộc dùng `\\n\\n` giữa các người):**\n  1. Tổng quan: \"Tìm thấy [Số lượng] ứng viên tên [Tên] trong hệ thống:\"\n  2. Danh sách:\n     - **[Tên Ứng Viên A]**\n       Link CV: [Link](URL)\n     \n     - **[Tên Ứng Viên B]**\n       Link CV: [Link](URL)\n\n**B. NHÓM CÂU HỎI ĐÁNH GIÁ / PHÂN TÍCH**\n*(Ví dụ: \"Long có kỹ năng gì?\", \"Đánh giá kinh nghiệm của Long\", \"So sánh Long và Nam\")*\n- **Yêu cầu:** Phân tích chi tiết, trích dẫn bằng chứng.\n- **Cấu trúc trả lời:**\n  1. Tóm tắt nhận định. `\\n\\n`\n  2. Chi tiết từng người (Mỗi người một đoạn riêng biệt):\n     - **[Tên Ứng Viên]**:\n       + Điểm mạnh: ...\n       + Kinh nghiệm: ... (kèm dẫn chứng)\n\n**C. CÁC LOẠI KHÁC:**\n- Câu hỏi \"Tính toán\": Đưa con số cụ thể + cách tính.\n- Câu hỏi \"Tìm kiếm kỹ năng\": Xếp hạng theo độ phù hợp giảm dần.\n\n### 5. QUY TẮC TRÍCH NGUỒN (SOURCE)\n- Ghi rõ: \"Tên Ứng Viên - [Link CV dưới dạng Markdown]\". Nếu nhiều người, liệt kê danh sách.\n\n### 6. XỬ LÝ KHI THIẾU THÔNG TIN\n- Nếu docs rỗng -> `needs_human_review = true`.\n- Trả lời: \"Dựa trên dữ liệu hiện có, không tìm thấy ứng viên nào...\"\n\n### 7. JSON SCHEMA BẮT BUỘC\n```json\n{\n  \"enriched_answer\": string,      // Markdown string. LƯU Ý: Phải chứa các ký tự \\n\\n để hiển thị tách dòng.\n  \"short_answer\": string,         // Tóm tắt cực ngắn (<= 30 từ)\n  \"source\": string,               // Nguồn tham khảo\n  \"needs_human_review\": boolean,  // True nếu thiếu thông tin\n  \"follow_up_question\": string|null, // Gợi ý câu hỏi tiếp theo\n  \"confidence\": number            // 0.0 - 1.0\n}"
+          "systemMessage": "=Bạn là TalentIQ - Một trợ lý AI chuyên nghiệp hỗ trợ Nhà tuyển dụng (HR) trong việc đánh giá, sàng lọc và tìm kiếm hồ sơ ứng viên (CV) dựa trên dữ liệu RAG.\n\nNhiệm vụ của bạn: Từ `question` và danh sách `docs` (thông tin ứng viên), hãy tạo ra MỘT JSON DUY NHẤT hợp lệ theo các nguyên tắc sau:\n\n### 0. BƯỚC XỬ LÝ TRƯỚC: RERANK & SÀNG LỌC\nTrước khi trả lời, PHẢI đánh giá mức độ phù hợp:\n- **Độ khớp kỹ năng:** Ưu tiên ứng viên có Hard Skills được nhắc đến.\n- **Kinh nghiệm:** Ưu tiên số năm kinh nghiệm hoặc vị trí tương đương.\n- Chỉ chọn lọc những ứng viên thực sự liên quan.\n\n### 1. NGUYÊN TẮC CỐT LÕI VỀ DỮ LIỆU\n- **Anti-Hallucination:** CHỈ dùng thông tin có thực trong docs. Không tự suy luận nếu CV không ghi.\n- **Tuyệt đối KHÔNG** nhắc đến các ứng dụng rác/không liên quan.\n\n### 2. FORMAT OUTPUT\n- Trả về DUY NHẤT một JSON hợp lệ.\n- Không trả thêm văn bản ngoài JSON. Không dùng code block.\n\n### 3. NGÔN NGỮ & PHONG CÁCH (QUAN TRỌNG)\n- **Mở đầu trực diện (QUAN TRỌNG NHẤT):** KHÔNG được dùng các câu dẫn nhập thừa thãi như: \"Danh sách các ứng viên phù hợp:\", \"Dưới đây là kết quả:\", \"Các ứng viên đáp ứng yêu cầu là:\". Hãy bắt đầu ngay bằng Tên ứng viên hoặc Nội dung phân tích.\n- **Giọng văn:** Chuyên nghiệp, khách quan, súc tích.\n- **Trình bày (Markdown):**\n  + BẮT BUỘC dùng `\\n\\n` (xuống dòng kép) để tách biệt rõ ràng giữa các đoạn văn hoặc giữa các ứng viên.\n  + Dùng gạch đầu dòng (`- `) cho các ý chi tiết.\n  + Dùng in đậm (`**Text**`) cho Tên ứng viên hoặc Tiêu đề quan trọng.\n\n### 4. XỬ LÝ THEO LOẠI CÂU HỎI\nXác định ý định câu hỏi để chọn cấu trúc `enriched_answer`:\n\n**A. NHÓM CÂU HỎI ĐỊNH DANH / LIỆT KÊ (TỐI GIẢN)**\n*(Ví dụ: \"Ai tên là Long?\", \"Tìm ứng viên tên Long\", \"Danh sách các bạn tên Hùng\")*\n- **Yêu cầu:** CHỈ hiển thị Tên và Link CV. Cắt bỏ các thông tin rườm rà.\n- **Cấu trúc trả lời (Vào thẳng vấn đề):**\n  - **[Tên Ứng Viên A]**\n    Link CV: [Link]\n\n  - **[Tên Ứng Viên B]**\n    Link CV: [Link]\n\n**B. NHÓM CÂU HỎI ĐÁNH GIÁ / PHÂN TÍCH**\n*(Ví dụ: \"Long có kỹ năng gì?\", \"Đánh giá kinh nghiệm của Long\", \"So sánh Long và Nam\")*\n- **Yêu cầu:** Phân tích chi tiết, trích dẫn bằng chứng.\n- **Cấu trúc trả lời:**\n  1. Tóm tắt nhận định ngắn gọn (nếu cần). `\\n\\n`\n  2. Chi tiết từng người (Mỗi người một đoạn riêng biệt):\n     - **[Tên Ứng Viên]**:\n       + Điểm mạnh: ...\n       + Kinh nghiệm: ... (kèm dẫn chứng)\n\n**C. CÁC LOẠI KHÁC:**\n- Câu hỏi \"Tính toán\": Đưa con số cụ thể + cách tính.\n- Câu hỏi \"Tìm kiếm kỹ năng\": Xếp hạng theo độ phù hợp giảm dần.\n\n### 5. QUY TẮC TRÍCH NGUỒN (SOURCE)\n- Ghi rõ: \"Tên Ứng Viên - [Link CV]\". Nếu nhiều người, liệt kê danh sách.\n\n### 6. XỬ LÝ KHI THIẾU THÔNG TIN\n- Nếu docs rỗng -> `needs_human_review = true`.\n- Trả lời: \"Dựa trên dữ liệu hiện có, không tìm thấy ứng viên nào phù hợp với yêu cầu.\"\n\n### 7. JSON SCHEMA BẮT BUỘC\n```json\n{\n  \"enriched_answer\": string,      // Markdown string. LƯU Ý: Phải chứa các ký tự \\n\\n để hiển thị tách dòng. Bắt đầu trực diện, không chào hỏi.\n  \"short_answer\": string,         // Tóm tắt cực ngắn (<= 30 từ)\n  \"source\": string,               // Nguồn tham khảo\n  \"needs_human_review\": boolean,  // True nếu thiếu thông tin\n  \"follow_up_question\": string|null, // Gợi ý câu hỏi tiếp theo\n  \"confidence\": number            // 0.0 - 1.0\n}"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 2.2,
       "position": [
-        -2080,
+        -1664,
         -48
       ],
       "id": "5f660958-2e54-4f3d-b47a-ff1e243a7c7f",
@@ -304,7 +304,7 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
-        -2032,
+        -1616,
         176
       ],
       "id": "161a4020-4071-49e7-9afd-c0faaf82963b",
@@ -318,12 +318,12 @@
     },
     {
       "parameters": {
-        "jsCode": "// n8n Function node: Robust JSON extractor & parser for TalentIQ CV Assessment\n// Input: items[].json.output (string) OR items[].json.message.content\n// Output: items[].json.parsed_json (object) aligned with TalentIQ schema\n\n// --- 1. HELPER FUNCTIONS (GIỮ NGUYÊN) ---\n\nfunction tryJsonParse(text) {\n  try { return { ok: true, value: JSON.parse(text), method: 'JSON.parse(raw)' }; }\n  catch (e) { return { ok: false, error: e.message }; }\n}\n\nfunction extractFirstObjectBlock(text) {\n  const m = text.match(/\\{[\\s\\S]*\\}/);\n  return m ? m[0] : null;\n}\n\nfunction unescapeCommonEscapes(s){\n  return s\n    .replace(/\\\\n/g, '\\n')   \n    .replace(/\\\\r/g, '\\r')\n    .replace(/\\\\\"/g, '\"')    \n    .replace(/\\\\'/g, \"'\")\n    .replace(/\\\\\\\\/g, '\\\\'); \n}\n\nfunction parseRobust(raw) {\n  const attempts = [];\n  if (raw === null || raw === undefined) {\n    attempts.push({ method: 'no-input', ok: false });\n    return { parsed: null, attempts };\n  }\n\n  if (typeof raw === 'object') {\n    return { parsed: raw, attempts };\n  }\n\n  const s = String(raw);\n  let attempt = tryJsonParse(s);\n  if (attempt.ok) return { parsed: attempt.value, attempts };\n\n  try {\n    const first = JSON.parse(s);\n    if (typeof first === 'object') return { parsed: first, attempts };\n    if (typeof first === 'string') {\n      const secondAttempt = tryJsonParse(first);\n      if (secondAttempt.ok) return { parsed: secondAttempt.value, attempts };\n      var candidate = first;\n    } else {\n      var candidate = s;\n    }\n  } catch(e) {\n    var candidate = s;\n  }\n\n  const block = extractFirstObjectBlock(candidate);\n  if (block) {\n    attempt = tryJsonParse(block);\n    if (attempt.ok) return { parsed: attempt.value, attempts };\n  }\n\n  const unescaped = unescapeCommonEscapes(candidate);\n  if (unescaped !== candidate) {\n    attempt = tryJsonParse(unescaped);\n    if (attempt.ok) return { parsed: attempt.value, attempts };\n    const block2 = extractFirstObjectBlock(unescaped);\n    if (block2) {\n      attempt = tryJsonParse(block2);\n      if (attempt.ok) return { parsed: attempt.value, attempts };\n    }\n  }\n\n  const cleaned = candidate\n    .replace(/\\u201c|\\u201d/g, '\"')\n    .replace(/\\u2018|\\u2019/g, \"'\")\n    .replace(/[\\u0000-\\u0019]+/g, ''); \n  attempt = tryJsonParse(cleaned);\n  if (attempt.ok) return { parsed: attempt.value, attempts };\n\n  return { parsed: null, attempts };\n}\n\n// --- 2. MAIN LOGIC (CẬP NHẬT TÁCH DÒNG) ---\nconst outputs = [];\n\nfor (const item of items) {\n  const rawCandidates = [];\n  if (item.json && item.json.output) rawCandidates.push(item.json.output);\n  if (item.json && item.json.message && item.json.message.content) rawCandidates.push(item.json.message.content); \n  if (item.json && item.json.response) rawCandidates.push(item.json.response);\n  if (item.json && item.json.text) rawCandidates.push(item.json.text);\n\n  if (rawCandidates.length === 0) rawCandidates.push(JSON.stringify(item.json));\n\n  let finalParsed = null;\n  for (const raw of rawCandidates) {\n    const { parsed } = parseRobust(raw);\n    if (parsed) { finalParsed = parsed; break; }\n  }\n\n  if (!finalParsed) {\n    finalParsed = {\n      \"enriched_answer\": \"Hệ thống gặp lỗi khi xử lý dữ liệu từ AI.\",\n      \"short_answer\": \"Lỗi hệ thống\",\n      \"source\": \"\",\n      \"needs_human_review\": true,\n      \"follow_up_question\": null,\n      \"confidence\": 0\n    };\n  }\n\n  // --- LOGIC TÁCH DÒNG (SPLIT LINES) ---\n  if (finalParsed.enriched_answer && typeof finalParsed.enriched_answer === 'string') {\n      // 1. Chuẩn hóa xuống dòng: chuyển hết \\\\n thành \\n thật\n      const normalizedText = finalParsed.enriched_answer\n          .replace(/\\\\n/g, '\\n')\n          .replace(/\\\\t/g, '\\t');\n      \n      // 2. Gán lại chuỗi đã chuẩn hóa vào field gốc (để hiển thị đẹp nếu cần in cả cục)\n      finalParsed.enriched_answer = normalizedText;\n\n      // 3. Tách thành mảng (Array) dựa trên dấu xuống dòng\n      // Filter(Boolean) để loại bỏ các dòng trống vô nghĩa\n      finalParsed.enriched_lines = normalizedText\n          .split('\\n')\n          .map(line => line.trim())\n          .filter(line => line.length > 0);\n  } else {\n      finalParsed.enriched_lines = [];\n  }\n\n  outputs.push({\n    json: {\n      parsed_json: finalParsed\n    }\n  });\n}\n\nreturn outputs;"
+        "jsCode": "// n8n Function node: Robust JSON extractor & parser for TalentIQ CV Assessment\n// Input: items[].json.output (string) OR items[].json.message.content\n// Output: items[].json.parsed_json (object) aligned with TalentIQ schema\n\n// --- 1. HELPER FUNCTIONS (GIỮ NGUYÊN KHÔNG ĐỔI) ---\n\nfunction tryJsonParse(text) {\n  try { return { ok: true, value: JSON.parse(text), method: 'JSON.parse(raw)' }; }\n  catch (e) { return { ok: false, error: e.message }; }\n}\n\nfunction extractFirstObjectBlock(text) {\n  const m = text.match(/\\{[\\s\\S]*\\}/);\n  return m ? m[0] : null;\n}\n\nfunction unescapeCommonEscapes(s){\n  return s\n    .replace(/\\\\n/g, '\\n')   \n    .replace(/\\\\r/g, '\\r')\n    .replace(/\\\\\"/g, '\"')    \n    .replace(/\\\\'/g, \"'\")\n    .replace(/\\\\\\\\/g, '\\\\'); \n}\n\nfunction parseRobust(raw) {\n  const attempts = [];\n  if (raw === null || raw === undefined) {\n    attempts.push({ method: 'no-input', ok: false });\n    return { parsed: null, attempts };\n  }\n\n  if (typeof raw === 'object') {\n    return { parsed: raw, attempts };\n  }\n\n  const s = String(raw);\n  let attempt = tryJsonParse(s);\n  if (attempt.ok) return { parsed: attempt.value, attempts };\n\n  try {\n    const first = JSON.parse(s);\n    if (typeof first === 'object') return { parsed: first, attempts };\n    if (typeof first === 'string') {\n      const secondAttempt = tryJsonParse(first);\n      if (secondAttempt.ok) return { parsed: secondAttempt.value, attempts };\n      var candidate = first;\n    } else {\n      var candidate = s;\n    }\n  } catch(e) {\n    var candidate = s;\n  }\n\n  const block = extractFirstObjectBlock(candidate);\n  if (block) {\n    attempt = tryJsonParse(block);\n    if (attempt.ok) return { parsed: attempt.value, attempts };\n  }\n\n  const unescaped = unescapeCommonEscapes(candidate);\n  if (unescaped !== candidate) {\n    attempt = tryJsonParse(unescaped);\n    if (attempt.ok) return { parsed: attempt.value, attempts };\n    const block2 = extractFirstObjectBlock(unescaped);\n    if (block2) {\n      attempt = tryJsonParse(block2);\n      if (attempt.ok) return { parsed: attempt.value, attempts };\n    }\n  }\n\n  const cleaned = candidate\n    .replace(/\\u201c|\\u201d/g, '\"')\n    .replace(/\\u2018|\\u2019/g, \"'\")\n    .replace(/[\\u0000-\\u0019]+/g, ''); \n  attempt = tryJsonParse(cleaned);\n  if (attempt.ok) return { parsed: attempt.value, attempts };\n\n  return { parsed: null, attempts };\n}\n\n// --- 2. MAIN LOGIC (ĐÃ CẬP NHẬT TÁCH LINK & CLEAN LINES) ---\nconst outputs = [];\n\nfor (const item of items) {\n  const rawCandidates = [];\n  if (item.json && item.json.output) rawCandidates.push(item.json.output);\n  if (item.json && item.json.message && item.json.message.content) rawCandidates.push(item.json.message.content); \n  if (item.json && item.json.response) rawCandidates.push(item.json.response);\n  if (item.json && item.json.text) rawCandidates.push(item.json.text);\n\n  if (rawCandidates.length === 0) rawCandidates.push(JSON.stringify(item.json));\n\n  let finalParsed = null;\n  for (const raw of rawCandidates) {\n    const { parsed } = parseRobust(raw);\n    if (parsed) { finalParsed = parsed; break; }\n  }\n\n  // Fallback nếu parse thất bại\n  if (!finalParsed) {\n    finalParsed = {\n      \"enriched_answer\": \"Hệ thống gặp lỗi khi xử lý dữ liệu từ AI.\",\n      \"short_answer\": \"Lỗi hệ thống\",\n      \"source\": \"\",\n      \"needs_human_review\": true,\n      \"follow_up_question\": null,\n      \"confidence\": 0\n    };\n  }\n\n  // --- A. XỬ LÝ EXTRACT LINK TỪ SOURCE (MỚI) ---\n  const candidatesExtracted = [];\n  if (finalParsed.source && typeof finalParsed.source === 'string') {\n      // Tách các ứng viên bằng dấu chấm phẩy (;)\n      const parts = finalParsed.source.split(';');\n      parts.forEach(part => {\n          // Regex tìm: [Tên] - [Link http...]\n          const match = part.match(/(.*?)\\s*-\\s*(https?:\\/\\/[^\\s]+)/);\n          if (match) {\n              candidatesExtracted.push({\n                  name: match[1].trim(),     // VD: Pham Anh Tuan\n                  cv_link: match[2].trim()   // VD: https://drive...\n              });\n          }\n      });\n  }\n  // Gán vào kết quả cuối cùng\n  finalParsed.candidates_info = candidatesExtracted;\n\n  // --- B. XỬ LÝ TÁCH DÒNG & CLEAN LINES ---\n  if (finalParsed.enriched_answer && typeof finalParsed.enriched_answer === 'string') {\n      // 1. Chuẩn hóa xuống dòng: chuyển hết \\\\n thành \\n thật\n      const normalizedText = finalParsed.enriched_answer\n          .replace(/\\\\n/g, '\\n')\n          .replace(/\\\\t/g, '\\t');\n      \n      // 2. Gán lại chuỗi đã chuẩn hóa\n      finalParsed.enriched_answer = normalizedText;\n\n      // 3. Tách thành mảng & LỌC BỎ DÒNG NGUỒN (MỚI)\n      finalParsed.enriched_lines = normalizedText\n          .split('\\n')\n          .map(line => line.trim())\n          .filter(line => {\n              // Giữ lại dòng nếu: Không rỗng VÀ Không bắt đầu bằng \"Nguồn:\" hoặc \"Source:\"\n              return line.length > 0 && !line.startsWith(\"Nguồn:\") && !line.startsWith(\"Source:\");\n          });\n  } else {\n      finalParsed.enriched_lines = [];\n  }\n\n  outputs.push({\n    json: {\n      parsed_json: finalParsed\n    }\n  });\n}\n\nreturn outputs;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1536,
+        -1120,
         64
       ],
       "id": "6b98e0c4-95e1-44cf-8c0e-03aadeb8ac1d",
@@ -331,13 +331,12 @@
     },
     {
       "parameters": {
-        "respondWith": "firstIncomingItem",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        -1104,
+        -688,
         64
       ],
       "id": "d4e0301a-ce38-4759-a2f8-865cb6085ffe",
@@ -345,25 +344,26 @@
     },
     {
       "parameters": {
-        "jsCode": "// Logic for General/Greeting response\nconst parsed = $input.first().json.response || {};\nlet answerText = \"\";\n\nif (typeof parsed === 'object') {\n  answerText = parsed.enriched_answer || parsed.answer || parsed.message || JSON.stringify(parsed);\n} else {\n  answerText = String(parsed);\n}\n\n// Normalize newlines\nif (answerText) {\n  answerText = answerText.replace(/\\\\n/g, '\\n');\n}\n\nlet requestData = {};\ntry {\n  requestData = $node['Webhook'].json.body || {};\n} catch (e) {\n  requestData = {};\n}\n\nreturn [\n  {\n    json: {\n      status: \"ok\",\n      tenantCode: requestData.tenant_code || \"\",\n      chatid: String(requestData.message_id || \"\").trim(),\n      employeeId: String(requestData.user_id || \"\").trim(),\n      timestamp: requestData.timestamp || new Date().toISOString(),\n      question_message: requestData.message || \"\",\n      answer_message: answerText,\n      short_message: parsed.short_answer || \"\",\n      source: parsed.source || \"TalentIQ General\",\n      needs_human_review: parsed.needs_human_review || false,\n      follow_up_question: parsed.follow_up_question || null,\n      candidate_list: [],\n      answer_url: [],\n      category: [parsed.category || \"General\"],\n      clarify_question: null,\n      handoff_note: null\n    }\n  }\n];"
+        "jsCode": "// Lấy item từ node trước\nconst data = $node['Check JSON body'].json;\n\n// Chuẩn hóa khoảng trắng cho chatid và employeeId\nconst chatid = String(data.data.message_id || \"\").trim();\nconst employeeId = String(data.data.user_id || \"\").trim();\n\n// Tạo response JSON\nreturn [\n  {\n    json: {\n      status: \"ok\",\n      tenantCode: data.data.tenant_code || \"\",\n      chatid,\n      question_message: data.data.question_message || \"\",\n      answer_message: $input.first().json.response.enriched_answer,\n      answer_url: data.answer_url || [],\n      source: \"UN_ANSWER\",\n      category: $input.first().json.response.category,\n      needs_clarification: data.needs_clarification ?? false,\n      clarify_question: data.clarify_question ?? null,\n      handoff_note: data.handoff_note ?? null,\n      employeeId,\n      timestamp: data.data.timestamp || new Date().toISOString()\n    }\n  }\n];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1800,
+        -1328,
         400
       ],
-      "id": "restored-responeformat-id-fix",
-      "name": "ResponeFormat"
+      "id": "eac4aea3-dc3d-4d9c-8ffe-889810c6897a",
+      "name": "ResponeFormat",
+      "alwaysOutputData": false
     },
     {
       "parameters": {
-        "jsCode": "// 1. Lấy dữ liệu từ Node Parser (Output của AI đã được làm sạch)\nconst parserOutput = $input.first().json.parsed_json || {};\n\n// 2. Lấy dữ liệu gốc từ Request ban đầu (Node 'Webhook')\nlet requestData = {};\ntry {\n  requestData = $node['Webhook'].json.body || {};\n} catch (e) {\n  requestData = {};\n}\n\n// 3. Lấy thông tin Context (Danh sách ứng viên đã tìm thấy)\nlet contextData = {};\ntry {\n  contextData = $('Merge Context').first().json.merged_context || {};\n} catch (e) {}\n\n// Chuẩn hóa ID\nconst chatid = String(requestData.message_id || \"\").trim();\nconst employeeId = String(requestData.user_id || \"\").trim();\n\n// --- XỬ LÝ ANSWER MESSAGE CHO DỄ NHÌN ---\nlet finalAnswer = \"\";\n\n// Cách 1: Nếu node trước đã tách dòng thành mảng (enriched_lines) -> Nối lại\nif (parserOutput.enriched_lines && Array.isArray(parserOutput.enriched_lines) && parserOutput.enriched_lines.length > 0) {\n    finalAnswer = parserOutput.enriched_lines.join('\\n');\n} \n// Cách 2: Nếu chỉ có chuỗi (enriched_answer)\nelse {\n    finalAnswer = parserOutput.enriched_answer || \"\";\n}\n\n// QUAN TRỌNG: Đảm bảo xuống dòng hiển thị đúng\n// Replace \\\\n (chuỗi ký tự do AI sinh ra) thành \\n (ký tự xuống dòng thật)\nif (typeof finalAnswer === 'string') {\n    finalAnswer = finalAnswer.replace(/\\\\n/g, '\\n').replace(/\\\\t/g, '\\t');\n}\n// ------------------------------------------\n\n// 4. Tạo Response JSON chuẩn cho Frontend\nreturn [\n  {\n    json: {\n      status: \"ok\",\n      \n      // Thông tin định danh phiên chat\n      tenantCode: requestData.tenant_code || \"\",\n      chatid: chatid,\n      employeeId: employeeId,\n      timestamp: requestData.timestamp || new Date().toISOString(),\n      \n      // Câu hỏi và Câu trả lời chính\n      question_message: $('Webhook').first().json.body.message || \"\",\n      \n      // Gán biến đã xử lý ở trên vào đây\n      answer_message: finalAnswer || \"Xin lỗi, hệ thống chưa thể xử lý yêu cầu này.\",\n      \n      // Câu trả lời tóm tắt\n      short_message: parserOutput.short_answer || \"\",\n\n      // Nguồn dữ liệu\n      source: parserOutput.source || \"TalentIQ Database\",\n      \n      // Các cờ nghiệp vụ\n      needs_human_review: parserOutput.needs_human_review || false,\n      follow_up_question: parserOutput.follow_up_question || null,\n      \n      // Metadata bổ sung\n      candidate_list: contextData.top_candidates ? contextData.top_candidates.map(c => c.name) : [],\n      \n      // Tương thích ngược\n      answer_url: [], \n      category: contextData.top_candidates ? contextData.top_candidates.map(c => \"Candidate Profile\") : [],\n      clarify_question: null,\n      handoff_note: null\n    }\n  }\n];"
+        "jsCode": "// 1. Lấy dữ liệu từ Node Parser (Output của AI đã được làm sạch)\nconst parserOutput = $input.first().json.parsed_json || {};\n\n// 2. Lấy dữ liệu gốc từ Request ban đầu (để giữ session info)\nlet requestData = {};\ntry {\n  requestData = $node['Check JSON body'].json.data || {};\n} catch (e) {\n  requestData = {};\n}\n\n// 3. Xử lý thông tin Ứng viên (Quan trọng: Lấy từ candidates_info của Parser)\n// Input mẫu: [{ name: \"Tuan\", cv_link: \"...\" }, { name: \"Dang\", cv_link: \"...\" }]\nconst candidatesInfo = parserOutput.candidates_info || [];\n\n// Tạo mảng danh sách tên và danh sách link\nconst candidateNames = candidatesInfo.map(c => c.name).filter(n => n);\nconst candidateLinks = candidatesInfo.map(c => c.cv_link).filter(l => l);\n\n// Chuẩn hóa ID\nconst chatid = String(requestData.message_id || \"\").trim();\nconst employeeId = String(requestData.user_id || \"\").trim();\n\n// --- XỬ LÝ ANSWER MESSAGE ---\nlet finalAnswer = \"\";\n\n// Ưu tiên dùng enriched_answer (chuỗi gốc) để giữ format chuẩn nhất\nif (parserOutput.enriched_answer) {\n    finalAnswer = parserOutput.enriched_answer;\n} \n// Fallback: Nếu không có chuỗi gốc mới dùng mảng nối lại\nelse if (parserOutput.enriched_lines && Array.isArray(parserOutput.enriched_lines)) {\n    finalAnswer = parserOutput.enriched_lines.join('\\n\\n');\n}\n\n// QUAN TRỌNG: Chuẩn hóa xuống dòng cho Frontend hiển thị Markdown\nif (typeof finalAnswer === 'string') {\n    finalAnswer = finalAnswer\n        .replace(/\\\\n/g, '\\n') // Chuyển \\n string thành xuống dòng thật\n        .replace(/\\\\t/g, '\\t');\n}\n\n// 4. Tạo Response JSON chuẩn cho Frontend\nreturn [\n  {\n    json: {\n      status: \"ok\",\n      \n      // Thông tin định danh phiên chat\n      tenantCode: requestData.tenant_code || \"\",\n      chatid: chatid,\n      employeeId: employeeId,\n      timestamp: requestData.timestamp || new Date().toISOString(),\n      \n      // Câu hỏi và Câu trả lời chính\n      // Lưu ý: Kiểm tra kỹ tên node chứa câu hỏi gốc (thường là Webhook hoặc Edit Fields)\n      question_message: $('Context-Merger').first().json.user_question, \n      \n      // Nội dung trả lời đã format\n      answer_message: finalAnswer || \"Xin lỗi, hệ thống chưa thể xử lý yêu cầu này.\",\n      \n      // Câu trả lời tóm tắt\n      short_message: parserOutput.short_answer || \"\",\n\n      // Nguồn dữ liệu (Giữ nguyên chuỗi nguồn gộp để tham khảo)\n      source: parserOutput.source || \"TalentIQ Database\",\n      \n      // Các cờ nghiệp vụ\n      needs_human_review: parserOutput.needs_human_review || false,\n      follow_up_question: parserOutput.follow_up_question || null,\n      \n      // --- CÁC TRƯỜNG CẬP NHẬT TỰ ĐỘNG ---\n      \n      // Danh sách tên ứng viên (Lấy từ kết quả AI trả về)\n      candidate_list: candidateNames,\n      \n      // Danh sách Link CV (Frontend dùng để hiển thị nút/link)\n      answer_url: candidateLinks, \n      \n      // Phân loại\n      category: candidateNames.map(() => \"Candidate Profile\"),\n      \n      // Các trường null mặc định\n      clarify_question: null,\n      handoff_note: null\n    }\n  }\n];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1312,
+        -896,
         64
       ],
       "id": "6dbfc5f3-8687-4a7a-957f-6d424bc047f4",
@@ -371,13 +371,13 @@
     },
     {
       "parameters": {
-        "respondWith": "firstIncomingItem",
+        "respondWith": "allIncomingItems",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        -1552,
+        -1136,
         400
       ],
       "id": "02d70285-174c-49ba-be58-5a7cf7fef619",
@@ -391,147 +391,184 @@
           "headers": {
             "connection": "upgrade",
             "host": "n8ndev.ndsvn.vn",
-            "x-real-ip": "10.86.101.254",
-            "x-forwarded-for": "2a09:bac5:d46c:137d::1f1:1e0, 10.86.101.254",
+            "x-real-ip": "10.86.6.15",
+            "x-forwarded-for": "10.86.6.15",
             "x-forwarded-proto": "https",
-            "content-length": "6550",
-            "accept": "*/*",
-            "accept-language": "*",
-            "accept-encoding": "gzip, br",
-            "user-agent": "node",
-            "cf-ray": "9af2f0e51c3fa035-SIN",
-            "sec-fetch-mode": "cors",
+            "content-length": "17756",
             "x-n8n-api-key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NDc5YTc1My05MDJkLTQ1NDItYTlkYy03Y2Y2ZWI2YTI5YjgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzY1NTA1MDY1fQ.2jvuZTRLH5v1aEp6aGO_-M6d8XT9e9JT8wVCDMcydBg",
             "content-type": "application/json",
-            "cdn-loop": "cloudflare; loops=1",
-            "cf-connecting-ip": "2a09:bac5:d46c:137d::1f1:1e0",
-            "cf-ipcountry": "VN",
-            "cf-visitor": "{\"scheme\":\"https\"}"
+            "accept": "*/*",
+            "accept-language": "*",
+            "sec-fetch-mode": "cors",
+            "user-agent": "node",
+            "accept-encoding": "br, gzip, deflate"
           },
           "params": {},
           "query": {},
           "body": {
-            "message": "cho tôi link cv các ứng viên tên Khoa",
+            "message": "cho tôi ứng viên có kĩ năng Machine Learning",
             "history": [
               {
                 "id": "1",
                 "role": "assistant",
                 "content": "Hello! I am TalentIQ Agent. I can help you filter candidates or answer questions about the CVs. E.g., \"Who has React experience?\"",
-                "timestamp": 1765935110473
+                "timestamp": 1766045258268
               },
               {
-                "id": "user_1765935122060",
+                "id": "user_1766045268649",
                 "role": "user",
-                "content": "ai tên Long",
-                "timestamp": 1765935122060
+                "content": "cho tôi ứng viên có 3 năm kinh nghiệm",
+                "timestamp": 1766045268649
               },
               {
-                "id": "user_1765935186643",
-                "role": "user",
-                "content": "giang có project nào",
-                "timestamp": 1765935186643
-              },
-              {
-                "id": "msg_1765935199061_5op51j6ej",
+                "id": "msg_1766045282814_rfld5at5h",
                 "role": "assistant",
-                "content": "**Nguyen Chau Giang** có kinh nghiệm quản lý dự án tại Ztech Asia (Spahub.vn) từ tháng 11/2023 đến nay.\n- Trong vai trò Product/Project Manager, Giang phối hợp với các phòng ban Công nghệ, Marketing và Vận hành để phát triển các module CRM, đặt chỗ, loyalty và trò chơi hóa.\n- Dự án do Giang quản lý đã ra mắt nền tảng ổn định, đạt tăng 50% DAU và tỷ lệ khách hàng quay lại 30% trong 3 tháng.\nThông tin trên cho thấy Giang có kinh nghiệm thực tế trong quản lý dự án phát triển sản phẩm số với kết quả cụ thể và có kỹ năng liên quan như Stakeholder Management, Swagger và Draw.io hỗ trợ công việc.\nNguồn: Nguyen Chau Giang - Link CV: https://drive.google.com/file/d/1zeo1UTsxAKAdVvqECvmOCQ1yIMQ2ROm4/view?usp=drivesdk",
-                "timestamp": 1765935199395
+                "content": "**Danh sách ứng viên có 3 năm kinh nghiệm làm việc hoặc hơn:**\n- **Tran Quoc Kiet**:\n+ Kinh nghiệm: Hơn 5 năm trong lĩnh vực phân tích kinh doanh và công nghệ thông tin.\n+ Lý do phù hợp: Kinh nghiệm vượt yêu cầu 3 năm, vị trí IT Business Analyst tại GKIM Digital.\n- **Nguyễn Trần Minh Thịnh**:\n+ Kinh nghiệm: Hơn 4 năm làm Business Analyst tại EPAY SERVICE.\n+ Lý do phù hợp: Kinh nghiệm trên 3 năm, có kỹ năng phân tích nghiệp vụ và quản lý sản phẩm.\n- **Long Nguyen**:\n+ Kinh nghiệm: Khoảng 5 năm làm Business Analyst/Product Owner tại Liberty Group.\n+ Lý do phù hợp: Kinh nghiệm làm việc liên tục từ 12/2019 đến 11/2025, vượt yêu cầu 3 năm.\n- **Dinh Hoang Tien**:\n+ Kinh nghiệm: Hơn 7 năm trong phân tích nghiệp vụ, quản lý dự án và lãnh đạo nhóm nghiên cứu.\n+ Lý do phù hợp: Kinh nghiệm dày dặn vượt xa yêu cầu, đảm nhiệm vai trò Product Owner & Business Analyst.\n- **Nguyễn Thị Anh Đào**:\n+ Kinh nghiệm: Hơn 3 năm làm Business Analyst tại VnResource Company.\n+ Lý do phù hợp: Kinh nghiệm vừa đủ 3 năm, tham gia ra mắt nhiều thương hiệu.\nTất cả ứng viên trên đều đáp ứng hoặc vượt yêu cầu 3 năm kinh nghiệm làm việc.",
+                "timestamp": 1766045284964
               },
               {
-                "id": "user_1765935884298",
+                "id": "user_1766045566969",
                 "role": "user",
-                "content": "cho tôi các chứng chỉ của ứng viên Giang",
-                "timestamp": 1765935884298
+                "content": "cho tôi ứng viên có 3 năm kinh nghiệm",
+                "timestamp": 1766045566969
               },
               {
-                "id": "msg_1765935899661_223cn47ou",
+                "id": "msg_1766045588417_0q4nzn4zk",
                 "role": "assistant",
-                "content": "**Nguyen Chau Giang** hiện tại không có thông tin về chứng chỉ trong hồ sơ được cung cấp.\n- Hồ sơ chỉ đề cập đến các kỹ năng như Stakeholder Management, Swagger và Product Strategy.\n- Kinh nghiệm làm việc của ứng viên là Product/Project Manager tại Ztech Asia (Spahub.vn) từ tháng 11/2023 đến nay, với các kết quả cụ thể như ra mắt nền tảng ổn định tăng 50% DAU và tỷ lệ khách hàng quay lại 30% trong 3 tháng.\nDo đó, không thể cung cấp thông tin về chứng chỉ dựa trên dữ liệu hiện có.",
-                "timestamp": 1765935900027
+                "content": "**Danh sách ứng viên có ít nhất 3 năm kinh nghiệm làm việc:**\n- **Tran Quoc Kiet**:\n+ Có hơn 5 năm kinh nghiệm trong lĩnh vực phân tích kinh doanh và công nghệ thông tin.\n+ Vai trò IT Business Analyst tại GKIM Digital, có kinh nghiệm đào tạo và hướng dẫn thực tập sinh cũng như nhân viên mới.\n- **Nguyễn Trần Minh Thịnh**:\n+ Hơn 4 năm kinh nghiệm làm việc trong lĩnh vực phân tích nghiệp vụ và quản lý sản phẩm.\n+ Đã phối hợp với nhóm sản phẩm để xác định phạm vi MVP và theo dõi tiến độ theo phương pháp Agile tại EPAY SERVICE.\n- **Dinh Hoang Tien**:\n+ Tổng cộng hơn 7 năm kinh nghiệm trong phân tích nghiệp vụ, quản lý dự án và lãnh đạo nhóm nghiên cứu.\n+ Đảm nhiệm vai trò Product Owner và Business Analyst cho các dự án e-commerce tại Vela Corporation.\n- **Long Nguyen**:\n+ Khoảng 5 năm kinh nghiệm làm việc liên tục từ 12/2019 đến 11/2025.\n+ Kinh nghiệm kiểm thử nghiệm thu người dùng (UAT) để xác nhận tính năng phù hợp với yêu cầu tại Liberty Group.\n- **Nguyễn Thị Anh Đào**:\n+ Hơn 3 năm kinh nghiệm làm việc.\n+ Vai trò Project Engineer tại AziWorld Company, giám sát tiến độ dự án và rủi ro.\nTất cả các ứng viên trên đều đáp ứng yêu cầu kinh nghiệm tối thiểu 3 năm làm việc dựa trên thông tin trong hồ sơ.\nNguồn: Tran Quoc Kiet - https://drive.google.com/file/d/1svy_RKbova6RmqrHnJDZNjjEoIwsNzR2/view?usp=drivesdk; Nguyễn Trần Minh Thịnh - https://drive.google.com/file/d/1wlUbkN3hWPNc69FMdI1wLyuXrHJnB3wd/view?usp=drivesdk; Dinh Hoang Tien - Không có link CV; Long Nguyen - https://drive.google.com/file/d/1MoQHEWlQ7-akJDLIiCH9s9qxkSjnOv0n/view?usp=drivesdk; Nguyễn Thị Anh Đào - https://drive.google.com/file/d/11rzEGDnnUrBdUcwgYjT9yOmo2rhKKbNm/view?usp=drivesdk",
+                "timestamp": 1766045590560
               },
               {
-                "id": "user_1765935962126",
+                "id": "user_1766045693535",
                 "role": "user",
-                "content": "cho tôi số điện thoại của ứng viên Giang",
-                "timestamp": 1765935962126
+                "content": "cho tôi ứng viên có 3 năm kinh nghiệm",
+                "timestamp": 1766045693535
               },
               {
-                "id": "msg_1765935973429_bf7kkkoww",
+                "id": "msg_1766045710122_tnbpk0kpf",
                 "role": "assistant",
-                "content": "**Nguyen Chau Giang** có số điện thoại liên hệ được ghi nhận trong hồ sơ:\n- Số điện thoại: (+84) 0373 075 225\n- Email: nguyenchaugiang5211@gmail.com\nThông tin này được trích dẫn trực tiếp từ phần liên hệ trong CV của ứng viên.\nNguồn: Nguyen Chau Giang - https://drive.google.com/file/d/1zeo1UTsxAKAdVvqECvmOCQ1yIMQ2ROm4/view?usp=drivesdk",
-                "timestamp": 1765935973798
+                "content": "**Danh sách ứng viên có tối thiểu 3 năm kinh nghiệm làm việc:**\n- **Nguyễn Trần Minh Thịnh**:\n+ Kinh nghiệm: Hơn 4 năm trong lĩnh vực phân tích nghiệp vụ và quản lý sản phẩm.\n+ Lý do phù hợp: Có kinh nghiệm thực tế với vai trò Business Analyst tại EPAY SERVICE, phối hợp nhóm sản phẩm theo phương pháp Agile.\n- **Tran Quoc Kiet**:\n+ Kinh nghiệm: Hơn 5 năm trong phân tích kinh doanh và công nghệ thông tin.\n+ Lý do phù hợp: Đã đảm nhiệm vị trí IT Business Analyst - Healthcare tại GKIM Digital, có kinh nghiệm đào tạo và hướng dẫn nhân viên mới.\n- **Long Nguyen**:\n+ Kinh nghiệm: Khoảng 5 năm làm Business Analyst/ Product Owner tại Liberty Group.\n+ Lý do phù hợp: Kinh nghiệm liên tục từ 12/2019 đến 11/2025, thực hiện kiểm thử nghiệm thu người dùng (UAT).\n- **Dinh Hoang Tien**:\n+ Kinh nghiệm: Hơn 7 năm trong phân tích nghiệp vụ, quản lý dự án và lãnh đạo nhóm nghiên cứu.\n+ Lý do phù hợp: Đảm nhận vai trò Product Owner và Business Analyst cho các dự án e-commerce như EcomOne và VelaOne.\n- **Trương Anh Thư**:\n+ Kinh nghiệm: Hơn 5 năm làm Business Analyst tại Tera Solutions Company và IVS Joint Stock Company.\n+ Lý do phù hợp: Tham gia kiểm thử chức năng, tổ chức demo, báo cáo sprint và dự án retail bakery management system với ứng dụng camera giám sát bán hàng.\nTất cả ứng viên trên đều đáp ứng yêu cầu tối thiểu 3 năm kinh nghiệm làm việc dựa trên thông tin trong hồ sơ.\nNguồn: Nguyễn Trần Minh Thịnh - https://drive.google.com/file/d/1wlUbkN3hWPNc69FMdI1wLyuXrHJnB3wd/view?usp=drivesdk; Tran Quoc Kiet - https://drive.google.com/file/d/1svy_RKbova6RmqrHnJDZNjjEoIwsNzR2/view?usp=drivesdk; Long Nguyen - https://drive.google.com/file/d/1MoQHEWlQ7-akJDLIiCH9s9qxkSjnOv0n/view?usp=drivesdk; Dinh Hoang Tien - Không có link CV; Trương Anh Thư - https://drive.google.com/file/d/1gYP0gA1nrlAYSjL9IT_E9emsazvmshMB",
+                "timestamp": 1766045712179
               },
               {
-                "id": "user_1765935998419",
+                "id": "user_1766045841890",
                 "role": "user",
-                "content": "Cho tôi link CV của ứng viên Giang",
-                "timestamp": 1765935998419
+                "content": "cho tôi ứng viên có 3 năm kinh nghiệm",
+                "timestamp": 1766045841890
               },
               {
-                "id": "msg_1765936008871_qg2n1tbdz",
+                "id": "msg_1766045856032_in911uspb",
                 "role": "assistant",
-                "content": "**Nguyen Chau Giang**\n- Link CV: https://drive.google.com/file/d/1zeo1UTsxAKAdVvqECvmOCQ1yIMQ2ROm4/view?usp=drivesdk\nỨng viên phù hợp với yêu cầu tìm kiếm tên Giang, có kinh nghiệm làm Product/Project Manager tại Ztech Asia (Spahub.vn) từ tháng 11/2023 đến nay.\n- Kỹ năng nổi bật: Stakeholder Management, Swagger, Draw.io.\n- Kinh nghiệm thực tế: Phối hợp các phòng ban Công nghệ, Marketing và Vận hành để cung cấp các module CRM, đặt chỗ, loyalty và trò chơi hóa.\n- Thành tích: Ra mắt nền tảng ổn định, tăng 50% DAU và tỷ lệ khách hàng quay lại 30% trong 3 tháng.\nThông tin này được trích dẫn trực tiếp từ hồ sơ ứng viên Nguyen Chau Giang.",
-                "timestamp": 1765936009293
+                "content": "**Danh sách ứng viên có ít nhất 3 năm kinh nghiệm làm việc:**\n- **Tran Quoc Kiet**:\n+ Có hơn 5 năm kinh nghiệm trong lĩnh vực phân tích kinh doanh và công nghệ thông tin.\n+ Vai trò IT Business Analyst tại GKIM Digital, với kinh nghiệm đào tạo và hướng dẫn thực tập sinh cùng nhân viên mới.\n- **Nguyễn Trần Minh Thịnh**:\n+ Hơn 4 năm kinh nghiệm làm việc trong phân tích nghiệp vụ và quản lý sản phẩm.\n+ Kinh nghiệm phối hợp nhóm sản phẩm xác định phạm vi MVP và theo dõi tiến độ theo Agile tại EPAY SERVICE.\n- **Dinh Hoang Tien**:\n+ Hơn 7 năm kinh nghiệm trong phân tích nghiệp vụ, quản lý dự án và lãnh đạo nhóm nghiên cứu.\n+ Đảm nhận vai trò Product Owner và Business Analyst cho các dự án e-commerce tại Vela Corporation.\n- **Long Nguyen**:\n+ Khoảng 5 năm kinh nghiệm làm Business Analyst và Product Owner tại Liberty Group.\n+ Thực hiện kiểm thử nghiệm thu người dùng (UAT) để đảm bảo tính năng phù hợp yêu cầu.\n- **Nguyễn Thị Anh Đào**:\n+ Hơn 3 năm kinh nghiệm làm Project Engineer tại AziWorld Company.\n+ Giám sát tiến độ dự án, rủi ro và tiến triển.\nTất cả các ứng viên trên đều đáp ứng yêu cầu về tối thiểu 3 năm kinh nghiệm làm việc, với kinh nghiệm đa dạng trong các lĩnh vực phân tích nghiệp vụ, quản lý dự án và phát triển sản phẩm.",
+                "timestamp": 1766045858182
               },
               {
-                "id": "user_1765936093897",
+                "id": "user_1766045946089",
                 "role": "user",
-                "content": "cho tôi link CV của ứng viên Le Hoang Hai Dang",
-                "timestamp": 1765936093897
+                "content": "cho tôi ứng viên có 3 năm kinh nghiệm",
+                "timestamp": 1766045946089
               },
               {
-                "id": "msg_1765936101706_hn7rfbdht",
+                "id": "msg_1766045964995_hpq80ps21",
                 "role": "assistant",
-                "content": "Sorry, I couldn't process that.",
-                "timestamp": 1765936101706
+                "content": "**Danh sách ứng viên có 3 năm kinh nghiệm làm việc trở lên:**\n- **Nguyễn Trần Minh Thịnh**:\n+ Có hơn 4 năm kinh nghiệm trong lĩnh vực phân tích nghiệp vụ và quản lý sản phẩm.\n+ Vai trò Business Analyst tại EPAY SERVICE, phối hợp nhóm sản phẩm xác định phạm vi MVP, ưu tiên backlog và theo dõi tiến độ theo phương pháp Agile.\n- **Tran Quoc Kiet**:\n+ Hơn 5 năm kinh nghiệm trong phân tích kinh doanh và công nghệ thông tin.\n+ Đảm nhận vị trí IT Business Analyst - Healthcare tại GKIM Digital, có kinh nghiệm đào tạo và hướng dẫn thực tập sinh, nhân viên mới.\n- **Dinh Hoang Tien**:\n+ Có tổng cộng hơn 7 năm kinh nghiệm trong phân tích nghiệp vụ, quản lý dự án và lãnh đạo nhóm nghiên cứu.\n+ Đảm nhận vai trò Product Owner & Business Analyst tại Vela Corporation, phụ trách các dự án e-commerce như EcomOne và VelaOne.\n- **Nguyễn Thị Anh Đào**:\n+ Hơn 3 năm kinh nghiệm làm Project Engineer tại AziWorld Company.\n+ Giám sát tiến độ dự án, rủi ro và tiến triển.\n- **Long Nguyen**:\n+ Khoảng 5 năm kinh nghiệm làm Business Analyst/ Product Owner tại Liberty Group.\n+ Thực hiện kiểm thử nghiệm thu người dùng (UAT) để xác nhận tính năng phù hợp với yêu cầu.\nTất cả các ứng viên trên đều đáp ứng yêu cầu ít nhất 3 năm kinh nghiệm làm việc trở lên, với các vai trò liên quan đến phân tích nghiệp vụ, quản lý sản phẩm, và quản lý dự án.\nNguồn: Nguyễn Trần Minh Thịnh - https://drive.google.com/file/d/1wlUbkN3hWPNc69FMdI1wLyuXrHJnB3wd/view?usp=drivesdk; Tran Quoc Kiet - https://drive.google.com/file/d/1svy_RKbova6RmqrHnJDZNjjEoIwsNzR2/view?usp=drivesdk; Dinh Hoang Tien - (không có link CV); Nguyễn Thị Anh Đào - https://drive.google.com/file/d/11rzEGDnnUrBdUcwgYjT9yOmo2rhKKbNm/view?usp=drivesdk; Long Nguyen - https://drive.google.com/file/d/1MoQHEWlQ7-akJDLIiCH9s9qxkSjnOv0n/view?usp=drivesdk",
+                "timestamp": 1766045967165
               },
               {
-                "id": "user_1765936124384",
+                "id": "user_1766046057547",
                 "role": "user",
-                "content": "cho tôi link CV của ứng viên LE HOANG HAI DANG",
-                "timestamp": 1765936124384
+                "content": "cho tôi ứng viên có kĩ năng AI",
+                "timestamp": 1766046057547
               },
               {
-                "id": "msg_1765936132456_msz3bic0n",
+                "id": "msg_1766046069275_617q9vc0j",
                 "role": "assistant",
-                "content": "Sorry, I couldn't process that.",
-                "timestamp": 1765936132456
+                "content": "Sorry, I couldn't process that. (No valid answer field found)",
+                "timestamp": 1766046069275
               },
               {
-                "id": "user_1765936229898",
+                "id": "user_1766046088409",
                 "role": "user",
-                "content": "cho tôi link CV của ứng viên Le Quang Hai Dang",
-                "timestamp": 1765936229898
+                "content": "cho tôi ứng viên có kĩ năng LLM",
+                "timestamp": 1766046088409
               },
               {
-                "id": "msg_1765936239763_lgm3096rx",
+                "id": "msg_1766046108616_c1s29pxaa",
                 "role": "assistant",
-                "content": "**Lê Quang Hải Đăng**:\n- Link CV: https://drive.google.com/file/d/1uovx53KwaAoq7jHFEeBGnywa-6tuyEC9/view?usp=drivesdk\n- Ứng viên có kinh nghiệm thực tế ở vị trí Data Engineer tại Orthian từ tháng 8/2023 đến 6/2024, tham gia dự án cuối khóa đại học với vai trò toàn thời gian.\n- Kỹ năng chính bao gồm Excel và SQL, phù hợp với vai trò liên quan đến dữ liệu.\n- Đã hoàn thành chứng chỉ IBM Data Science Professional Certificate từ Coursera, thể hiện sự đầu tư vào phát triển chuyên môn trong lĩnh vực khoa học dữ liệu.\nNguồn thông tin dựa trên hồ sơ của ứng viên và link CV được cung cấp.",
-                "timestamp": 1765936240172
+                "content": "Sorry, I couldn't process that. (No valid answer field found)",
+                "timestamp": 1766046108616
               },
               {
-                "id": "user_1765936301577",
+                "id": "user_1766046540035",
                 "role": "user",
-                "content": "cho tôi link CV của ứng viên Nguyen Chau Giang",
-                "timestamp": 1765936301577
+                "content": "cho tôi ứng viên có kĩ năng Machine Learning",
+                "timestamp": 1766046540035
               },
               {
-                "id": "msg_1765936308211_13az3my9i",
+                "id": "msg_1766046547139_0rtm5xe92",
                 "role": "assistant",
-                "content": "Sorry, I couldn't process that.",
-                "timestamp": 1765936308211
+                "content": "Sorry, I couldn't process that. (No valid answer field found)",
+                "timestamp": 1766046547139
               },
               {
-                "id": "user_1765937829121",
+                "id": "user_1766046637873",
                 "role": "user",
-                "content": "cho tôi link CV của ứng viên Nguyen Chau Giang",
-                "timestamp": 1765937829121
+                "content": "cho tôi ứng viên có kĩ năng Machine Learning",
+                "timestamp": 1766046637873
               },
               {
-                "id": "msg_1765937839633_lyw22idqc",
+                "id": "msg_1766046648659_o3mcmez39",
                 "role": "assistant",
-                "content": "**Nguyen Chau Giang** là ứng viên phù hợp được tìm thấy với thông tin chi tiết như sau:\n- Ứng viên hiện đang giữ vị trí Product/Project Manager tại Ztech Asia (Spahub.vn) từ tháng 11/2023 đến nay.\n- Có kinh nghiệm phối hợp với các phòng ban Công nghệ, Marketing và Vận hành để phát triển các module CRM, đặt chỗ, loyalty và trò chơi hóa.\n- Đã góp phần ra mắt nền tảng ổn định với kết quả tăng 50% DAU và tỷ lệ khách hàng quay lại 30% trong 3 tháng.\n- Sở hữu các kỹ năng liên quan như Stakeholder Management, Swagger và Draw.io.\nLink CV của ứng viên: https://drive.google.com/file/d/1zeo1UTsxAKAdVvqECvmOCQ1yIMQ2ROm4/view?usp=drivesdk",
-                "timestamp": 1765937839997
+                "content": "**Danh sách ứng viên có kỹ năng Machine Learning phù hợp:**\n- **Pham Anh Tuan**:\n+ Kỹ năng chính bao gồm Machine Learning, Neural Network, Python, R language, SQL, PowerBI, AWS.\n+ Có kiến thức chuyên sâu về các thuật toán và công cụ liên quan đến Machine Learning như Neural Network và ARIMA.\n+ Kinh nghiệm làm việc với Data Engineering và Project Management, cho thấy khả năng ứng dụng Machine Learning trong dự án thực tế.\n- **Lê Quang Hải Đăng**:\n+ Thành thạo Machine Learning cùng với các ngôn ngữ lập trình Python và C++.\n+ Kinh nghiệm sử dụng các nền tảng điện toán đám mây như IBM Cloud Pak for Data và Google Cloud Platform hỗ trợ triển khai Machine Learning.\n+ Có kỹ năng về SQL, Sparks, Git và Power BI, hỗ trợ tốt cho việc xử lý dữ liệu và phân tích.\nCả hai ứng viên đều có kỹ năng Machine Learning rõ ràng và các công cụ liên quan được liệt kê trong hồ sơ. Tuy nhiên, Pham Anh Tuan có thêm kinh nghiệm về Neural Network và Data Engineering, trong khi Lê Quang Hải Đăng có thế mạnh về lập trình và nền tảng đám mây.\nNguồn thông tin được trích dẫn trực tiếp từ hồ sơ ứng viên.",
+                "timestamp": 1766046650843
+              },
+              {
+                "id": "user_1766046708510",
+                "role": "user",
+                "content": "cho tôi ứng viên có kĩ năng LLM",
+                "timestamp": 1766046708510
+              },
+              {
+                "id": "msg_1766046716257_jk5ux906g",
+                "role": "assistant",
+                "content": "**Ứng viên phù hợp với kỹ năng LLM:**\n- **Lê Quang Hải Đăng**:\n+ Điểm mạnh: Có kinh nghiệm hỗ trợ tạo mô hình ngôn ngữ lớn (LLM) cho AI, thể hiện sự hiểu biết và thực hành liên quan trực tiếp đến kỹ năng LLM.\n+ Kinh nghiệm: Hơn 1 năm kinh nghiệm làm Data Engineer tại Orthian, trong đó có công việc liên quan đến LLM.\nỨng viên này phù hợp vì có kỹ năng và kinh nghiệm được ghi rõ về LLM, dù tổng kinh nghiệm chưa nhiều nhưng có liên quan trực tiếp đến yêu cầu tuyển dụng.",
+                "timestamp": 1766046718446
+              },
+              {
+                "id": "user_1766046896295",
+                "role": "user",
+                "content": "cho tôi ứng viên có kĩ năng Machine Learning",
+                "timestamp": 1766046896295
+              },
+              {
+                "id": "msg_1766046908766_lxwrdpxnp",
+                "role": "assistant",
+                "content": "**Danh sách ứng viên có kỹ năng Machine Learning phù hợp:**\n- **Pham Anh Tuan**:\n+ Kỹ năng chính: Machine Learning, Neural Network, Python, R language, AWS, Data Engineering.\n+ Điểm mạnh: Thành thạo các kỹ thuật Machine Learning và Neural Network, sử dụng Python và R language cho phân tích dữ liệu.\n+ Có kinh nghiệm với các công cụ và ngôn ngữ hỗ trợ Machine Learning như SQL, PowerBI, AWS.\n- **Lê Quang Hải Đăng**:\n+ Kỹ năng chính: Machine Learning, Python, C++, SQL, Google Cloud Platform, IBM Cloud Pak for Data.\n+ Điểm mạnh: Kinh nghiệm sử dụng nhiều ngôn ngữ lập trình và nền tảng đám mây hỗ trợ Machine Learning.\n+ Sử dụng công cụ quản lý dự án Jira và công cụ phân tích dữ liệu Power BI, Excel.\nCả hai ứng viên đều có kỹ năng Machine Learning rõ ràng trong hồ sơ và sử dụng các công nghệ hỗ trợ mạnh mẽ. Pham Anh Tuan có lợi thế về kỹ năng Neural Network và R language, trong khi Lê Quang Hải Đăng có kinh nghiệm đa dạng về lập trình và nền tảng đám mây.\nNguồn: Pham Anh Tuan - https://drive.google.com/file/d/1kF_KK-7Wzm9sJ7YT_pOzSSwF1heqFwSK/view?usp=drivesdk; Lê Quang Hải Đăng - https://drive.google.com/file/d/1wxExDRL8H-6MCE3yYx6OaQuk4KCRWhnm/view?usp=drivesdk",
+                "timestamp": 1766046910943
+              },
+              {
+                "id": "user_1766047307893",
+                "role": "user",
+                "content": "cho tôi ứng viên có kĩ năng Machine Learning",
+                "timestamp": 1766047307893
+              },
+              {
+                "id": "msg_1766047317752_saat92rlx",
+                "role": "assistant",
+                "content": "**Pham Anh Tuan**:\n- Có kỹ năng Machine Learning rõ ràng, cùng với Neural Network, Fourier, ARIMA, Python và AWS, thể hiện năng lực phân tích và triển khai các mô hình học máy.\n- Kinh nghiệm liên quan đến Data Engineering và Project Management hỗ trợ việc ứng dụng Machine Learning trong môi trường thực tế.\n**Lê Quang Hải Đăng**:\n- Sở hữu kỹ năng Machine Learning cùng với Python, C++, Sparks, và các nền tảng đám mây như IBM Cloud Pak for Data, Google Cloud Platform, phù hợp cho các dự án Machine Learning quy mô lớn.\n- Kỹ năng bổ trợ như SQL, Git, Jira giúp quản lý và phát triển dự án hiệu quả.\nCả hai ứng viên đều có kỹ năng Machine Learning được nêu rõ trong hồ sơ, phù hợp với yêu cầu tuyển dụng.\nNguồn: Pham Anh Tuan - https://drive.google.com/file/d/1kF_KK-7Wzm9sJ7YT_pOzSSwF1heqFwSK/view?usp=drivesdk; Lê Quang Hải Đăng - https://drive.google.com/file/d/1wxExDRL8H-6MCE3yYx6OaQuk4KCRWhnm/view?usp=drivesdk",
+                "timestamp": 1766047319918
+              },
+              {
+                "id": "user_1766047520691",
+                "role": "user",
+                "content": "cho tôi ứng viên có kĩ năng Machine Learning",
+                "timestamp": 1766047520691
+              },
+              {
+                "id": "msg_1766047532859_fbdn7m4a5",
+                "role": "assistant",
+                "content": "**Pham Anh Tuan**:\n- Có kỹ năng Machine Learning cùng Neural Network, Fourier, ARIMA, Python, R language, AWS, và Data Engineering, thể hiện sự thành thạo trong lĩnh vực học máy và xử lý dữ liệu.\n**Lê Quang Hải Đăng**:\n- Sở hữu kỹ năng Machine Learning cùng Python, C++, SQL, Sparks, Git, và sử dụng các nền tảng IBM Cloud Pak for Data, Google Cloud Platform, cho thấy kinh nghiệm thực tế trong phát triển và triển khai các giải pháp học máy trên nền tảng đám mây.\nCả hai ứng viên đều có kỹ năng Machine Learning rõ ràng và các công nghệ hỗ trợ liên quan, phù hợp với yêu cầu tuyển dụng về kỹ năng này.\nNguồn: Pham Anh Tuan - https://drive.google.com/file/d/1kF_KK-7Wzm9sJ7YT_pOzSSwF1heqFwSK/view?usp=drivesdk; Lê Quang Hải Đăng - https://drive.google.com/file/d/1wxExDRL8H-6MCE3yYx6OaQuk4KCRWhnm/view?usp=drivesdk",
+                "timestamp": 1766047535012
               }
             ]
           },
@@ -752,7 +789,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "ae9a86cb-ae27-444a-9d57-e718d8d408c5",
+  "versionId": "42796b23-e6e5-4ad0-accd-d7dd10367d6b",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "df174d571e95541c805919aa88d99c6ff9e79e2c1ffc42837bb92614d24bb4eb"

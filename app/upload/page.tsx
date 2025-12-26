@@ -6,21 +6,22 @@ import { useRouter } from "next/navigation"
 import { Candidate } from "@/types"
 
 export default function UploadPage() {
-    const { setCandidates } = useCandidates()
+    const { candidates, setCandidates, setSortConfig } = useCandidates()
     const router = useRouter()
 
     const handleAnalysisComplete = (newCandidates: Candidate[]) => {
-        setCandidates(newCandidates)
+        setCandidates([...candidates, ...newCandidates])
+        setSortConfig({ column: 'score', direction: 'desc' })
         // Redirect to Leaderboard after successful upload
         router.push('/leaderboard')
     }
 
     return (
-        <div className="container mx-auto py-10 space-y-8 max-w-4xl">
+        <div className="container mx-auto py-10 space-y-8 max-w-6xl">
             <div className="space-y-4 text-center">
-                <h1 className="text-3xl font-bold tracking-tight">Upload JD & CV</h1>
+                <h1 className="text-3xl font-bold tracking-tight">Tải lên JD & Hồ sơ</h1>
                 <p className="text-muted-foreground">
-                    Upload Job Description and Candidate CVs to start analysis.
+                    Cung cấp Mô tả công việc (JD) và CV ứng viên để bắt đầu phân tích.
                 </p>
             </div>
 

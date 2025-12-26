@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { CandidateProvider } from "@/components/candidate-context";
 import { SiteHeader } from "@/components/site-header";
 import { ChatWidget } from "@/components/chat-widget";
+import { ChatProvider } from "@/components/chat-context";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -20,7 +21,7 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TalentIQ - AI Recruitment Dashboard",
+  title: "RecruitPRO - AI Recruitment Dashboard",
   description: "AI-powered Applicant Tracking System",
 };
 
@@ -30,17 +31,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${inter.variable} ${robotoMono.variable} antialiased`}
       >
         <CandidateProvider>
-          <SiteHeader />
-          <main className="min-h-[calc(100vh-3.5rem)]">
-            {children}
-          </main>
-          <ChatWidget />
-          <Toaster />
+          <ChatProvider>
+            <SiteHeader />
+            <main className="min-h-[calc(100vh-3.5rem)]">
+              {children}
+            </main>
+            <ChatWidget />
+            <Toaster />
+          </ChatProvider>
         </CandidateProvider>
       </body>
     </html>
