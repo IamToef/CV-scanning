@@ -513,8 +513,7 @@ ${jdText}
         }
 
         const data = await res.json();
-
-
+        console.log("N8N JD Extraction Response:", JSON.stringify(data, null, 2));
 
         let result: JDAnalysisResult = { raw_text: "" };
         const item = Array.isArray(data) ? data[0] : data;
@@ -553,10 +552,73 @@ ${jdText}
             }
         }
 
-        // Mock fallback if logic failed but we are in mock mode? No, handled above.
+        // Specific mapping for the new JSON format (User Request)
+        // Format: [{ "Kỹ năng kỹ thuật": [], "Số năm kinh nghiệm": [], "education": [], "soft_skills": [] }]
+        const itemObj = Array.isArray(data) ? data[0] : data;
+
+        if (itemObj) {
+            const rawObj = itemObj.output || itemObj.json || itemObj; // simplified access
+
+            // flexible check for any of the known keys
+            if (rawObj && (rawObj['Kỹ năng kỹ thuật'] || rawObj['technical_skills'] || rawObj['Kinh nghiệm'] || rawObj['education'])) {
+                const rawExp = rawObj['Số năm kinh nghiệm'] || rawObj['Kinh nghiệm'] || rawObj['experience'] || [];
+                const rawEdu = rawObj['education'] || rawObj['Học vấn'] || [];
+                const rawTech = rawObj['Kỹ năng kỹ thuật'] || rawObj['technical_skills'] || [];
+                const rawSoft = rawObj['soft_skills'] || rawObj['Kỹ năng mềm'] || [];
+
+                // Parse Years from text "Từ 2 đến 3 năm..."
+                let minYears = 0;
+                if (Array.isArray(rawExp) && rawExp.length > 0) {
+                    const match = rawExp[0].match(/(\d+)/);
+                    if (match) minYears = parseInt(match[1]);
+                }
+
+                result.job_requirements = {
+                    technical_skills: rawTech,
+                    soft_skills: rawSoft,
+                    years_of_experience: {
+                        min_years: minYears,
+                        description: Array.isArray(rawExp) ? rawExp.join('\n') : String(rawExp)
+                    },
+                    education: {
+                        degree_level: "",
+                        major: Array.isArray(rawEdu) ? rawEdu.join('\n') : String(rawEdu),
+                        certifications: [] // We merge all into major for list display
+                    }
+                };
+            }
+
+            // Sanity Check / Post-Processing to recover from "Values as Keys" hallucination
+            // Example: { "Figma": [], "React": [], "technical_skills": [] }
+            if (result.job_requirements) {
+                const jr = result.job_requirements;
+                const raw = (itemObj && (itemObj.output || itemObj.json || itemObj)) || {};
+
+                // 1. Recover Technical Skills from Keys
+                if ((!jr.technical_skills || jr.technical_skills.length === 0) && typeof raw === 'object') {
+                    // Filter keys that look like skills (not standard fields)
+                    const potentialSkills = Object.keys(raw).filter(k =>
+                        !['technical_skills', 'soft_skills', 'years_of_experience', 'education', 'job_requirements', 'output', 'json'].includes(k) &&
+                        !k.startsWith('Kỹ năng') &&
+                        !k.startsWith('Số năm') &&
+                        !k.match(/experience|education|skill|requirements/i) &&
+                        k.length < 50 && // Skip long sentences
+                        Array.isArray(raw[k]) && raw[k].length === 0 // Check if value is empty array (common in this hallucination)
+                    );
+
+                    if (potentialSkills.length > 0) {
+                        jr.technical_skills = potentialSkills;
+                    }
+                }
+
+                // 2. Ensure Arrays
+                if (!Array.isArray(jr.technical_skills)) jr.technical_skills = [];
+                if (!Array.isArray(jr.soft_skills)) jr.soft_skills = [];
+            }
+
+        }
 
         return result;
-
     } catch (error) {
         console.error("Failed to extract requirements:", error);
         throw error;

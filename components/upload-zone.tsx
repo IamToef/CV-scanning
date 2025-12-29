@@ -399,10 +399,10 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
                                 </div>
 
                                 <div className="flex gap-2 pt-2">
-                                    <Button variant="outline" size="sm" className="w-full" onClick={() => setIsEditingCriteria(false)}>
+                                    <Button variant="outline" size="sm" className="flex-1" onClick={() => setIsEditingCriteria(false)}>
                                         <X className="h-4 w-4 mr-1" /> Hủy
                                     </Button>
-                                    <Button size="sm" className="w-full" onClick={() => {
+                                    <Button size="sm" className="flex-1" onClick={() => {
                                         setJobRequirements(editForm);
                                         // Force update JD string to new structured format for API consistency
                                         setJd(JSON.stringify(editForm, null, 2));
@@ -425,13 +425,14 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
                                             <Code2 className="h-4 w-4" />
                                             <span>Kỹ năng chuyên môn</span>
                                         </div>
-                                        <div className="flex flex-wrap gap-1.5">
+                                        <ul className="space-y-1.5 pl-1">
                                             {jobRequirements.technical_skills.map((skill, i) => (
-                                                <Badge key={i} variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200 whitespace-normal h-auto text-left leading-snug py-1.5 max-w-full">
-                                                    {skill}
-                                                </Badge>
+                                                <li key={i} className="text-sm text-foreground/90 flex items-start gap-2">
+                                                    <div className="h-1.5 w-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                                                    <span className="leading-snug">{skill}</span>
+                                                </li>
                                             ))}
-                                        </div>
+                                        </ul>
                                     </div>
                                 )}
 
@@ -444,10 +445,17 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
                                             <Briefcase className="h-4 w-4" />
                                             <span>Kinh nghiệm</span>
                                         </div>
-                                        <p className="text-sm text-foreground/80 pl-6">
-                                            {jobRequirements.years_of_experience.min_years ? `${jobRequirements.years_of_experience.min_years} năm - ` : ''}
-                                            {jobRequirements.years_of_experience.description}
-                                        </p>
+                                        <div className="pl-6 text-sm text-foreground/80 leading-relaxed">
+                                            {jobRequirements.years_of_experience.description.includes('\n') ? (
+                                                <ul className="list-disc pl-4 mt-1 space-y-1">
+                                                    {jobRequirements.years_of_experience.description.split('\n').map((line, i) => (
+                                                        <li key={i}>{line}</li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <span>{jobRequirements.years_of_experience.description}</span>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
 
@@ -460,8 +468,18 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
                                             <GraduationCap className="h-4 w-4" />
                                             <span>Học vấn</span>
                                         </div>
-                                        <div className="pl-6 text-sm text-foreground/80">
-                                            <p>{jobRequirements.education.degree_level} - {jobRequirements.education.major}</p>
+                                        <div className="pl-6 text-sm text-foreground/80 leading-relaxed">
+                                            {jobRequirements.education.degree_level && <p className="font-medium">{jobRequirements.education.degree_level}</p>}
+                                            {jobRequirements.education.major.includes('\n') ? (
+                                                <ul className="list-disc pl-4 mt-1 space-y-1">
+                                                    {jobRequirements.education.major.split('\n').map((line, i) => (
+                                                        <li key={i}>{line}</li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <p>{jobRequirements.education.major}</p>
+                                            )}
+
                                             {jobRequirements.education.certifications?.length > 0 && (
                                                 <p className="text-xs text-muted-foreground mt-1">
                                                     CC: {jobRequirements.education.certifications.join(', ')}
@@ -480,13 +498,14 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
                                             <Users className="h-4 w-4" />
                                             <span>Kỹ năng mềm</span>
                                         </div>
-                                        <div className="flex flex-wrap gap-1.5">
+                                        <ul className="space-y-1.5 pl-1">
                                             {jobRequirements.soft_skills.map((skill, i) => (
-                                                <Badge key={i} variant="outline" className="border-primary/20 text-muted-foreground whitespace-normal h-auto text-left leading-snug py-1.5 max-w-full">
-                                                    {skill}
-                                                </Badge>
+                                                <li key={i} className="text-sm text-foreground/90 flex items-start gap-2">
+                                                    <div className="h-1.5 w-1.5 rounded-full bg-green-500 mt-1.5 shrink-0" />
+                                                    <span className="leading-snug">{skill}</span>
+                                                </li>
                                             ))}
-                                        </div>
+                                        </ul>
                                     </div>
                                 )}
                             </div>
@@ -505,11 +524,13 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
                             <p className="text-sm text-muted-foreground italic">Chưa trích xuất được tiêu chí cụ thể.</p>
                         )}
 
-                        <div className="pt-4 border-t border-primary/10">
-                            <p className="text-xs text-muted-foreground line-clamp-4">
-                                {jd}
-                            </p>
-                        </div>
+                        {!jobRequirements && (
+                            <div className="pt-4 border-t border-primary/10">
+                                <p className="text-xs text-muted-foreground line-clamp-4">
+                                    {jd}
+                                </p>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>
