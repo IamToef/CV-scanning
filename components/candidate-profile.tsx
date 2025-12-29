@@ -29,6 +29,7 @@ import { Progress } from "@/components/ui/progress"
 import { Brain, Star, AlertTriangle, GraduationCap, Briefcase, User, Phone, Mail, MessageSquare } from "lucide-react"
 import { useCandidates } from "@/components/candidate-context"
 import { useState } from "react"
+import { cn } from "@/lib/utils"
 
 interface CandidateProfileProps {
     candidate: Candidate
@@ -111,117 +112,95 @@ export function CandidateProfile({ candidate, children }: CandidateProfileProps)
 
                 <div className="flex-1 overflow-y-auto p-6 pt-0">
                     <div className="space-y-8 pr-4">
-                        {/* Main Score & Status Section */}
-                        <div className="p-6 rounded-xl border bg-card text-card-foreground shadow-sm space-y-4 mt-2">
-                            <div className="flex items-end justify-between">
-                                <div>
-                                    <h3 className="font-semibold text-lg text-foreground">Số điểm phù hợp</h3>
-                                    <p className="text-sm text-muted-foreground">Điểm tổng mức độ phù hợp cho công việc</p>
-                                </div>
-                                <div className="text-right">
-                                    <span className={`text-4xl font-extrabold ${candidate.score >= 80 ? 'bg-gradient-to-r from-purple-600 via-pink-500 to-orange-500 bg-clip-text text-transparent' : candidate.score >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                        {candidate.score}
-                                    </span>
-                                    <span className="text-lg text-muted-foreground font-medium">/100</span>
-                                </div>
+                        {/* Main Score & Status Section - Refactored */}
+                        <div className="p-6 rounded-xl border bg-card text-card-foreground shadow-sm mt-2 flex items-center justify-between">
+                            <div>
+                                <h3 className="font-semibold text-lg text-foreground">Số điểm phù hợp</h3>
+                                <p className="text-sm text-muted-foreground mt-1">Điểm tổng mức độ phù hợp cho công việc</p>
                             </div>
 
-                            <div className="space-y-2">
-                                <Progress value={candidate.score} className="h-4 rounded-full" indicatorClassName={getScoreColor(candidate.score)} />
-                                {candidate.match_level && (
-                                    <div className="flex justify-end">
-                                        <span className="text-sm font-medium text-muted-foreground">Mức độ: <span className="text-foreground">{candidate.match_level}</span></span>
-                                    </div>
-                                )}
+                            {/* Score Box */}
+                            <div className={cn(
+                                "rounded-2xl h-24 w-24 flex flex-col items-center justify-center",
+                                candidate.score >= 80 ? "bg-green-100 text-green-700" :
+                                    candidate.score >= 50 ? "bg-yellow-100 text-yellow-700" :
+                                        "bg-red-100 text-red-700"
+                            )}>
+                                <span className="text-4xl font-bold tracking-tight">
+                                    {candidate.score}
+                                </span>
+                                <span className="text-[10px] font-extrabold uppercase mt-1">
+                                    ĐIỂM
+                                </span>
                             </div>
                         </div>
 
-                        {/* Detailed Reasoning Scores */}
-                        {candidate.reasoning && (
-                            <div className="space-y-4">
-                                <h3 className="font-bold text-xl flex items-center gap-2 text-foreground">
-                                    <Brain className="h-5 w-5 text-purple-600" /> Đánh giá chi tiết
-                                </h3>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                    {[
-                                        { label: 'Kinh nghiệm', value: candidate.reasoning.experience_score },
-                                        { label: 'Kỹ năng', value: candidate.reasoning.skills_score },
-                                        { label: 'Học vấn', value: candidate.reasoning.education_score },
-                                        { label: 'Tiềm năng', value: candidate.reasoning.potential_score }
-                                    ].map((item, i) => (
-                                        <div key={i} className="flex flex-col items-center justify-between p-4 rounded-lg bg-muted/40 border hover:bg-muted/60 transition-colors h-[110px]">
-                                            <div className="text-sm text-muted-foreground font-medium text-center flex items-center justify-center leading-tight px-1 w-full whitespace-nowrap">
-                                                {item.label}
-                                            </div>
-                                            <span className="text-3xl font-extrabold tracking-tight text-foreground">{item.value || '-'}</span>
-                                        </div>
-                                    ))}
-                                </div>
+                        {/* Summary - Moved to Top */}
+                        <div className="space-y-4">
+                            <h3 className="font-bold text-xl flex items-center gap-2 text-foreground">
+                                <Briefcase className="h-5 w-5 text-purple-600" /> Tóm tắt
+                            </h3>
+                            <div className="text-base text-slate-600 leading-7 whitespace-pre-wrap bg-purple-50/30 p-5 rounded-xl border-l-4 border-purple-500 shadow-sm">
+                                {candidate.summary}
                             </div>
-                        )}
+                        </div>
 
-                        {/* Analysis Grid: Risk vs Reward */}
-
-
-                        {/* Pros & Cons Section */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                            {/* Pros */}
-                            {(candidate.pros?.length ? candidate.pros : candidate.strengths)?.length > 0 && (
-                                <div className="p-5 rounded-xl border border-green-100 bg-green-50/50 space-y-3">
+                        {/* 3-Column Layout: Pros | Cons | Skills */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {/* Column 1: Pros */}
+                            <div className="flex flex-col h-full space-y-3">
+                                <div className="p-5 rounded-xl border border-green-100 bg-green-50/50 space-y-3 flex-1">
                                     <div className="flex items-center gap-2 text-green-700 font-bold text-lg">
                                         <Star className="h-5 w-5" /> Ưu điểm
                                     </div>
                                     <ul className="list-disc list-outside ml-4 space-y-3">
-                                        {(candidate.pros?.length ? candidate.pros : candidate.strengths).map((item, i) => (
-                                            <li key={i} className="text-sm text-foreground/80 leading-relaxed pl-1">{item}</li>
-                                        ))}
+                                        {(candidate.pros?.length ? candidate.pros : candidate.strengths)?.length > 0 ? (
+                                            (candidate.pros?.length ? candidate.pros : candidate.strengths).map((item, i) => (
+                                                <li key={i} className="text-sm text-foreground/80 leading-relaxed pl-1">{item}</li>
+                                            ))
+                                        ) : (
+                                            <li className="text-sm text-muted-foreground italic list-none">Chưa có thông tin</li>
+                                        )}
                                     </ul>
                                 </div>
-                            )}
+                            </div>
 
-                            {/* Cons */}
-                            {(candidate.cons?.length ? candidate.cons : candidate.weaknesses)?.length > 0 && (
-                                <div className="p-5 rounded-xl border border-red-100 bg-red-50/50 space-y-3">
+                            {/* Column 2: Cons */}
+                            <div className="flex flex-col h-full space-y-3">
+                                <div className="p-5 rounded-xl border border-red-100 bg-red-50/50 space-y-3 flex-1">
                                     <div className="flex items-center gap-2 text-red-700 font-bold text-lg">
                                         <AlertTriangle className="h-5 w-5" /> Nhược điểm
                                     </div>
                                     <ul className="list-disc list-outside ml-4 space-y-3">
-                                        {(candidate.cons?.length ? candidate.cons : candidate.weaknesses).map((item, i) => (
-                                            <li key={i} className="text-sm text-foreground/80 leading-relaxed pl-1">{item}</li>
-                                        ))}
+                                        {(candidate.cons?.length ? candidate.cons : candidate.weaknesses)?.length > 0 ? (
+                                            (candidate.cons?.length ? candidate.cons : candidate.weaknesses).map((item, i) => (
+                                                <li key={i} className="text-sm text-foreground/80 leading-relaxed pl-1">{item}</li>
+                                            ))
+                                        ) : (
+                                            <li className="text-sm text-muted-foreground italic list-none">Chưa có thông tin</li>
+                                        )}
                                     </ul>
                                 </div>
-                            )}
-                        </div>
-
-                        <Separator />
-
-                        {/* Skills Section */}
-                        {candidate.skills_found && candidate.skills_found.length > 0 && (
-                            <div className="space-y-4">
-                                <h3 className="font-bold text-xl flex items-center gap-2 text-foreground">
-                                    <GraduationCap className="h-5 w-5 text-pink-600" /> Kỹ năng nổi bật
-                                </h3>
-                                <div className="flex flex-wrap gap-2">
-                                    {candidate.skills_found.map((skill, index) => (
-                                        <Badge key={index} variant="secondary" className="bg-pink-50 text-pink-700 hover:bg-pink-100 border-pink-100">
-                                            {skill}
-                                        </Badge>
-                                    ))}
-                                </div>
                             </div>
-                        )}
 
-                        <Separator />
-
-                        {/* Summary */}
-                        <div className="space-y-4">
-                            <h3 className="font-bold text-xl flex items-center gap-2 text-foreground">
-                                <Briefcase className="h-5 w-5 text-orange-500" /> Tóm tắt
-                            </h3>
-                            {/* Increased to text-base for better readability */}
-                            <div className="text-base text-slate-600 leading-7 whitespace-pre-wrap bg-purple-50/30 p-4 rounded-lg border-l-4 border-purple-500">
-                                {candidate.summary}
+                            {/* Column 3: Skills - Moved here */}
+                            <div className="flex flex-col h-full space-y-3">
+                                <div className="p-5 rounded-xl border border-pink-100 bg-pink-50/30 space-y-3 flex-1">
+                                    <div className="flex items-center gap-2 text-pink-700 font-bold text-lg">
+                                        <GraduationCap className="h-5 w-5" /> Kỹ năng nổi bật
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {candidate.skills_found && candidate.skills_found.length > 0 ? (
+                                            candidate.skills_found.map((skill, index) => (
+                                                <Badge key={index} variant="secondary" className="bg-white text-pink-700 hover:bg-pink-100 border border-pink-200 shadow-sm py-1.5 px-3">
+                                                    {skill}
+                                                </Badge>
+                                            ))
+                                        ) : (
+                                            <span className="text-sm text-muted-foreground italic">Chưa có thông tin kỹ năng</span>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

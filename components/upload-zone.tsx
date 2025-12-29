@@ -5,12 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useCandidates } from "@/components/candidate-context"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
-import { Upload, FileText, Loader2, CloudUpload, FileType, CheckCircle2, X, ArrowRight, Sparkles, Edit2 } from "lucide-react"
+import { Upload, FileText, Loader2, CloudUpload, FileType, CheckCircle2, X, ArrowRight, Sparkles, Edit2, Briefcase, GraduationCap, Code2, Users, Save } from "lucide-react"
 import { toast } from "sonner"
 import { uploadJDAndCVs, extractRequirementsFromJD } from "@/lib/api"
-import { Candidate } from "@/types"
+import { Candidate, JobRequirements } from "@/types"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+
+import { Input } from "@/components/ui/input"
 
 interface UploadZoneProps {
     onAnalysisComplete: (candidates: Candidate[]) => void
@@ -22,11 +25,22 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
     const [isUploading, setIsUploading] = useState(false)
     const [isExtracting, setIsExtracting] = useState(false)
     const [extractedRequirements, setExtractedRequirements] = useState<string[]>([])
+    const [jobRequirements, setJobRequirements] = useState<JobRequirements | null>(null)
+    const [selectedJDFile, setSelectedJDFile] = useState<File | null>(null) // New state for manual confirm
     const [step, setStep] = useState<'jd' | 'cv'>('jd') // Progressive Disclosure
 
     // Drag States
     const [isDraggingJD, setIsDraggingJD] = useState(false)
     const [isDraggingCV, setIsDraggingCV] = useState(false)
+    // Edit States
+    const [isEditingCriteria, setIsEditingCriteria] = useState(false)
+    const [editForm, setEditForm] = useState<JobRequirements>({
+        technical_skills: [],
+        soft_skills: [],
+        years_of_experience: { min_years: 0, description: "" },
+        education: { degree_level: "", major: "", certifications: [] }
+    })
+
     const [activeTab, setActiveTab] = useState("file")
 
     const jdInputRef = useRef<HTMLInputElement>(null)
@@ -62,7 +76,7 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
                 toast.success("Đã đọc xong JD!", { id: toastId })
 
                 // Auto-extract logic
-                analyzeRequirements(data.text);
+                await analyzeRequirements(data.text);
             } else {
                 throw new Error("No text found in file")
             }
@@ -77,10 +91,25 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
     const analyzeRequirements = async (text: string) => {
         const toastId = toast.loading("AI đang phân tích yêu cầu công việc...");
         try {
-            const extractedText = await extractRequirementsFromJD(text);
-            if (extractedText) {
+            const result = await extractRequirementsFromJD(text);
+
+            // Handle Structured Data
+            if (result.job_requirements) {
+                setJobRequirements(result.job_requirements);
+                setJd(JSON.stringify(result.job_requirements, null, 2)); // Save structured JSON as JD text for API consistency? Or keep raw Text?
+                // Ideally keep raw text OR meaningful summary for the CV matching prompt.
+                // For now, let's keep the raw text if available in result, or fall back to the stringified requirements
+                if (result.raw_text) setJd(result.raw_text);
+
+                toast.success("Phân tích hoàn tất!", { id: toastId });
+                setStep('cv');
+                return;
+            }
+
+            // Fallback: Old String Summary
+            if (result.summary) {
                 // Heuristic parsing of the bullets for the badge display
-                const reqs = extractedText.split('\n')
+                const reqs = result.summary.split('\n')
                     .map(line => line.trim())
                     .filter(line => line.startsWith('-') || line.startsWith('•') || line.match(/^\d+\./))
                     .map(line => line.replace(/^[-•\d.]+\s*/, ''))
@@ -88,11 +117,9 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
                     .slice(0, 6); // Take top 6
 
                 setExtractedRequirements(reqs);
-                setJd(extractedText); // Update JD with the structured version if desired, or keep original? 
-                // Usually keeping the structured one is better for the prompting later.
-
+                setJd(result.summary);
                 toast.success("Phân tích hoàn tất!", { id: toastId });
-                setStep('cv'); // Auto-advance
+                setStep('cv');
             }
         } catch (error) {
             console.error(error);
@@ -103,7 +130,7 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
 
     const handleJDFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
-            processJDFile(e.target.files[0])
+            setSelectedJDFile(e.target.files[0])
             e.target.value = ''
         }
     }
@@ -125,7 +152,7 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
 
         if (e.type === 'drop' && e.dataTransfer.files) {
             const files = Array.from(e.dataTransfer.files);
-            if (type === 'jd' && files[0]) processJDFile(files[0]);
+            if (type === 'jd' && files[0]) setSelectedJDFile(files[0]); // Change to set state
             if (type === 'cv') {
                 const valid = files.filter(f => f.name.toLowerCase().endsWith('.pdf'));
                 if (valid.length > 0) {
@@ -187,7 +214,7 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
                                     onDragOver={(e) => handleDrag(e, setIsDraggingJD, () => { }, 'jd')}
                                     onDragLeave={(e) => handleDrag(e, setIsDraggingJD, () => { }, 'jd')}
                                     onDrop={(e) => handleDrag(e, setIsDraggingJD, () => { }, 'jd')}
-                                    onClick={() => jdInputRef.current?.click()}
+                                    onClick={() => !selectedJDFile && jdInputRef.current?.click()}
                                 >
                                     <input ref={jdInputRef} type="file" accept=".pdf,.docx,.doc,.txt" className="hidden" onChange={handleJDFileChange} disabled={isExtracting} />
 
@@ -195,11 +222,37 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
 
                                     <div className="flex flex-col items-center gap-4 text-center p-6 relative z-10 w-3/4">
                                         {isExtracting ? (
-                                            <div className="flex flex-col items-center gap-4 w-full">
-                                                <Loader2 className="h-10 w-10 text-primary animate-spin" />
-                                                <div className="space-y-1 w-full">
-                                                    <p className="font-medium text-foreground">Đang phân tích JD...</p>
-                                                    <SimulatedProgress duration={2000} />
+                                            <ScanningAnimation />
+                                        ) : selectedJDFile ? (
+                                            <div className="flex flex-col items-center gap-4 w-full animate-in zoom-in-95 duration-300">
+                                                <div className="p-4 rounded-full bg-primary/10 text-primary mb-2">
+                                                    <FileText className="h-10 w-10" />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="font-semibold text-lg text-foreground break-all px-4 line-clamp-1">{selectedJDFile.name}</p>
+                                                    <p className="text-sm text-muted-foreground">{(selectedJDFile.size / 1024).toFixed(0)} KB</p>
+                                                </div>
+                                                <div className="flex gap-3 mt-4">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setSelectedJDFile(null);
+                                                        }}
+                                                    >
+                                                        Thay đổi
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            processJDFile(selectedJDFile);
+                                                        }}
+                                                        className="min-w-[140px]"
+                                                    >
+                                                        Xác nhận & Phân tích
+                                                    </Button>
                                                 </div>
                                             </div>
                                         ) : (
@@ -266,20 +319,183 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
                         <div className="flex items-center justify-between">
                             <CardTitle className="text-lg font-bold flex items-center gap-2 text-primary">
                                 <FileText className="h-5 w-5" />
-                                JD Đang chọn
+                                {isEditingCriteria ? "Chỉnh sửa tiêu chí" : "JD Đang chọn"}
                             </CardTitle>
-                            <Button variant="ghost" size="sm" onClick={() => setStep('jd')} className="h-8 w-8 p-0 rounded-full hover:bg-background/50" title="Chỉnh sửa JD">
-                                <Edit2 className="h-4 w-4 text-primary" />
-                            </Button>
+                            {!isEditingCriteria && (
+                                <Button variant="ghost" size="sm" onClick={() => {
+                                    // Initialize form
+                                    if (jobRequirements) {
+                                        setEditForm(JSON.parse(JSON.stringify(jobRequirements)));
+                                    } else {
+                                        // Try to parse from fallback bullets
+                                        setEditForm({
+                                            technical_skills: extractedRequirements,
+                                            soft_skills: [],
+                                            years_of_experience: { min_years: 0, description: "" },
+                                            education: { degree_level: "", major: "", certifications: [] }
+                                        })
+                                    }
+                                    setIsEditingCriteria(true)
+                                }} className="h-8 w-8 p-0 rounded-full hover:bg-background/50" title="Chỉnh sửa JD">
+                                    <Edit2 className="h-4 w-4 text-primary" />
+                                </Button>
+                            )}
                         </div>
                     </CardHeader>
                     <CardContent className="p-4 space-y-4">
-                        {extractedRequirements.length > 0 ? (
+
+                        {isEditingCriteria ? (
+                            <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-semibold text-primary flex items-center gap-2">
+                                        <Code2 className="h-3 w-3" /> Kỹ năng chuyên môn
+                                    </label>
+                                    <Textarea
+                                        value={editForm.technical_skills.join('\n')}
+                                        onChange={(e) => setEditForm(p => ({ ...p, technical_skills: e.target.value.split('\n').filter(l => l.trim()) }))}
+                                        placeholder="Mỗi kỹ năng một dòng (VD: ReactJS, Figma...)"
+                                        className="h-24 text-sm"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-semibold text-primary flex items-center gap-2">
+                                        <Users className="h-3 w-3" /> Kỹ năng mềm
+                                    </label>
+                                    <Textarea
+                                        value={editForm.soft_skills.join('\n')}
+                                        onChange={(e) => setEditForm(p => ({ ...p, soft_skills: e.target.value.split('\n').filter(l => l.trim()) }))}
+                                        placeholder="Mỗi kỹ năng một dòng"
+                                        className="h-24 text-sm"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-semibold text-primary flex items-center gap-2">
+                                        <Briefcase className="h-3 w-3" /> Kinh nghiệm
+                                    </label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <Input
+                                            type="number"
+                                            placeholder="Số năm"
+                                            value={editForm.years_of_experience.min_years || ''}
+                                            onChange={(e) => setEditForm(p => ({ ...p, years_of_experience: { ...p.years_of_experience, min_years: parseFloat(e.target.value) || 0 } }))}
+                                        />
+                                        <Input
+                                            className="col-span-2"
+                                            placeholder="Mô tả (VD: Kinh nghiệm làm Product)"
+                                            value={editForm.years_of_experience.description}
+                                            onChange={(e) => setEditForm(p => ({ ...p, years_of_experience: { ...p.years_of_experience, description: e.target.value } }))}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-semibold text-primary flex items-center gap-2">
+                                        <GraduationCap className="h-3 w-3" /> Học vấn
+                                    </label>
+                                    <Input
+                                        placeholder="Bằng cấp / Chuyên ngành"
+                                        value={`${editForm.education.degree_level} ${editForm.education.major}`.trim()}
+                                        onChange={(e) => setEditForm(p => ({ ...p, education: { ...p.education, degree_level: e.target.value, major: "" } }))}
+                                    />
+                                </div>
+
+                                <div className="flex gap-2 pt-2">
+                                    <Button variant="outline" size="sm" className="w-full" onClick={() => setIsEditingCriteria(false)}>
+                                        <X className="h-4 w-4 mr-1" /> Hủy
+                                    </Button>
+                                    <Button size="sm" className="w-full" onClick={() => {
+                                        setJobRequirements(editForm);
+                                        // Force update JD string to new structured format for API consistency
+                                        setJd(JSON.stringify(editForm, null, 2));
+                                        // Clear legacy requirements to force structured view
+                                        setExtractedRequirements([]);
+                                        setIsEditingCriteria(false);
+                                        toast.success("Đã cập nhật tiêu chí!");
+                                    }}>
+                                        <Save className="h-4 w-4 mr-1" /> Lưu
+                                    </Button>
+
+                                </div>
+                            </div>
+                        ) : jobRequirements ? (
+                            <div className="space-y-4 animate-in fade-in duration-500">
+                                {/* Technical Skills */}
+                                {jobRequirements.technical_skills?.length > 0 && (
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2 text-primary font-semibold text-sm">
+                                            <Code2 className="h-4 w-4" />
+                                            <span>Kỹ năng chuyên môn</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {jobRequirements.technical_skills.map((skill, i) => (
+                                                <Badge key={i} variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200 whitespace-normal h-auto text-left leading-snug py-1.5 max-w-full">
+                                                    {skill}
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <Separator className="bg-primary/10" />
+
+                                {/* Experience */}
+                                {jobRequirements.years_of_experience && (
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2 text-primary font-semibold text-sm">
+                                            <Briefcase className="h-4 w-4" />
+                                            <span>Kinh nghiệm</span>
+                                        </div>
+                                        <p className="text-sm text-foreground/80 pl-6">
+                                            {jobRequirements.years_of_experience.min_years ? `${jobRequirements.years_of_experience.min_years} năm - ` : ''}
+                                            {jobRequirements.years_of_experience.description}
+                                        </p>
+                                    </div>
+                                )}
+
+                                <Separator className="bg-primary/10" />
+
+                                {/* Education */}
+                                {jobRequirements.education && (
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2 text-primary font-semibold text-sm">
+                                            <GraduationCap className="h-4 w-4" />
+                                            <span>Học vấn</span>
+                                        </div>
+                                        <div className="pl-6 text-sm text-foreground/80">
+                                            <p>{jobRequirements.education.degree_level} - {jobRequirements.education.major}</p>
+                                            {jobRequirements.education.certifications?.length > 0 && (
+                                                <p className="text-xs text-muted-foreground mt-1">
+                                                    CC: {jobRequirements.education.certifications.join(', ')}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <Separator className="bg-primary/10" />
+
+                                {/* Soft Skills */}
+                                {jobRequirements.soft_skills?.length > 0 && (
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2 text-primary font-semibold text-sm">
+                                            <Users className="h-4 w-4" />
+                                            <span>Kỹ năng mềm</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {jobRequirements.soft_skills.map((skill, i) => (
+                                                <Badge key={i} variant="outline" className="border-primary/20 text-muted-foreground whitespace-normal h-auto text-left leading-snug py-1.5 max-w-full">
+                                                    {skill}
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ) : extractedRequirements.length > 0 ? (
                             <div className="space-y-2">
                                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tiêu chí phát hiện:</p>
                                 <div className="flex flex-wrap gap-2">
                                     {extractedRequirements.map((req, i) => (
-                                        <Badge key={i} variant="secondary" className="bg-background/80 hover:bg-background border-primary/20 text-foreground font-normal leading-normal py-1">
+                                        <Badge key={i} variant="secondary" className="bg-background/80 hover:bg-background border-primary/20 text-foreground font-normal leading-normal py-1.5 whitespace-normal h-auto text-left max-w-full">
                                             {req}
                                         </Badge>
                                     ))}
@@ -426,6 +642,64 @@ function SimulatedProgress({ duration = 3000 }: { duration?: number }) {
             <p className="text-xs text-center text-muted-foreground animate-pulse">
                 Đang xử lý... {Math.round(progress)}%
             </p>
+        </div>
+    )
+}
+
+// Scanning Animation Component
+function ScanningAnimation() {
+    const [text, setText] = useState("Đang đọc tài liệu...")
+
+    useEffect(() => {
+        const texts = ["Đang đọc tài liệu...", "Phân tích kỹ năng...", "Trích xuất yêu cầu...", "Đang tổng hợp..."]
+        let i = 0
+        const interval = setInterval(() => {
+            i = (i + 1) % texts.length
+            setText(texts[i])
+        }, 1200)
+        return () => clearInterval(interval)
+    }, [])
+
+    return (
+        <div className="relative flex flex-col items-center justify-center w-full py-8">
+            {/* Document Icon Container */}
+            <div className="relative w-24 h-32 bg-background border-2 border-primary/20 rounded-xl flex items-center justify-center overflow-hidden shadow-[0_0_20px_rgba(var(--primary),0.1)]">
+                <FileText className="w-10 h-10 text-primary/30" />
+
+                {/* Content Lines Simulation */}
+                <div className="absolute top-8 left-4 right-4 space-y-2 opacity-30">
+                    <div className="h-1.5 w-full bg-primary/40 rounded-full" />
+                    <div className="h-1.5 w-3/4 bg-primary/40 rounded-full" />
+                    <div className="h-1.5 w-5/6 bg-primary/40 rounded-full" />
+                    <div className="h-1.5 w-full bg-primary/40 rounded-full" />
+                </div>
+
+                {/* Moving Scan Line */}
+                <div
+                    className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent shadow-[0_0_15px_rgba(var(--primary),0.6)] animate-[scan_2s_linear_infinite]"
+                    style={{ animationName: 'scan' }}
+                />
+                <style jsx>{`
+                    @keyframes scan {
+                        0% { top: 0%; opacity: 0; }
+                        10% { opacity: 1; }
+                        90% { opacity: 1; }
+                        100% { top: 100%; opacity: 0; }
+                    }
+                `}</style>
+            </div>
+
+            {/* Status Text */}
+            <div className="mt-6 flex flex-col items-center gap-2">
+                <p className="font-medium text-primary animate-pulse transition-all duration-300 min-w-[150px] text-center">
+                    {text}
+                </p>
+                <div className="flex gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" />
+                </div>
+            </div>
         </div>
     )
 }

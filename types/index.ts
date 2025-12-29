@@ -66,3 +66,24 @@ export type NumericFilterState = Record<string, NumericFilterCondition | null>;
 export interface AnalysisResult {
     candidates: Candidate[];
 }
+
+export interface JobRequirements {
+    technical_skills: string[];
+    soft_skills: string[];
+    years_of_experience: {
+        min_years: number | null;
+        description: string;
+    };
+    education: {
+        degree_level: string;
+        major: string;
+        certifications: string[];
+    };
+    soft_skills_list?: string[]; // fallback
+}
+
+export interface JDAnalysisResult {
+    job_requirements?: JobRequirements;
+    summary?: string; // fallback
+    raw_text?: string;
+}

@@ -194,7 +194,7 @@ export function ChatInterface() {
                         disabled={isLoading}
                         className="pr-14 pl-6 py-4 text-sm rounded-full bg-white border-slate-200 shadow-xl hover:shadow-2xl transition-all focus-visible:ring-2 focus-visible:ring-purple-500/50 focus-visible:border-purple-500"
                     />
-                    <Button type="submit" size="icon" disabled={isLoading} className="absolute right-2 top-2 h-10 w-10 rounded-full bg-gradient-to-r from-purple-600 via-pink-500 to-orange-500 text-white shadow-md hover:shadow-lg transition-all hover:scale-105 border-0">
+                    <Button type="submit" size="icon" disabled={isLoading} className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-gradient-to-r from-purple-600 via-pink-500 to-orange-500 text-white shadow-md hover:shadow-lg transition-all hover:scale-105 border-0">
                         <Send className="h-4 w-4" />
                     </Button>
                 </form>

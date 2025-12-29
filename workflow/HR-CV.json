@@ -24,7 +24,7 @@
       "typeVersion": 1.3,
       "position": [
         -64,
-        128
+        112
       ],
       "id": "1f9081ac-d909-4e1d-a1fe-db4a8784514a",
       "name": "Call 'CV Processing LLM Pipeline (Final)'",
@@ -50,7 +50,7 @@
       "typeVersion": 3,
       "position": [
         -960,
-        208
+        192
       ],
       "id": "a1943d63-f77a-421b-84b5-c40786764199",
       "name": "Search files and folders",
@@ -69,7 +69,7 @@
       "typeVersion": 3,
       "position": [
         -736,
-        208
+        192
       ],
       "id": "64252e09-ce41-41a5-a91f-13337ebddac7",
       "name": "Loop Over Items"
@@ -84,7 +84,7 @@
       "typeVersion": 3.2,
       "position": [
         -288,
-        128
+        112
       ],
       "id": "229fb707-f2d7-46a5-a147-8c6ff8d31a2b",
       "name": "Merge"
@@ -117,7 +117,7 @@
       "typeVersion": 2.2,
       "position": [
         -512,
-        208
+        192
       ],
       "id": "f0fd115f-0ab7-47b9-bdc2-21218457e852",
       "name": "If"
@@ -205,7 +205,7 @@
       "typeVersion": 1,
       "position": [
         -1408,
-        32
+        16
       ],
       "id": "6a383af4-137f-428c-add9-73497212f07c",
       "name": "Lấy thông tin CV"
@@ -234,7 +234,7 @@
       "typeVersion": 3.4,
       "position": [
         -1184,
-        32
+        16
       ],
       "id": "cd6f7f4d-1934-4eb3-902f-1dbed95c3997",
       "name": "Edit Fields"
@@ -268,7 +268,7 @@
         "text": "=CV Ứng viên:\n{{ $('candidate CV').item.json.resume_content }}\nBảng giới thiệu công việc (Job Description)\n{{ $('Webhook').item.json.body.jd }}",
         "hasOutputParser": true,
         "options": {
-          "systemMessage": "=Bạn là một hệ thống ATS chuyên nghiệp nhất thế giới dùng để đánh giá mức độ phù hợp của ứng viên với một yêu cầu công việc Business Analyst (Junior/Middle).\n\nNhiệm vụ của bạn:\n1. Phân tích thông tin CV ứng viên.\n2. Phân tích yêu cầu công việc (tập trung vào phần Yêu cầu được cung cấp).\n3. So khớp và chấm điểm theo thang điểm 100.\n4. Trích xuất các kỹ năng chuyên môn và kỹ năng mềm từ CV.\n5. Chỉ trả về đúng một JSON DUY NHẤT theo format quy định.\n\nFORMAT OUTPUT PHẢI TRẢ VỀ (BẮT BUỘC):\n{\n  \"Họ tên ứng viên\": \"HỌ TÊN VIẾT IN HOA KHÔNG DẤU\",\n  \"Email\": \"email của ứng viên\",\n  \"SĐT\": \"số điện thoại (định dạng 090 - ...)\",\n  \"Số năm kinh nghiệm\": \"Số năm kinh nghiệm làm việc liên quan\",\n  \"Điểm tổng\": 0-100 (Trung bình cộng của 4 đầu điểm thành phần),\n  \"Mức độ phù hợp\": \"Thấp | Trung bình | Cao | Cực kỳ phù hợp\",\n  \"Tóm tắt\": \"Tóm tắt toàn bộ CV của ứng viên chỉ trong 1 câu, tối đa 40 từ\",\n  \"Lý do chấm điểm\": \"Giải thích ngắn gọn tại sao cho mức điểm này\",\n  \"Danh sách kỹ năng\": [\"Kỹ năng 1\", \"Kỹ năng 2\", ...],\n  \"Ưu điểm\": [\"Ưu điểm 1\", \"Ưu điểm 2\", ...],\n  \"Nhược điểm\": [\"Nhược điểm 1\", \"Nhược điểm 2\", ...],\n  \"Chi tiết điểm\": {\n    \"điểm kinh nghiệm\": 0-100,\n    \"điểm kỹ năng\": 0-100,\n    \"điểm học vấn\": 0-100,\n    \"điểm thành tích & tiềm năng\": 0-100\n  }\n}\n\nLƯU Ý QUAN TRỌNG VỀ FORMAT:\n1. Số điện thoại: Nếu có (+84) đổi thành 0. Định dạng bắt buộc: XXX - XXX - XXXX (Ví dụ: 090 - 123 - 4567).\n2. JSON phải hợp lệ, không chứa markdown thừa (như ```json).\n\nTIÊU CHÍ CHẤM ĐIỂM (THANG 100 ĐIỂM)\n\nA. Điểm Kinh nghiệm (Tối đa 100 điểm)\n- Mục tiêu: Đánh giá độ sâu và tính liên quan của kinh nghiệm BA.\n- 90-100: Có 2+ năm kinh nghiệm BA Product VÀ có kinh nghiệm thực tế ứng dụng AI trong Bán lẻ/Phân phối.\n- 70-89: Có kinh nghiệm BA Product VÀ áp dụng Agile/Scrum thuần thục.\n- 50-69: Đạt yêu cầu tối thiểu (2-3 năm BA, hiểu Agile, chưa mạnh về Product/AI).\n- < 50: Thiếu kinh nghiệm hoặc kinh nghiệm không liên quan.\n\nB. Điểm Kỹ năng (Technical & Tool) (Tối đa 100 điểm)\n- Mục tiêu: Đánh giá thành thạo công cụ và tư duy công nghệ.\n- 90-100: Thành thạo AI/LLM trong workflow VÀ có kinh nghiệm tự động hóa (n8n, Zapier, Make).\n- 70-89: Thành thạo công cụ bắt buộc (Jira, Confluence, Figma, SQL, Draw.io) VÀ có tư duy Product Mindset tốt.\n- 40-69: Chỉ biết sử dụng công cụ cơ bản, chưa áp dụng công nghệ mới.\n\nC. Điểm Học vấn (Tối đa 100 điểm)\n- Mục tiêu: Đánh giá nền tảng đào tạo.\n- 90-100: Đại học chuyên ngành CNTT/Hệ thống thông tin/Khoa học dữ liệu.\n- 60-89: Cao đẳng CNTT hoặc Đại học ngành khác nhưng có kinh nghiệm BA dày dặn bù đắp.\n- 40-59: Ngành không liên quan, chỉ có chứng chỉ ngắn hạn.\n\nD. Điểm Thành tích & Tiềm năng (Tối đa 100 điểm)\n- Mục tiêu: Đánh giá sự chủ động (Growth Mindset).\n- 90-100: Có chứng chỉ quốc tế (CBAP, PSPO, CCBA) VÀ dự án cá nhân/thành tích nổi bật (giải thưởng, blog chuyên môn, dự án AI cá nhân).\n- 60-89: Có chứng chỉ cơ bản hoặc thành tích học tập tốt.\n- < 60: Không có thành tích hoặc hoạt động nổi bật.\n\n*Lưu ý: CV dài hơn 3 trang lan man -> Trừ 5-10 điểm vào điểm tổng.*\n\nYÊU CẦU BẮT BUỘC KHI TRẢ LỜI:\n- Ngôn ngữ: Tiếng Việt.\n- Trung thực: Không bịa thông tin.\n- Vai trò: Chuyên gia tuyển dụng khắt khe nhưng công bằng.\n\nDỮ LIỆU ĐẦU VÀO:\n- Mô tả công việc (JD): {{ $('Webhook').item.json.body.jd }}\n- CV Ứng viên: (Dữ liệu CV sẽ được cung cấp ngay sau đây)"
+          "systemMessage": "=Bạn là một hệ thống ATS chuyên nghiệp nhất thế giới dùng để đánh giá mức độ phù hợp của ứng viên với một yêu cầu công việc Business Analyst (Junior/Middle).\n\nNhiệm vụ của bạn:\n1. Phân tích thông tin CV ứng viên.\n2. Phân tích yêu cầu công việc (tập trung vào phần Yêu cầu được cung cấp).\n3. So khớp và chấm điểm theo thang điểm 100.\n4. Trích xuất các kỹ năng chuyên môn và kỹ năng mềm từ CV.\n5. Chỉ trả về đúng một JSON DUY NHẤT theo format quy định.\n\nFORMAT OUTPUT PHẢI TRẢ VỀ (BẮT BUỘC):\n\nLƯU Ý QUAN TRỌNG: \n- TRẢ VỀ JSON GỐC (FLAT OBJECT).\n- TUYỆT ĐỐI KHÔNG BỌC TRONG KEY 'output' HAY 'json'.\n- KHÔNG DÙNG MARKDOWN BLOCK (```).\n\n{\n  \"Họ tên ứng viên\": \"HỌ TÊN VIẾT IN HOA KHÔNG DẤU\",\n  \"Email\": \"email của ứng viên\",\n  \"SĐT\": \"số điện thoại (định dạng 090 - ...)\",\n  \"Số năm kinh nghiệm\": \"Số năm kinh nghiệm làm việc liên quan\",\n  \"Điểm tổng\": 0-100 (Trung bình cộng của 4 đầu điểm thành phần),\n  \"Mức độ phù hợp\": \"Thấp | Trung bình | Cao | Cực kỳ phù hợp\",\n  \"Tóm tắt\": \"Tóm tắt toàn bộ CV của ứng viên chỉ trong 1 câu, tối đa 40 từ\",\n  \"Lý do chấm điểm\": \"Giải thích ngắn gọn tại sao cho mức điểm này\",\n  \"Danh sách kỹ năng\": [\"Kỹ năng 1\", \"Kỹ năng 2\", ...], CHỈ LIỆT KÊ TỐI ĐA 5-7 KỸ NĂNG QUAN TRỌNG NHẤT KHỚP VỚI JD (ưu tiên Hard Skill để phân loại). Format chuẩn (VD: Agile/Scrum, SQL, Figma).,\n  \"Kỹ năng còn thiếu\": [\"Kỹ năng A\", \"Kỹ năng B\", ...], So sánh kỹ với JD, liệt kê các kỹ năng BẮT BUỘC trong JD mà CV KHÔNG CÓ.\n  \"Ưu điểm\": [\"Ưu điểm 1\", \"Ưu điểm 2\", ...],\n  \"Nhược điểm\": [\"Nhược điểm 1\", \"Nhược điểm 2\", ...],\n  \"Chi tiết điểm\": {\n    \"điểm kinh nghiệm\": 0-100,\n    \"điểm kỹ năng\": 0-100,\n    \"điểm học vấn\": 0-100,\n    \"điểm thành tích & tiềm năng\": 0-100\n  }\n}\n\nLƯU Ý QUAN TRỌNG VỀ FORMAT:\n1. Số điện thoại: Nếu có (+84) đổi thành 0. Định dạng bắt buộc: XXX - XXX - XXXX (Ví dụ: 090 - 123 - 4567).\n2. JSON phải hợp lệ, không chứa markdown thừa (như ```json).\n\nTIÊU CHÍ CHẤM ĐIỂM (THANG 100 ĐIỂM)\n\nA. Điểm Kinh nghiệm (Tối đa 100 điểm)\n- Mục tiêu: Đánh giá độ sâu và tính liên quan của kinh nghiệm BA.\n- 90-100: Có 2+ năm kinh nghiệm BA Product VÀ có kinh nghiệm thực tế ứng dụng AI trong Bán lẻ/Phân phối.\n- 70-89: Có kinh nghiệm BA Product VÀ áp dụng Agile/Scrum thuần thục.\n- 50-69: Đạt yêu cầu tối thiểu (2-3 năm BA, hiểu Agile, chưa mạnh về Product/AI).\n- < 50: Thiếu kinh nghiệm hoặc kinh nghiệm không liên quan.\n\nB. Điểm Kỹ năng (Technical & Tool) (Tối đa 100 điểm)\n- Mục tiêu: Đánh giá thành thạo công cụ và tư duy công nghệ.\n- 90-100: Thành thạo AI/LLM trong workflow VÀ có kinh nghiệm tự động hóa (n8n, Zapier, Make).\n- 70-89: Thành thạo công cụ bắt buộc (Jira, Confluence, Figma, SQL, Draw.io) VÀ có tư duy Product Mindset tốt.\n- 40-69: Chỉ biết sử dụng công cụ cơ bản, chưa áp dụng công nghệ mới.\n\nC. Điểm Học vấn (Tối đa 100 điểm)\n- Mục tiêu: Đánh giá nền tảng đào tạo.\n- 90-100: Đại học chuyên ngành CNTT/Hệ thống thông tin/Khoa học dữ liệu.\n- 60-89: Cao đẳng CNTT hoặc Đại học ngành khác nhưng có kinh nghiệm BA dày dặn bù đắp.\n- 40-59: Ngành không liên quan, chỉ có chứng chỉ ngắn hạn.\n\nD. Điểm Thành tích & Tiềm năng (Tối đa 100 điểm)\n- Mục tiêu: Đánh giá sự chủ động (Growth Mindset).\n- 90-100: Có chứng chỉ quốc tế (CBAP, PSPO, CCBA) VÀ dự án cá nhân/thành tích nổi bật (giải thưởng, blog chuyên môn, dự án AI cá nhân).\n- 60-89: Có chứng chỉ cơ bản hoặc thành tích học tập tốt.\n- < 60: Không có thành tích hoặc hoạt động nổi bật.\n\n*Lưu ý: CV dài hơn 3 trang lan man -> Trừ 5-10 điểm vào điểm tổng.*\n\nYÊU CẦU BẮT BUỘC KHI TRẢ LỜI:\n- Ngôn ngữ: Tiếng Việt.\n- Trung thực: Không bịa thông tin.\n- Vai trò: Chuyên gia tuyển dụng khắt khe nhưng công bằng.\n\nDỮ LIỆU ĐẦU VÀO:\n- Mô tả công việc (JD): {{ $('Webhook').item.json.body.jd }}\n- CV Ứng viên: (Dữ liệu CV sẽ được cung cấp ngay sau đây)"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
@@ -428,12 +428,12 @@
     },
     {
       "parameters": {
-        "jsonSchemaExample": "{\n  \"Họ tên ứng viên\": \"string\",\n  \"Email\": \"string\",\n  \"SĐT\": \"string\",\n  \"Số năm kinh nghiệm\": \"string\",\n  \"Điểm tổng\": 0,\n  \"Mức độ phù hợp\": \"string\",\n  \"Tóm tắt\": \"string\",\n  \"Lý do chấm điểm\": \"string\",\n  \"Danh sách kỹ năng\": [\n    \"string\"\n  ],\n  \"Ưu điểm\": [\n    \"string\"\n  ],\n  \"Nhược điểm\": [\n    \"string\"\n  ],\n  \"Chi tiết điểm\": {\n    \"điểm kinh nghiệm\": 0,\n    \"điểm kỹ năng\": 0,\n    \"điểm học vấn\": 0,\n    \"điểm thành tích & tiềm năng\": 0\n  }\n}"
+        "jsonSchemaExample": "{\n  \"Họ tên ứng viên\": \"string\",\n  \"Email\": \"string\",\n  \"SĐT\": \"string\",\n  \"Số năm kinh nghiệm\": 0,\n  \"Điểm tổng\": 0,\n  \"Mức độ phù hợp\": \"string\",\n  \"Tóm tắt\": \"string\",\n  \"Lý do chấm điểm\": \"string\",\n  \"Danh sách kỹ năng\": [\n    \"string\"\n  ],\n  \"Kỹ năng còn thiếu\": [\n    \"string\"\n  ],\n  \"Ưu điểm\": [\n    \"string\"\n  ],\n  \"Nhược điểm\": [\n    \"string\"\n  ],\n  \"Chi tiết điểm\": {\n    \"điểm kinh nghiệm\": 0,\n    \"điểm kỹ năng\": 0,\n    \"điểm học vấn\": 0,\n    \"điểm thành tích & tiềm năng\": 0\n  }\n}"
       },
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        1184,
+        1200,
         -32
       ],
       "id": "2400f34c-07a1-4c7c-8bac-48c720b54c02",
@@ -454,7 +454,7 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
-        1056,
+        1072,
         -32
       ],
       "id": "67c5fefc-b04a-4da1-9415-08acdcf4d516",
@@ -752,7 +752,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "7c36eac2-2607-47cc-b614-6ffc96648428",
+  "versionId": "a58973a8-effd-417d-9dcc-ab9278c50864",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "df174d571e95541c805919aa88d99c6ff9e79e2c1ffc42837bb92614d24bb4eb"

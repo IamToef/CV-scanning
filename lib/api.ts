@@ -1,5 +1,5 @@
 import { APP_CONFIG } from './config';
-import { AnalysisResult, ChatMessage, Candidate } from '@/types';
+import { AnalysisResult, ChatMessage, Candidate, JDAnalysisResult } from '@/types';
 
 export async function uploadJDAndCVs(jd: string, files: File[]): Promise<AnalysisResult> {
     if (APP_CONFIG.useMockData) {
@@ -482,11 +482,11 @@ export async function sendChatMessage(message: string, history: ChatMessage[] = 
     };
 }
 
-export async function extractRequirementsFromJD(jdText: string): Promise<string> {
+export async function extractRequirementsFromJD(jdText: string): Promise<JDAnalysisResult> {
     if (APP_CONFIG.useMockData) {
-        return new Promise(resolve => setTimeout(() => resolve(
-            "- 3+ years of experience in React and TypeScript.\n- Strong understanding of server-side rendering (Next.js).\n- Experience with Tailwind CSS and UI component libraries.\n- Ability to write clean, maintainable code."
-        ), 1000));
+        return new Promise(resolve => setTimeout(() => resolve({
+            summary: "- 3+ years of experience in React and TypeScript.\n- Strong understanding of server-side rendering (Next.js).\n- Experience with Tailwind CSS and UI component libraries.\n- Ability to write clean, maintainable code."
+        }), 1000));
     }
 
     try {
@@ -514,25 +514,48 @@ ${jdText}
 
         const data = await res.json();
 
-        let content = "No content extracted";
+
+
+        let result: JDAnalysisResult = { raw_text: "" };
         const item = Array.isArray(data) ? data[0] : data;
 
         if (item) {
-            // Priority 1: Simple output fields
-            if (item.output) content = item.output;
-            else if (item.text) content = item.text;
-            else if (item.message) content = item.message;
+            // Priority 1: Structured JSON output from "Structured Output Parser" or Agent "json.output"
+            // The workflow returns: { job_requirements: { ... } } directly or wrapped
 
-            // Priority 2: Chatbot specific fields (answer_message, short_message)
-            else if (item.answer_message) content = item.answer_message;
-            else if (item.short_message) content = item.short_message;
+            const rawOutput = item.output || (item.json && item.json.output) || (item.body && item.body.output) || item;
 
-            // Priority 3: Nested JSON or Body
-            else if (item.json && item.json.output) content = item.json.output;
-            else if (item.body && item.body.output) content = item.body.output;
+            // Try to find job_requirements in rawOutput
+            if (rawOutput && typeof rawOutput === 'object') {
+                if (rawOutput.job_requirements) {
+                    result.job_requirements = rawOutput.job_requirements;
+                }
+                // Sometimes it might be directly in the root if flattened
+                else if (rawOutput.technical_skills || rawOutput.years_of_experience) {
+                    result.job_requirements = rawOutput as any;
+                }
+            }
+
+            // Fallback: If it's a string (old prompt behavior), use it as summary
+            if (typeof rawOutput === 'string') {
+                try {
+                    // Try parsing if it looks like JSON
+                    if (rawOutput.trim().startsWith('{')) {
+                        const parsed = JSON.parse(rawOutput);
+                        if (parsed.job_requirements) result.job_requirements = parsed.job_requirements;
+                        else result.job_requirements = parsed;
+                    } else {
+                        result.summary = rawOutput;
+                    }
+                } catch {
+                    result.summary = rawOutput;
+                }
+            }
         }
 
-        return content;
+        // Mock fallback if logic failed but we are in mock mode? No, handled above.
+
+        return result;
 
     } catch (error) {
         console.error("Failed to extract requirements:", error);
