@@ -107,7 +107,9 @@ export function ChatCandidateCard({ candidate }: ChatCandidateCardProps) {
                             <h3 className="font-bold text-lg text-slate-900 leading-tight line-clamp-1" title={candidate.name}>
                                 {candidate.name}
                             </h3>
-                            <p className="text-sm text-slate-500 font-medium">Junior Business Analyst</p>
+                            <p className="text-sm text-slate-500 font-medium">
+                                {(candidate.applied_role || "Business Analyst").replace(/\b(Junior|Senior|Fresher|Intern|Jr|Sr)\b/gi, "").trim()}
+                            </p>
                         </div>
                         {isRejected && (
                             <Badge variant="destructive" className="text-[10px] px-2 h-5">Đã loại</Badge>
@@ -192,11 +194,11 @@ export function ChatCandidateCard({ candidate }: ChatCandidateCardProps) {
                                 {candidate.skills_found && candidate.skills_found.length > 0 && (
                                     <div className="space-y-1.5 pt-1">
                                         <div className="flex items-center gap-1.5">
-                                            <span className="text-xs font-bold text-pink-600 uppercase tracking-wide">Kỹ năng</span>
+                                            <span className="text-xs font-bold text-green-700 uppercase tracking-wide">Kỹ năng</span>
                                         </div>
                                         <div className="flex flex-wrap gap-1.5">
-                                            {candidate.skills_found.map((skill: string, idx: number) => (
-                                                <Badge key={idx} variant="secondary" className="px-1.5 py-0 h-5 text-[10px] bg-pink-50 text-pink-700 hover:bg-pink-100 border-pink-100">
+                                            {candidate.skills_found.slice(0, 5).map((skill: string, idx: number) => (
+                                                <Badge key={idx} variant="secondary" className="px-1.5 py-0 h-5 text-[10px] bg-green-50 text-green-700 hover:bg-green-100 border-green-100">
                                                     {skill}
                                                 </Badge>
                                             ))}

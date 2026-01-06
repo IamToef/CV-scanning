@@ -3,7 +3,6 @@
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
@@ -21,15 +20,17 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
-import { CheckCircle2, X, AlertCircle } from "lucide-react"
+import { CheckCircle2, X, AlertCircle, HelpCircle, Brain, Star, AlertTriangle, Briefcase, User, Phone, Mail, MessageSquare, Sparkles } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Candidate } from "@/types"
-import { Progress } from "@/components/ui/progress"
-import { Brain, Star, AlertTriangle, GraduationCap, Briefcase, User, Phone, Mail, MessageSquare } from "lucide-react"
 import { useCandidates } from "@/components/candidate-context"
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { cn } from "@/lib/utils"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Typewriter } from "@/components/ui/typewriter"
 
 interface CandidateProfileProps {
     candidate: Candidate
@@ -42,11 +43,13 @@ export function CandidateProfile({ candidate, children }: CandidateProfileProps)
     const [showContactAlert, setShowContactAlert] = useState(false)
     const [showRejectAlert, setShowRejectAlert] = useState(false)
 
-    const getScoreColor = (score: number) => {
-        if (score >= 80) return "bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500"
-        if (score >= 50) return "bg-yellow-500"
-        return "bg-red-500"
-    }
+    // Questions Derived State
+    const questions = (candidate.technical_questions?.length || candidate.soft_skill_questions?.length)
+        ? { technical: candidate.technical_questions || [], soft: candidate.soft_skill_questions || [] }
+        : null;
+
+    const [showInlineQuestions, setShowInlineQuestions] = useState(false)
+
 
     const confirmContact = () => {
         updateCandidateStatus(candidate.id, 'shortlisted')
@@ -70,6 +73,15 @@ export function CandidateProfile({ candidate, children }: CandidateProfileProps)
         })
     }
 
+
+
+
+
+    const handleSuggestQuestionsClick = () => {
+        setShowInlineQuestions(!showInlineQuestions);
+    };
+
+
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -84,14 +96,31 @@ export function CandidateProfile({ candidate, children }: CandidateProfileProps)
                     }
                 }}
             >
-                <DialogHeader className="p-6 pb-2 shrink-0">
-                    <div className="flex items-start justify-between">
-                        <div className="space-y-1">
-                            <DialogTitle className="flex items-center gap-3 text-2xl font-bold">
-                                <User className="h-6 w-6 text-purple-600" />
-                                {candidate.name}
-                            </DialogTitle>
-                            <div className="flex flex-col sm:flex-row sm:items-center text-muted-foreground gap-2 sm:gap-4 text-sm">
+                <DialogHeader className="p-6 pb-2 shrink-0 pr-20">
+                    <div className="flex items-start justify-between w-full">
+                        <div className="space-y-1 flex-1">
+                            {/* Score directly next to Name */}
+                            <div className="flex items-center gap-3">
+                                <DialogTitle className="flex items-center gap-2 text-2xl font-bold">
+                                    <User className="h-6 w-6 text-purple-600" />
+                                    {candidate.name}
+                                </DialogTitle>
+                                {(() => {
+                                    const score = (candidate as any).displayScore ?? candidate.score;
+                                    return (
+                                        <div className={cn(
+                                            "flex items-center justify-center px-3 py-1 rounded-md text-sm font-bold border-0 text-white bg-gradient-to-r ml-2 shadow-sm",
+                                            score >= 80 ? "from-purple-600 via-pink-500 to-orange-500" :
+                                                score >= 50 ? "from-orange-400 to-amber-400" :
+                                                    "from-red-500 to-pink-600"
+                                        )}>
+                                            {score} điểm
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row sm:items-center text-muted-foreground gap-2 sm:gap-4 text-sm mt-1">
                                 <div className="flex items-center gap-1.5">
                                     <Mail className="h-4 w-4" />
                                     {candidate.email}
@@ -104,109 +133,214 @@ export function CandidateProfile({ candidate, children }: CandidateProfileProps)
                                 )}
                             </div>
                         </div>
-                        <Badge variant="outline" className="text-base px-3 py-1 font-medium bg-muted/50 mr-8">
-                            {candidate.status.toUpperCase()}
-                        </Badge>
+
+                        {/* Status (Right Side) */}
+                        <div className="flex items-center gap-4">
+                            <Badge variant="outline" className="text-base px-3 py-1 font-medium bg-muted/50">
+                                {candidate.status.toUpperCase()}
+                            </Badge>
+                        </div>
                     </div>
                 </DialogHeader>
 
-                <div className="flex-1 overflow-y-auto p-6 pt-0">
-                    <div className="space-y-8 pr-4">
-                        {/* Main Score & Status Section - Refactored */}
-                        <div className="p-6 rounded-xl border bg-card text-card-foreground shadow-sm mt-2 flex items-center justify-between">
-                            <div>
-                                <h3 className="font-semibold text-lg text-foreground">Số điểm phù hợp</h3>
-                                <p className="text-sm text-muted-foreground mt-1">Điểm tổng mức độ phù hợp cho công việc</p>
-                            </div>
+                <Tabs defaultValue="profile" className="flex-1 flex flex-col overflow-hidden">
+                    <div className="px-6 border-b shrink-0 bg-white z-10">
+                        <TabsList className="w-full justify-start h-12 bg-transparent p-0 gap-6">
+                            <TabsTrigger
+                                value="profile"
+                                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-purple-600 data-[state=active]:text-purple-700 rounded-none h-full px-4 text-base font-medium text-slate-500"
+                            >
+                                <User className="w-4 h-4 mr-2" />
+                                Hồ sơ ứng viên
+                            </TabsTrigger>
 
-                            {/* Score Box */}
-                            <div className={cn(
-                                "rounded-2xl h-24 w-24 flex flex-col items-center justify-center",
-                                candidate.score >= 80 ? "bg-green-100 text-green-700" :
-                                    candidate.score >= 50 ? "bg-yellow-100 text-yellow-700" :
-                                        "bg-red-100 text-red-700"
-                            )}>
-                                <span className="text-4xl font-bold tracking-tight">
-                                    {candidate.score}
-                                </span>
-                                <span className="text-[10px] font-extrabold uppercase mt-1">
-                                    ĐIỂM
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Summary - Moved to Top */}
-                        <div className="space-y-4">
-                            <h3 className="font-bold text-xl flex items-center gap-2 text-foreground">
-                                <Briefcase className="h-5 w-5 text-purple-600" /> Tóm tắt
-                            </h3>
-                            <div className="text-base text-slate-600 leading-7 whitespace-pre-wrap bg-purple-50/30 p-5 rounded-xl border-l-4 border-purple-500 shadow-sm">
-                                {candidate.summary}
-                            </div>
-                        </div>
-
-                        {/* 3-Column Layout: Pros | Cons | Skills */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {/* Column 1: Pros */}
-                            <div className="flex flex-col h-full space-y-3">
-                                <div className="p-5 rounded-xl border border-green-100 bg-green-50/50 space-y-3 flex-1">
-                                    <div className="flex items-center gap-2 text-green-700 font-bold text-lg">
-                                        <Star className="h-5 w-5" /> Ưu điểm
-                                    </div>
-                                    <ul className="list-disc list-outside ml-4 space-y-3">
-                                        {(candidate.pros?.length ? candidate.pros : candidate.strengths)?.length > 0 ? (
-                                            (candidate.pros?.length ? candidate.pros : candidate.strengths).map((item, i) => (
-                                                <li key={i} className="text-sm text-foreground/80 leading-relaxed pl-1">{item}</li>
-                                            ))
-                                        ) : (
-                                            <li className="text-sm text-muted-foreground italic list-none">Chưa có thông tin</li>
-                                        )}
-                                    </ul>
-                                </div>
-                            </div>
-
-                            {/* Column 2: Cons */}
-                            <div className="flex flex-col h-full space-y-3">
-                                <div className="p-5 rounded-xl border border-red-100 bg-red-50/50 space-y-3 flex-1">
-                                    <div className="flex items-center gap-2 text-red-700 font-bold text-lg">
-                                        <AlertTriangle className="h-5 w-5" /> Nhược điểm
-                                    </div>
-                                    <ul className="list-disc list-outside ml-4 space-y-3">
-                                        {(candidate.cons?.length ? candidate.cons : candidate.weaknesses)?.length > 0 ? (
-                                            (candidate.cons?.length ? candidate.cons : candidate.weaknesses).map((item, i) => (
-                                                <li key={i} className="text-sm text-foreground/80 leading-relaxed pl-1">{item}</li>
-                                            ))
-                                        ) : (
-                                            <li className="text-sm text-muted-foreground italic list-none">Chưa có thông tin</li>
-                                        )}
-                                    </ul>
-                                </div>
-                            </div>
-
-                            {/* Column 3: Skills - Moved here */}
-                            <div className="flex flex-col h-full space-y-3">
-                                <div className="p-5 rounded-xl border border-pink-100 bg-pink-50/30 space-y-3 flex-1">
-                                    <div className="flex items-center gap-2 text-pink-700 font-bold text-lg">
-                                        <GraduationCap className="h-5 w-5" /> Kỹ năng nổi bật
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {candidate.skills_found && candidate.skills_found.length > 0 ? (
-                                            candidate.skills_found.map((skill, index) => (
-                                                <Badge key={index} variant="secondary" className="bg-white text-pink-700 hover:bg-pink-100 border border-pink-200 shadow-sm py-1.5 px-3">
-                                                    {skill}
-                                                </Badge>
-                                            ))
-                                        ) : (
-                                            <span className="text-sm text-muted-foreground italic">Chưa có thông tin kỹ năng</span>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        </TabsList>
                     </div>
-                </div>
 
-                <DialogFooter className="p-4 border-t bg-muted/10 shrink-0 gap-2 sm:gap-2">
+                    <TabsContent value="profile" className="flex-1 overflow-hidden p-0 m-0 data-[state=inactive]:hidden h-full">
+                        <ScrollArea className="h-full">
+                            <div className="p-6 pt-6 space-y-6">
+                                {/* Summary Section - Refined & Brief */}
+                                <div className="space-y-3">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2 text-primary">
+                                                <Briefcase className="h-4 w-4" />
+                                                <h3 className="font-semibold text-lg">Tóm tắt hồ sơ</h3>
+                                            </div>
+                                            <p className="text-sm text-slate-600 leading-relaxed font-normal">
+                                                {candidate.summary}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+
+                                {/* 3-Column Layout */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch pb-6">
+                                    {/* Column 1: Pros */}
+                                    <div className="flex flex-col h-full bg-green-50/30 rounded-xl border border-green-100 p-5">
+                                        <div className="flex items-center gap-2 text-green-700 font-bold text-lg mb-4">
+                                            <Star className="h-5 w-5" /> Ưu điểm
+                                        </div>
+                                        <ul className="space-y-3 flex-1">
+                                            {(candidate.pros?.length ? candidate.pros : candidate.strengths)?.length > 0 ? (
+                                                (candidate.pros?.length ? candidate.pros : candidate.strengths).map((item, i) => (
+                                                    <li key={i} className="flex items-start gap-2 text-sm text-foreground/80 leading-relaxed">
+                                                        <span className="text-green-500 mt-1.5 h-1.5 w-1.5 rounded-full bg-green-500 shrink-0" />
+                                                        <span>{item}</span>
+                                                    </li>
+                                                ))
+                                            ) : (
+                                                <li className="text-sm text-muted-foreground italic">Chưa có thông tin</li>
+                                            )}
+                                        </ul>
+                                    </div>
+
+                                    {/* Column 2: Cons */}
+                                    <div className="flex flex-col h-full bg-red-50/30 rounded-xl border border-red-100 p-5">
+                                        <div className="flex items-center gap-2 text-red-700 font-bold text-lg mb-4">
+                                            <AlertTriangle className="h-5 w-5" /> Nhược điểm
+                                        </div>
+                                        <ul className="space-y-3 flex-1">
+                                            {(candidate.cons?.length ? candidate.cons : candidate.weaknesses)?.length > 0 ? (
+                                                (candidate.cons?.length ? candidate.cons : candidate.weaknesses).map((item, i) => (
+                                                    <li key={i} className="flex items-start gap-2 text-sm text-foreground/80 leading-relaxed">
+                                                        <span className="text-red-500 mt-1.5 h-1.5 w-1.5 rounded-full bg-red-500 shrink-0" />
+                                                        <span>{item}</span>
+                                                    </li>
+                                                ))
+                                            ) : (
+                                                <li className="text-sm text-muted-foreground italic">Chưa có thông tin</li>
+                                            )}
+                                        </ul>
+                                    </div>
+
+                                    {/* Column 3: Skills (Matching & Missing) */}
+                                    <div className="flex flex-col h-full gap-4">
+                                        {/* Matching Skills */}
+                                        <div className="bg-green-50/30 rounded-xl border border-green-100 p-4 flex-1">
+                                            <div className="flex items-center gap-2 text-green-700 font-bold text-base mb-3">
+                                                <CheckCircle2 className="h-4 w-4" /> Kỹ năng phù hợp
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {candidate.skills_found && candidate.skills_found.length > 0 ? (
+                                                    candidate.skills_found.slice(0, 5).map((skill, index) => (
+                                                        <Badge key={index} variant="secondary" className="bg-white text-green-700 border-green-200 shadow-sm hover:bg-green-50">
+                                                            {skill}
+                                                        </Badge>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-sm text-muted-foreground italic">--</span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Missing Skills */}
+                                        <div className="bg-orange-50/30 rounded-xl border border-orange-100 p-4 flex-1">
+                                            <div className="flex items-center gap-2 text-orange-700 font-bold text-base mb-3">
+                                                <AlertCircle className="h-4 w-4" /> Kỹ năng còn thiếu
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {candidate.skills_missing && candidate.skills_missing.length > 0 ? (
+                                                    candidate.skills_missing.map((skill, index) => (
+                                                        <Badge key={index} variant="outline" className="bg-white text-orange-700 border-orange-200 shadow-sm">
+                                                            {skill}
+                                                        </Badge>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-sm text-muted-foreground italic">--</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Suggest Questions Trigger (Moved to Bottom) */}
+                                <div className="space-y-4 pb-6">
+                                    <div className="flex items-center gap-2 pt-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={handleSuggestQuestionsClick}
+                                            className={cn(
+                                                "gap-2 text-purple-700 bg-purple-50 border-purple-200 hover:bg-purple-100 hover:border-purple-300 transition-all",
+                                                showInlineQuestions && "bg-purple-100 border-purple-300"
+                                            )}
+                                        >
+                                            <Sparkles className="h-4 w-4" />
+                                            {showInlineQuestions ? "Ẩn gợi ý câu hỏi" : "Gợi ý câu hỏi phỏng vấn"}
+                                        </Button>
+                                    </div>
+
+                                    {/* Inline Questions Display */}
+                                    {showInlineQuestions && (
+                                        <div className="p-5 rounded-xl border border-purple-100 bg-gradient-to-br from-white to-purple-50/30 shadow-md animate-in fade-in zoom-in-95 duration-200">
+                                            {questions ? (
+                                                <div className="space-y-8">
+                                                    {/* Technical */}
+                                                    <div className="space-y-4">
+                                                        <div className="flex items-center gap-3 text-purple-700 border-b border-purple-100 pb-2">
+                                                            <Brain className="h-5 w-5" />
+                                                            <h4 className="font-bold text-base">Câu hỏi chuyên môn</h4>
+                                                        </div>
+                                                        <div className="grid gap-3 pl-1">
+                                                            {questions.technical.length > 0 ? questions.technical.map((q, i) => {
+                                                                if (typeof q !== 'string' || q.includes('_questions') || q.includes('":') || q.length > 500) return null;
+                                                                const cleanQ = q.trim();
+                                                                return (
+                                                                    <div key={`tech-${i}`} className="flex gap-3 text-sm text-slate-700 items-start group">
+                                                                        <span className="text-purple-400 font-bold shrink-0 leading-relaxed mt-0.5 group-hover:text-purple-600 transition-colors">•</span>
+                                                                        <span className="leading-relaxed bg-white/50 p-2 rounded-lg block w-full">
+                                                                            {cleanQ}
+                                                                        </span>
+                                                                    </div>
+                                                                );
+                                                            }) : <span className="text-sm text-muted-foreground italic">Không có đề xuất.</span>}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Soft Skills */}
+                                                    <div className="space-y-4">
+                                                        <div className="flex items-center gap-3 text-pink-700 border-b border-pink-100 pb-2">
+                                                            <MessageSquare className="h-5 w-5" />
+                                                            <h4 className="font-bold text-base">Câu hỏi kỹ năng mềm</h4>
+                                                        </div>
+                                                        <div className="grid gap-3 pl-1">
+                                                            {questions.soft.length > 0 ? questions.soft.map((q, i) => {
+                                                                if (typeof q !== 'string' || q.includes('_questions') || q.includes('":') || q.length > 500) return null;
+                                                                const cleanQ = q.trim();
+                                                                return (
+                                                                    <div key={`soft-${i}`} className="flex gap-3 text-sm text-slate-700 items-start group">
+                                                                        <span className="text-pink-400 font-bold shrink-0 leading-relaxed mt-0.5 group-hover:text-pink-600 transition-colors">•</span>
+                                                                        <span className="leading-relaxed bg-white/50 p-2 rounded-lg block w-full">
+                                                                            {cleanQ}
+                                                                        </span>
+                                                                    </div>
+                                                                );
+                                                            }) : <span className="text-sm text-muted-foreground italic">Không có đề xuất.</span>}
+                                                        </div>
+                                                    </div>
+
+
+                                                </div>
+                                            ) : (
+                                                <div className="text-center py-8 text-slate-400 italic">
+                                                    Chưa có dữ liệu câu hỏi từ lần phân tích gần nhất.
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </ScrollArea>
+                    </TabsContent>
+
+
+                </Tabs>
+
+                <DialogFooter className="p-4 border-t bg-muted/10 shrink-0 gap-2 sm:gap-2 z-20">
                     <div className="flex w-full sm:justify-end gap-2">
                         <Button
                             variant="destructive"

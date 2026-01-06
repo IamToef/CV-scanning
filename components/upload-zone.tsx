@@ -20,14 +20,18 @@ interface UploadZoneProps {
 }
 
 export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
-    const { jd, setJd } = useCandidates()
-    const [files, setFiles] = useState<File[]>([])
+    // Destructure everything from context
+    const {
+        jd, setJd,
+        jobRequirements, setJobRequirements,
+        uploadedFiles: files, setUploadedFiles: setFiles, // Alias to match existing code
+        uploadStep: step, setUploadStep: setStep,
+        extractedRequirements, setExtractedRequirements,
+        selectedJDFile, setSelectedJDFile
+    } = useCandidates()
+
     const [isUploading, setIsUploading] = useState(false)
     const [isExtracting, setIsExtracting] = useState(false)
-    const [extractedRequirements, setExtractedRequirements] = useState<string[]>([])
-    const [jobRequirements, setJobRequirements] = useState<JobRequirements | null>(null)
-    const [selectedJDFile, setSelectedJDFile] = useState<File | null>(null) // New state for manual confirm
-    const [step, setStep] = useState<'jd' | 'cv'>('jd') // Progressive Disclosure
 
     // Drag States
     const [isDraggingJD, setIsDraggingJD] = useState(false)
@@ -46,14 +50,14 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
     const jdInputRef = useRef<HTMLInputElement>(null)
     const cvInputRef = useRef<HTMLInputElement>(null)
 
-    // Check if we already have JD data to restore state
+    // Check if we already have JD data to restore logic for badge display or sync
     useEffect(() => {
-        if (jd && step === 'jd' && extractedRequirements.length === 0) {
-            // If JD exists but no reqs parsed (e.g. navigation back), try to parse simplistic bullets
+        if (jd && step === 'jd' && extractedRequirements.length === 0 && !jobRequirements) {
+            // If JD exists but no reqs parsed (e.g. simplified text mode), try simple bullet parse
             const lines = jd.split('\n').filter(l => l.trim().startsWith('-') || l.trim().startsWith('•')).slice(0, 5);
             if (lines.length > 0) setExtractedRequirements(lines.map(l => l.replace(/^[-•]\s*/, '')));
         }
-    }, [jd, step]);
+    }, [jd, step, jobRequirements, extractedRequirements]);
 
     const processJDFile = async (file: File) => {
         setIsExtracting(true)
@@ -172,6 +176,7 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
             if (result && result.candidates) {
                 onAnalysisComplete(result.candidates)
                 toast.success(`Hoàn tất! Đã chấm ${result.candidates.length} ứng viên.`, { id: toastId })
+                setFiles([]); // Clear files after successful processing
             } else {
                 throw new Error("No candidates received")
             }
@@ -314,8 +319,8 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
         <div className="grid gap-8 lg:grid-cols-12 animate-in fade-in slide-in-from-right-8 duration-500">
             {/* Sidebar: Job Context (Col 4) */}
             <div className="lg:col-span-4 space-y-6">
-                <Card className="border-primary/20 bg-primary/5 shadow-none overflow-hidden sticky top-4">
-                    <CardHeader className="bg-primary/10 pb-4">
+                <Card className="border-primary/20 bg-primary/5 shadow-none sticky top-4 max-h-[calc(100vh-14rem)] flex flex-col">
+                    <CardHeader className="bg-primary/10 p-4">
                         <div className="flex items-center justify-between">
                             <CardTitle className="text-lg font-bold flex items-center gap-2 text-primary">
                                 <FileText className="h-5 w-5" />
@@ -342,7 +347,7 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
                             )}
                         </div>
                     </CardHeader>
-                    <CardContent className="p-4 space-y-4">
+                    <CardContent className="p-4 space-y-4 overflow-y-auto custom-scrollbar">
 
                         {isEditingCriteria ? (
                             <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
@@ -352,7 +357,7 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
                                     </label>
                                     <Textarea
                                         value={editForm.technical_skills.join('\n')}
-                                        onChange={(e) => setEditForm(p => ({ ...p, technical_skills: e.target.value.split('\n').filter(l => l.trim()) }))}
+                                        onChange={(e) => setEditForm(p => ({ ...p, technical_skills: e.target.value.split('\n') }))}
                                         placeholder="Mỗi kỹ năng một dòng (VD: ReactJS, Figma...)"
                                         className="h-24 text-sm"
                                     />
@@ -363,7 +368,7 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
                                     </label>
                                     <Textarea
                                         value={editForm.soft_skills.join('\n')}
-                                        onChange={(e) => setEditForm(p => ({ ...p, soft_skills: e.target.value.split('\n').filter(l => l.trim()) }))}
+                                        onChange={(e) => setEditForm(p => ({ ...p, soft_skills: e.target.value.split('\n') }))}
                                         placeholder="Mỗi kỹ năng một dòng"
                                         className="h-24 text-sm"
                                     />
@@ -373,14 +378,14 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
                                         <Briefcase className="h-3 w-3" /> Kinh nghiệm
                                     </label>
                                     <div className="grid grid-cols-3 gap-2">
-                                        <Input
+                                        {/* <Input
                                             type="number"
                                             placeholder="Số năm"
                                             value={editForm.years_of_experience.min_years || ''}
                                             onChange={(e) => setEditForm(p => ({ ...p, years_of_experience: { ...p.years_of_experience, min_years: parseFloat(e.target.value) || 0 } }))}
-                                        />
-                                        <Input
-                                            className="col-span-2"
+                                        /> */}
+                                        <Textarea
+                                            className="col-span-3 h-24 text-sm"
                                             placeholder="Mô tả (VD: Kinh nghiệm làm Product)"
                                             value={editForm.years_of_experience.description}
                                             onChange={(e) => setEditForm(p => ({ ...p, years_of_experience: { ...p.years_of_experience, description: e.target.value } }))}
@@ -391,10 +396,11 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
                                     <label className="text-xs font-semibold text-primary flex items-center gap-2">
                                         <GraduationCap className="h-3 w-3" /> Học vấn
                                     </label>
-                                    <Input
-                                        placeholder="Bằng cấp / Chuyên ngành"
-                                        value={`${editForm.education.degree_level} ${editForm.education.major}`.trim()}
-                                        onChange={(e) => setEditForm(p => ({ ...p, education: { ...p.education, degree_level: e.target.value, major: "" } }))}
+                                    <Textarea
+                                        placeholder="Bằng cấp / Chuyên ngành (VD: Đại học CNTT...)"
+                                        value={editForm.education.major}
+                                        onChange={(e) => setEditForm(p => ({ ...p, education: { ...p.education, major: e.target.value } }))}
+                                        className="h-24 text-sm"
                                     />
                                 </div>
 
@@ -403,9 +409,15 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
                                         <X className="h-4 w-4 mr-1" /> Hủy
                                     </Button>
                                     <Button size="sm" className="flex-1" onClick={() => {
-                                        setJobRequirements(editForm);
+                                        // Clean up arrays before saving
+                                        const cleanForm = {
+                                            ...editForm,
+                                            technical_skills: editForm.technical_skills.filter(l => l.trim()),
+                                            soft_skills: editForm.soft_skills.filter(l => l.trim())
+                                        };
+                                        setJobRequirements(cleanForm);
                                         // Force update JD string to new structured format for API consistency
-                                        setJd(JSON.stringify(editForm, null, 2));
+                                        setJd(JSON.stringify(cleanForm, null, 2));
                                         // Clear legacy requirements to force structured view
                                         setExtractedRequirements([]);
                                         setIsEditingCriteria(false);
@@ -446,6 +458,11 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
                                             <span>Kinh nghiệm</span>
                                         </div>
                                         <div className="pl-6 text-sm text-foreground/80 leading-relaxed">
+                                            {/* {(jobRequirements.years_of_experience.min_years || 0) > 0 && (
+                                                <span className="font-semibold text-foreground mr-1">
+                                                    {jobRequirements.years_of_experience.min_years} năm:
+                                                </span>
+                                            )} */}
                                             {jobRequirements.years_of_experience.description.includes('\n') ? (
                                                 <ul className="list-disc pl-4 mt-1 space-y-1">
                                                     {jobRequirements.years_of_experience.description.split('\n').map((line, i) => (

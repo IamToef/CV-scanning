@@ -9,12 +9,7 @@ import { Send, Bot, User, Loader2, Sparkles } from "lucide-react"
 
 // ... imports
 
-const suggestions = [
-    { label: "Tóm tắt điểm mạnh của từng ứng viên", icon: "✨" },
-    { label: "So sánh kinh nghiệm làm việc", icon: "📊" },
-    { label: "Liệt kê các chứng chỉ chuyên môn", icon: "📜" },
-    { label: "Tìm ứng viên có kỹ năng lãnh đạo", icon: "👥" }
-]
+
 import { toast } from "sonner"
 import { useChat } from "@/components/chat-context"
 import { useCandidates } from "@/components/candidate-context"
@@ -45,9 +40,25 @@ export function ChatInterface() {
 
         if (!fullCandidate) return chatCandidate;
 
+        // Calculate Score dynamically (like in CandidateTable)
+        const details = fullCandidate.score_details || fullCandidate.reasoning || {};
+        const exp = Number(details.experience_score) || 0;
+        const skill = Number(details.skills_score) || 0;
+        const edu = Number(details.education_score) || 0;
+        const pot = Number(details.potential_score) || 0;
+
+        const prof = Math.round((exp + skill) / 2);
+        const potential = Math.round((edu + pot) / 2);
+        const displayScore = Math.round((prof + potential) / 2);
+
+        const finalScore = displayScore > 0 ? displayScore : (fullCandidate.score || 0);
+
         // Merge: Prioritize chat properties for summary/analysis as that's what the user just asked for
         return {
             ...fullCandidate, // Base is the real data
+
+            // Use calculated score
+            score: finalScore,
 
             // CRITICAL FIX: Prioritize the immediate AI summary from the chat response
             // The DB summary might be old or empty. The chat response just generated a fresh summary.
@@ -78,12 +89,11 @@ export function ChatInterface() {
     }
 
     const suggestions = [
-        { label: "Tóm tắt điểm mạnh của từng ứng viên", icon: "✨" },
-        { label: "So sánh kinh nghiệm làm việc", icon: "📊" },
-        { label: "Tìm ứng viên có kỹ năng lãnh đạo", icon: "👥" }
+        { label: "Ứng viên có trên 4 năm kinh nghiệm", icon: "💼" },
+        { label: "Ứng viên có kỹ năng về AI/LLM", icon: "🤖" }
     ]
 
-    const isInitialState = messages.length <= 1
+    const isInitialState = messages.length === 0
 
     return (
         <Card className="flex flex-col h-full border-0 shadow-none bg-background">
@@ -142,7 +152,7 @@ export function ChatInterface() {
                                                     a: ({ node, ...props }) => (
                                                         <a
                                                             {...props}
-                                                            className="text-white underline hover:text-white/90 font-medium break-all"
+                                                            className={`underline font-medium break-all ${msg.role === 'user' ? 'text-white hover:text-white/90' : 'text-purple-600 hover:text-purple-700'}`}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                         />
@@ -158,6 +168,35 @@ export function ChatInterface() {
                                         </div>
                                         {/* User icon removed as per instruction */}
                                     </div>
+                                    {/* Interview Questions Section */}
+                                    {/* Interview Questions Section */}
+                                    {(msg.technical_questions?.length) ? (
+                                        <div className="pl-12 mt-3 w-full space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                            {msg.technical_questions && msg.technical_questions.length > 0 && (
+                                                <Card className="bg-white/50 border-purple-100 shadow-sm">
+                                                    <CardHeader className="py-3 px-4 bg-purple-50/50 border-b border-purple-100 mb-2">
+                                                        <CardTitle className="text-sm font-semibold text-purple-700 flex items-center gap-2">
+                                                            <Sparkles className="h-4 w-4" />
+                                                            Câu hỏi chuyên môn (Hard Skills)
+                                                        </CardTitle>
+                                                    </CardHeader>
+                                                    <CardContent className="px-4 pb-3 pt-0">
+                                                        <ul className="space-y-2">
+                                                            {msg.technical_questions.map((q, idx) => (
+                                                                <li key={idx} className="text-sm text-slate-700 flex gap-2">
+                                                                    <span className="text-purple-500 font-bold">•</span>
+                                                                    {q}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </CardContent>
+                                                </Card>
+                                            )}
+
+
+                                        </div>
+                                    ) : null}
+
                                     {msg.candidates && msg.candidates.length > 0 && (
                                         <div className="pl-12 mt-3 w-full animate-in fade-in slide-in-from-bottom-2 duration-500">
                                             <div className="flex flex-row flex-wrap gap-4">
@@ -192,7 +231,7 @@ export function ChatInterface() {
                         onChange={e => setInput(e.target.value)}
                         placeholder="Nhập câu hỏi về ứng viên..."
                         disabled={isLoading}
-                        className="pr-14 pl-6 py-4 text-sm rounded-full bg-white border-slate-200 shadow-xl hover:shadow-2xl transition-all focus-visible:ring-2 focus-visible:ring-purple-500/50 focus-visible:border-purple-500"
+                        className="pr-14 pl-6 py-6 text-base rounded-full bg-white border-slate-300 shadow-2xl ring-1 ring-slate-100/50 hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.25)] transition-all focus-visible:ring-2 focus-visible:ring-purple-500/50 focus-visible:border-purple-500 placeholder:text-slate-400"
                     />
                     <Button type="submit" size="icon" disabled={isLoading} className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-gradient-to-r from-purple-600 via-pink-500 to-orange-500 text-white shadow-md hover:shadow-lg transition-all hover:scale-105 border-0">
                         <Send className="h-4 w-4" />

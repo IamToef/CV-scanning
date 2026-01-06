@@ -38,6 +38,9 @@ export interface Candidate {
         education_score?: number;
         potential_score?: number;
     };
+    resume_content?: string;
+    technical_questions?: string[];
+    soft_skill_questions?: string[];
 }
 
 export interface ChatMessage {
@@ -47,6 +50,8 @@ export interface ChatMessage {
     timestamp: number;
     sources?: Candidate[]; // For RAG citations
     candidates?: any[]; // Simplified candidate info from chat
+    technical_questions?: string[];
+    soft_skill_questions?: string[];
 }
 
 export interface SortConfig {

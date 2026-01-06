@@ -54,6 +54,29 @@ export function CandidateTable({ candidates }: CandidateTableProps) {
         )
     }, [candidates, selectedSkills])
 
+    // Calculate Scores and Sort
+    const sortedCandidates = React.useMemo(() => {
+        const processed = filteredCandidates.map(c => {
+            const details = c.score_details || c.reasoning || {};
+            const exp = Number(details.experience_score) || 0;
+            const skill = Number(details.skills_score) || 0;
+            const edu = Number(details.education_score) || 0;
+            const pot = Number(details.potential_score) || 0;
+
+            // Calculate Total Score Average
+            const prof = Math.round((exp + skill) / 2);
+            const potential = Math.round((edu + pot) / 2);
+            const displayScore = Math.round((prof + potential) / 2);
+
+            // Use calculated score if valid, else fallback
+            const finalScore = displayScore > 0 ? displayScore : (c.score || 0);
+
+            return { ...c, score: finalScore };
+        });
+
+        return processed.sort((a, b) => b.score - a.score);
+    }, [filteredCandidates]);
+
     const toggleSkill = (skill: string) => {
         setSelectedSkills(prev =>
             prev.includes(skill)
@@ -135,20 +158,19 @@ export function CandidateTable({ candidates }: CandidateTableProps) {
                                     </Popover>
                                 </div>
                             </TableHead>
-                            <TableHead className="font-semibold text-foreground">Tóm tắt</TableHead>
+                            <TableHead className="font-semibold text-foreground">Lí do chấm điểm</TableHead>
                             <TableHead className="text-right font-semibold text-foreground">Thao tác</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {filteredCandidates.length === 0 ? (
+                        {sortedCandidates.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                                     Không tìm thấy ứng viên phù hợp.
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            // Sort by Score Descending
-                            [...filteredCandidates].sort((a, b) => b.score - a.score).map((candidate) => (
+                            sortedCandidates.map((candidate) => (
                                 <CandidateRow key={candidate.id} candidate={candidate} />
                             ))
                         )}
@@ -179,8 +201,9 @@ function CandidateRow({ candidate }: { candidate: Candidate }) {
             {/* Match Score */}
             <TableCell>
                 <div className="flex items-baseline gap-1">
-                    <span className={`text-xl font-black ${candidate.score >= 80 ? 'bg-gradient-to-r from-purple-600 via-pink-500 to-orange-500 bg-clip-text text-transparent' :
-                        candidate.score >= 50 ? 'text-yellow-600' : 'text-red-500'
+                    <span className={`text-xl font-black bg-clip-text text-transparent bg-gradient-to-r ${candidate.score >= 80 ? 'from-purple-600 via-pink-500 to-orange-500' :
+                        candidate.score >= 50 ? 'from-orange-500 to-amber-500' :
+                            'from-red-500 to-pink-600'
                         }`}>
                         {candidate.score}
                     </span>
@@ -215,39 +238,21 @@ function CandidateRow({ candidate }: { candidate: Candidate }) {
             {/* Skills */}
             <TableCell>
                 <div className="flex flex-wrap gap-1.5 transition-all">
-                    {(isExpanded ? candidate.skills_found : candidate.skills_found.slice(0, 3)).map((skill, i) => (
+                    {candidate.skills_found.slice(0, 5).map((skill, i) => (
                         <Badge
                             key={i}
-                            className="bg-pink-50 text-pink-700 hover:bg-pink-100 border-pink-100 rounded-md px-2 py-0.5 text-[10px] uppercase font-bold"
+                            className="bg-green-50 text-green-700 hover:bg-green-100 border-green-100 rounded-md px-2 py-0.5 text-[10px] uppercase font-bold"
                         >
                             {skill}
                         </Badge>
                     ))}
-                    {!isExpanded && candidate.skills_found.length > 3 && (
-                        <Badge
-                            variant="outline"
-                            className="border-dashed text-[10px] text-muted-foreground hover:bg-muted cursor-pointer hover:text-foreground"
-                            onClick={() => setIsExpanded(true)}
-                        >
-                            +{candidate.skills_found.length - 3}
-                        </Badge>
-                    )}
-                    {isExpanded && candidate.skills_found.length > 3 && (
-                        <Badge
-                            variant="outline"
-                            className="border-dashed text-[10px] text-muted-foreground hover:bg-muted cursor-pointer hover:text-foreground"
-                            onClick={() => setIsExpanded(false)}
-                        >
-                            Thu gọn
-                        </Badge>
-                    )}
                 </div>
             </TableCell>
 
             {/* Summary */}
             <TableCell className="max-w-[300px] whitespace-normal">
-                <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed" title={candidate.summary}>
-                    {candidate.summary}
+                <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed" title={candidate.scoring_reason || candidate.summary}>
+                    {candidate.scoring_reason || candidate.summary}
                 </p>
             </TableCell>
 

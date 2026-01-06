@@ -16,27 +16,20 @@ interface CandidateCardViewProps {
 }
 
 function ExpandableSummary({ text }: { text: string }) {
-    const [isExpanded, setIsExpanded] = useState(false)
-
     return (
-        <div
-            onClick={() => setIsExpanded(!isExpanded)}
-            className={`bg-nds-pink/50 rounded-xl p-4 space-y-2 mt-4 border border-nds-pink/20 transition-all duration-300 cursor-pointer hover:bg-nds-pink/60 relative group ${isExpanded ? '' : ''}`}
-        >
+        <div className="bg-slate-50 rounded-xl p-4 space-y-2 mt-4 border border-slate-200">
             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-nds-pink-foreground font-bold text-xs uppercase tracking-wide">
-                    <Sparkles className="h-3.5 w-3.5 text-nds-pink-foreground" />
-                    <span className="text-nds-pink-foreground">Tóm tắt từ AI</span>
+                <div className="flex items-center gap-2 font-bold text-xs tracking-wide">
+                    <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
+                    <span className="text-slate-700">
+                        Lí do chấm điểm
+                    </span>
                 </div>
-
             </div>
             <div className="relative">
-                <p className={`text-sm text-foreground/80 leading-relaxed ${isExpanded ? '' : 'line-clamp-3'}`}>
+                <p className="text-sm text-slate-600 leading-relaxed">
                     {text}
                 </p>
-                {!isExpanded && text.length > 150 && (
-                    <div className="absolute bottom-0 w-full h-8 bg-gradient-to-t from-nds-pink/20 to-transparent" />
-                )}
             </div>
         </div>
     )
@@ -45,16 +38,47 @@ function ExpandableSummary({ text }: { text: string }) {
 export function CandidateCardView({ candidates }: CandidateCardViewProps) {
     const { sortConfig } = useCandidates()
 
-    const sortedCandidates = [...candidates].sort((a, b) => {
+    // 1. Calculate scores and extend candidate objects
+    const processedCandidates = candidates.map(candidate => {
+        const details = candidate.score_details || candidate.reasoning || {};
+
+        const exp = Number(details.experience_score) || 0;
+        const skill = Number(details.skills_score) || 0;
+        const profScore = Math.round((exp + skill) / 2);
+
+        const edu = Number(details.education_score) || 0;
+        const pot = Number(details.potential_score) || 0;
+        const potScore = Math.round((edu + pot) / 2);
+
+        // New Total Score Calculation: Average of the two main categories
+        const calculatedScore = Math.round((profScore + potScore) / 2);
+
+        return {
+            ...candidate,
+            profScore,
+            potScore,
+            displayScore: calculatedScore
+        };
+    });
+
+    const sortedCandidates = [...processedCandidates].sort((a, b) => {
         if (!sortConfig) {
-            return (Number(b.score) || 0) - (Number(a.score) || 0)
+            return (b.displayScore - a.displayScore)
         }
         const col = sortConfig.column as keyof Candidate
+
+        // Handle sorting by calculated score if 'score' column is selected
+        if (col === 'score') {
+            return sortConfig.direction === 'asc'
+                ? a.displayScore - b.displayScore
+                : b.displayScore - a.displayScore
+        }
+
         const valA = a[col]
         const valB = b[col]
 
         // Explicitly handle strict numeric columns
-        if (col === 'score' || col === 'experience_years') {
+        if (col === 'experience_years') {
             const numA = Number(valA) || 0
             const numB = Number(valB) || 0
             return sortConfig.direction === 'asc' ? numA - numB : numB - numA
@@ -82,27 +106,29 @@ export function CandidateCardView({ candidates }: CandidateCardViewProps) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sortedCandidates.map((candidate) => (
-                <Card key={candidate.id} className="group relative overflow-hidden rounded-[1.5rem] border hover:shadow-xl transition-all duration-300 bg-card">
-                    <CardContent className="p-6 space-y-6">
+                <Card key={candidate.id} className="group relative overflow-hidden rounded-[2rem] border-0 bg-white shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgb(99,102,241,0.15)] transition-all duration-300 hover:-translate-y-1">
+                    <div className="absolute inset-0 rounded-[2rem] border-2 border-slate-50 group-hover:border-indigo-100 pointer-events-none transition-colors" />
+
+                    <CardContent className="p-7 space-y-6 relative z-10">
                         {/* Header: Name & Score */}
                         <div className="flex justify-between items-start">
-                            <div>
-                                <h3 className="font-extrabold text-lg text-primary leading-tight">
+                            <div className="space-y-2">
+                                <h3 className="font-black text-xl text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors">
                                     {candidate.name}
                                 </h3>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                    {candidate.experience_years > 5 ? "Senior Business Analyst" : "Business Analyst"}
-                                </p>
+                                <Badge variant="secondary" className="bg-slate-100 text-slate-600 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors font-semibold border-transparent">
+                                    {candidate.experience_years > 5 ? "Senior BA" : "Business Analyst"} • {candidate.experience_years} năm
+                                </Badge>
                             </div>
                             {/* Score Badge */}
                             <div className={`
-                                flex flex-col items-center justify-center w-14 h-14 rounded-2xl
-                                ${candidate.score >= 80 ? 'bg-green-100 text-green-700' :
-                                    candidate.score >= 50 ? 'bg-yellow-100 text-yellow-700' :
-                                        'bg-red-100 text-red-700'}
+                                flex flex-col items-center justify-center w-16 h-16 rounded-2xl shadow-lg text-white border-0 transform transition-transform group-hover:scale-105
+                                ${candidate.displayScore >= 80 ? 'bg-gradient-to-br from-indigo-500 to-purple-600 shadow-indigo-200' :
+                                    candidate.displayScore >= 50 ? 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-orange-100' :
+                                        'bg-gradient-to-br from-red-500 to-rose-600 shadow-red-100'}
                             `}>
-                                <span className="text-xl font-black leading-none">{candidate.score}</span>
-                                <span className="text-[10px] font-bold uppercase mt-0.5">Điểm</span>
+                                <span className="text-2xl font-black leading-none">{candidate.displayScore}</span>
+                                <span className="text-[9px] font-bold uppercase mt-1 opacity-90 tracking-wider">Điểm</span>
                             </div>
                         </div>
 
@@ -111,7 +137,7 @@ export function CandidateCardView({ candidates }: CandidateCardViewProps) {
                             <div className="flex items-center gap-3">
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-muted-foreground/20 text-muted-foreground hover:text-primary hover:border-primary" asChild>
+                                        <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50" asChild>
                                             <a href={candidate.link_cv || candidate.file_url || "#"} target="_blank" rel="noopener noreferrer">
                                                 <Download className="h-4 w-4" />
                                             </a>
@@ -124,7 +150,7 @@ export function CandidateCardView({ candidates }: CandidateCardViewProps) {
 
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-muted-foreground/20 text-muted-foreground hover:text-primary hover:border-primary" onClick={() => window.open(`mailto:${candidate.email}`)}>
+                                        <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50" onClick={() => window.open(`mailto:${candidate.email}`)}>
                                             <Mail className="h-4 w-4" />
                                         </Button>
                                     </TooltipTrigger>
@@ -135,7 +161,7 @@ export function CandidateCardView({ candidates }: CandidateCardViewProps) {
 
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-muted-foreground/20 text-muted-foreground hover:text-primary hover:border-primary">
+                                        <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50">
                                             <Phone className="h-4 w-4" />
                                         </Button>
                                     </TooltipTrigger>
@@ -145,7 +171,7 @@ export function CandidateCardView({ candidates }: CandidateCardViewProps) {
                                 </Tooltip>
 
                                 <CandidateProfile candidate={candidate}>
-                                    <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-[var(--nds-pink)]/40 text-[var(--nds-pink-foreground)] hover:bg-[var(--nds-pink)] hover:border-[var(--nds-pink)]">
+                                    <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300">
                                         <Eye className="h-4 w-4" />
                                     </Button>
                                 </CandidateProfile>
@@ -163,14 +189,20 @@ export function CandidateCardView({ candidates }: CandidateCardViewProps) {
 
                                 return (
                                     <div className="space-y-1.5">
-                                        <div className="flex justify-between text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                        <div className="flex justify-between text-xs font-semibold text-slate-600 tracking-wide">
                                             <span>Năng lực chuyên môn</span>
-                                            <span className="text-foreground">{avg}/100</span>
+                                            <span className={`font-bold ${avg >= 80 ? 'text-indigo-600' :
+                                                avg >= 50 ? 'text-amber-600' :
+                                                    'text-red-600'
+                                                }`}>{avg}/100</span>
                                         </div>
                                         <Progress
                                             value={avg}
-                                            className="h-1.5 bg-gray-100"
-                                            indicatorClassName="bg-green-500"
+                                            className="h-1.5 bg-slate-100"
+                                            indicatorClassName={`bg-gradient-to-r ${avg >= 80 ? 'from-indigo-600 to-blue-600' :
+                                                avg >= 50 ? 'from-amber-500 to-orange-500' :
+                                                    'from-red-600 to-rose-600'
+                                                }`}
                                         />
                                     </div>
                                 );
@@ -185,14 +217,20 @@ export function CandidateCardView({ candidates }: CandidateCardViewProps) {
 
                                 return (
                                     <div className="space-y-1.5">
-                                        <div className="flex justify-between text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                        <div className="flex justify-between text-xs font-semibold text-slate-600 tracking-wide">
                                             <span>Tiềm năng & Học vấn</span>
-                                            <span className="text-foreground">{avg}/100</span>
+                                            <span className={`font-bold ${avg >= 80 ? 'text-indigo-600' :
+                                                avg >= 50 ? 'text-amber-600' :
+                                                    'text-red-600'
+                                                }`}>{avg}/100</span>
                                         </div>
                                         <Progress
                                             value={avg}
-                                            className="h-1.5 bg-gray-100"
-                                            indicatorClassName="bg-yellow-500"
+                                            className="h-1.5 bg-slate-100"
+                                            indicatorClassName={`bg-gradient-to-r ${avg >= 80 ? 'from-indigo-600 to-blue-600' :
+                                                avg >= 50 ? 'from-amber-500 to-orange-500' :
+                                                    'from-red-600 to-rose-600'
+                                                }`}
                                         />
                                     </div>
                                 );
@@ -203,24 +241,22 @@ export function CandidateCardView({ candidates }: CandidateCardViewProps) {
                         {(candidate.risk_analysis || candidate.reward_analysis) && (
                             <div className="flex gap-2 mt-4 flex-wrap">
                                 {candidate.reward_analysis && (
-                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1 px-2">
+                                    <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200 gap-1 px-2">
                                         <Sparkles className="h-3 w-3" />
                                         Điểm cộng: {candidate.reward_analysis.level}
                                     </Badge>
                                 )}
                                 {candidate.risk_analysis && (
                                     <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 gap-1 px-2">
-                                        <div className="h-3 w-3 rounded-full bg-red-500/20 flex items-center justify-center text-[8px] font-bold">!</div>
+                                        <div className="h-3 w-3 rounded-full bg-red-100 flex items-center justify-center text-[8px] font-bold">!</div>
                                         Rủi ro: {candidate.risk_analysis.level}
                                     </Badge>
                                 )}
                             </div>
                         )}
 
-                        {/* AI Summary Box */}
-                        <ExpandableSummary text={candidate.summary} />
-
-
+                        {/* Scoring Reason Box */}
+                        <ExpandableSummary text={candidate.scoring_reason || candidate.summary} />
 
                     </CardContent>
                 </Card>

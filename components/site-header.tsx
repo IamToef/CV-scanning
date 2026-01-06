@@ -70,6 +70,6 @@ export function SiteHeader() {
                     <RotateCcw className="h-5 w-5" />
                 </Button>
             </div>
-        </header>
+        </header >
     )
 }

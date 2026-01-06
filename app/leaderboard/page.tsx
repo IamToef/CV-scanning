@@ -3,42 +3,58 @@
 import { useCandidates } from "@/components/candidate-context"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { UploadCloud, Trophy, Medal, Crown } from "lucide-react"
+import { UploadCloud, Trophy, Medal, Crown, ChevronRight } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { CandidateProfile } from "@/components/candidate-profile"
+import { cn } from "@/lib/utils"
+import { Candidate } from "@/types"
 
 export default function LeaderboardPage() {
     const { candidates } = useCandidates()
 
+    // Process Candidates with Score Logic (Same as Dashboard)
+    const processedCandidates = candidates.map(candidate => {
+        const details = candidate.score_details || candidate.reasoning || {};
+
+        const exp = Number(details.experience_score) || 0;
+        const skill = Number(details.skills_score) || 0;
+        const profScore = Math.round((exp + skill) / 2);
+
+        const edu = Number(details.education_score) || 0;
+        const pot = Number(details.potential_score) || 0;
+        const potScore = Math.round((edu + pot) / 2);
+
+        // Calculate Total Score
+        const calculatedScore = Math.round((profScore + potScore) / 2);
+
+        return {
+            ...candidate,
+            // Use calculated score if available, otherwise fallback to existing
+            score: calculatedScore > 0 ? calculatedScore : (candidate.score || 0)
+        };
+    });
+
     // Sort descending by score
-    const sortedCandidates = [...candidates].sort((a, b) => (b.score || 0) - (a.score || 0))
+    const sortedCandidates = [...processedCandidates].sort((a, b) => (b.score || 0) - (a.score || 0))
 
     const top3 = sortedCandidates.slice(0, 3)
     const rest = sortedCandidates.slice(3)
 
-    // Helper for Position Colors
-    const getPositionStyle = (index: number) => {
-        switch (index) {
-            case 0: return { color: "text-yellow-500", bg: "bg-yellow-100", border: "border-yellow-200", icon: <Crown className="h-6 w-6 text-yellow-500 fill-yellow-500" /> };
-            case 1: return { color: "text-slate-400", bg: "bg-slate-100", border: "border-slate-200", icon: <Medal className="h-6 w-6 text-slate-400 fill-slate-400" /> };
-            case 2: return { color: "text-amber-600", bg: "bg-amber-100", border: "border-amber-200", icon: <Medal className="h-6 w-6 text-amber-600 fill-amber-600" /> };
-            default: return { color: "text-slate-600", bg: "bg-white", border: "", icon: null };
-        }
-    }
-
     return (
-        <div className="container mx-auto py-8 space-y-12">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Bảng Xếp Hạng</h1>
-                    <p className="text-muted-foreground mt-2">
-                        Top ứng viên tiềm năng nhất
+        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-8 space-y-10">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-8">
+                <div className="space-y-2">
+                    <h1 className="text-4xl font-black bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent drop-shadow-sm pb-1 leading-relaxed">
+                        Bảng Xếp Hạng Ứng Viên
+                    </h1>
+                    <p className="text-indigo-600/80 font-medium text-lg">
+                        Top những ứng viên xuất sắc nhất cho vị trí của bạn
                     </p>
                 </div>
                 <Link href="/upload">
-                    <Button variant="outline" className="gap-2">
+                    <Button className="bg-white text-indigo-600 hover:bg-white/90 border border-indigo-100 shadow-sm gap-2">
                         <UploadCloud className="h-4 w-4" />
                         Upload Mới
                     </Button>
@@ -46,121 +62,181 @@ export default function LeaderboardPage() {
             </div>
 
             {candidates.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 border rounded-lg bg-muted/10 border-dashed">
-                    <p className="text-muted-foreground mb-4">Chưa có ứng viên nào để xếp hạng.</p>
+                <div className="flex flex-col items-center justify-center py-20 border rounded-3xl bg-white/50 border-dashed border-indigo-200">
+                    <p className="text-indigo-400 mb-4 font-medium">Chưa có ứng viên nào để xếp hạng.</p>
                     <Link href="/upload">
-                        <Button>Bắt đầu Upload</Button>
+                        <Button className="bg-indigo-600 hover:bg-indigo-700">Bắt đầu Upload</Button>
                     </Link>
                 </div>
             ) : (
                 <>
-                    {/* PODIUM SECTION */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end justify-center max-w-5xl mx-auto min-h-[400px]">
-                        {/* 2nd Place (Left) */}
-                        {top3[1] && (
-                            <div className="order-2 md:order-1 flex flex-col items-center cursor-pointer">
-                                <CandidateProfile candidate={top3[1]}>
-                                    <div>
-                                        <PodiumCard candidate={top3[1]} rank={2} style={getPositionStyle(1)} />
-                                    </div>
-                                </CandidateProfile>
-                            </div>
-                        )}
+                    {/* Top 3 Podium */}
+                    {top3.length > 0 && (
+                        <div className="flex justify-center items-end gap-6 mb-16 relative pt-12">
+                            {/* 2nd Place */}
+                            {top3[1] && (
+                                <div className="w-72 relative z-10 order-1 transform hover:-translate-y-2 transition-transform duration-300">
+                                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 text-4xl animate-bounce delay-100">🥈</div>
+                                    <PodiumCard
+                                        candidate={top3[1]}
+                                        rank={2}
+                                        className="h-[360px] bg-white border-2 border-blue-100 shadow-[0_8px_30px_rgb(59,130,246,0.15)] rounded-3xl"
+                                        barColor="bg-gradient-to-t from-blue-400 to-cyan-300"
+                                    />
+                                </div>
+                            )}
 
-                        {/* 1st Place (Center - Biggest) */}
-                        {top3[0] && (
-                            <div className="order-1 md:order-2 flex flex-col items-center -mt-8 z-10 w-full md:w-auto cursor-pointer">
-                                <CandidateProfile candidate={top3[0]}>
-                                    <div>
-                                        <PodiumCard candidate={top3[0]} rank={1} style={getPositionStyle(0)} isFirst />
-                                    </div>
-                                </CandidateProfile>
-                            </div>
-                        )}
+                            {/* 1st Place */}
+                            {top3[0] && (
+                                <div className="w-80 relative z-20 order-2 -mt-12 transform hover:-translate-y-2 transition-transform duration-300">
+                                    <div className="absolute -top-16 left-1/2 -translate-x-1/2 text-6xl animate-bounce">👑</div>
+                                    <PodiumCard
+                                        candidate={top3[0]}
+                                        rank={1}
+                                        className="h-[420px] bg-white border-2 border-yellow-200 shadow-[0_10px_40px_rgb(250,204,21,0.25)] ring-4 ring-yellow-100/50 rounded-3xl"
+                                        barColor="bg-gradient-to-t from-yellow-400 to-amber-300"
+                                    />
+                                </div>
+                            )}
 
-                        {/* 3rd Place (Right) */}
-                        {top3[2] && (
-                            <div className="order-3 md:order-3 flex flex-col items-center cursor-pointer">
-                                <CandidateProfile candidate={top3[2]}>
-                                    <div>
-                                        <PodiumCard candidate={top3[2]} rank={3} style={getPositionStyle(2)} />
-                                    </div>
-                                </CandidateProfile>
-                            </div>
-                        )}
-                    </div>
+                            {/* 3rd Place */}
+                            {top3[2] && (
+                                <div className="w-72 relative z-10 order-3 transform hover:-translate-y-2 transition-transform duration-300">
+                                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 text-4xl animate-bounce delay-200">🥉</div>
+                                    <PodiumCard
+                                        candidate={top3[2]}
+                                        rank={3}
+                                        className="h-[340px] bg-white border-2 border-orange-100 shadow-[0_8px_30px_rgb(249,115,22,0.15)] rounded-3xl"
+                                        barColor="bg-gradient-to-t from-orange-400 to-red-300"
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    )}
 
-                    {/* THE REST OF THE LIST */}
+                    {/* Remaining List */}
                     {rest.length > 0 && (
-                        <div className="max-w-4xl mx-auto mt-12 space-y-4">
-                            <h3 className="text-xl font-semibold border-b pb-2">Danh sách còn lại</h3>
-                            <div className="grid gap-3">
-                                {rest.map((candidate, idx) => (
-                                    <CandidateProfile key={candidate.id} candidate={candidate}>
-                                        <div className="flex items-center gap-4 p-4 bg-white border rounded-lg hover:shadow-md transition-all cursor-pointer w-full text-left">
-                                            <div className="flex-none font-bold text-slate-400 w-8 text-center text-lg self-center">
-                                                #{idx + 4}
-                                            </div>
-                                            <Avatar className="h-10 w-10 border self-center">
-                                                <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${candidate.name}`} />
-                                                <AvatarFallback>{candidate.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                                            </Avatar>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="font-semibold truncate">{candidate.name}</div>
-                                                <div className="text-sm text-muted-foreground">{candidate.email}</div>
-                                            </div>
-                                            <div className="flex items-center gap-4">
-                                                <div className="text-right flex flex-col justify-center h-full">
-                                                    <div className="font-bold text-slate-900 text-lg leading-none">{candidate.score}/100</div>
-                                                    <div className="text-xs text-muted-foreground mt-1">{candidate.experience_years} năm KN</div>
+                        <div className="max-w-4xl mx-auto">
+                            <div className="bg-white/70 backdrop-blur-xl rounded-3xl p-8 border border-white/50 shadow-xl space-y-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-indigo-100 p-2 rounded-lg">
+                                        <Trophy className="h-6 w-6 text-indigo-600" />
+                                    </div>
+                                    <h2 className="text-xl font-bold text-slate-800">Các ứng viên tiềm năng khác</h2>
+                                </div>
+
+                                <div className="grid gap-4">
+                                    {rest.map((candidate, i) => (
+                                        <div
+                                            key={candidate.id}
+                                            className="group flex items-center justify-between p-5 bg-white border border-indigo-50 rounded-2xl hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-500/5 transition-all duration-300"
+                                        >
+                                            <div className="flex items-center gap-6">
+                                                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-bold group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                                    {i + 4}
                                                 </div>
-                                                <Badge variant={candidate.status === 'shortlisted' ? 'default' : 'secondary'} className="self-center">
-                                                    {candidate.status === 'shortlisted' ? 'Đã chọn' : candidate.status}
-                                                </Badge>
+                                                <div className="flex items-center gap-4">
+                                                    <Avatar className="h-14 w-14 border-2 border-white shadow-sm">
+                                                        <AvatarFallback className="bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-700 font-bold">
+                                                            {candidate.name.charAt(0)}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div>
+                                                        <h3 className="font-bold text-slate-800 text-lg group-hover:text-indigo-600 transition-colors">{candidate.name}</h3>
+                                                        <p className="text-sm text-slate-500 font-medium">
+                                                            {candidate.experience_years} năm kinh nghiệm
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Score & Badge */}
+                                            <div className="flex items-center gap-8">
+                                                <div className="flex items-center gap-6">
+                                                    <div className="text-right flex items-center gap-3">
+                                                        <div className="flex flex-col items-end w-16">
+                                                            <span className="text-xs text-slate-400 font-medium uppercase">Điểm</span>
+                                                            <span className={`font-bold text-2xl ${(candidate.score || 0) >= 80 ? 'text-transparent bg-clip-text bg-gradient-to-r from-green-500 to-emerald-600' :
+                                                                (candidate.score || 0) >= 50 ? 'text-amber-500' : 'text-red-500'
+                                                                }`}>
+                                                                {candidate.score}
+                                                            </span>
+                                                        </div>
+                                                        <Badge variant="outline" className="bg-indigo-50/50 text-indigo-700 border-indigo-100 font-semibold w-24 justify-center py-1">
+                                                            {candidate.experience_years} năm KN
+                                                        </Badge>
+                                                    </div>
+                                                    <Badge
+                                                        variant={candidate.status === 'shortlisted' ? 'default' : 'secondary'}
+                                                        className={`self-center px-4 py-1.5 rounded-full ${candidate.status === 'shortlisted' ? 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-md shadow-indigo-200 border-none' : 'bg-slate-100 text-slate-600'}`}
+                                                    >
+                                                        {candidate.status === 'shortlisted' ? 'Đã chọn' : candidate.status}
+                                                    </Badge>
+                                                </div>
+
+                                                <CandidateProfile candidate={candidate}>
+                                                    <Button variant="ghost" size="icon" className="text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 transition-all rounded-full h-10 w-10">
+                                                        <ChevronRight className="h-6 w-6" />
+                                                    </Button>
+                                                </CandidateProfile>
                                             </div>
                                         </div>
-                                    </CandidateProfile>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     )}
                 </>
             )}
         </div>
-    )
+    );
 }
 
-function PodiumCard({ candidate, rank, style, isFirst = false }: { candidate: any, rank: number, style: any, isFirst?: boolean }) {
+function PodiumCard({ candidate, rank, className, barColor }: { candidate: Candidate, rank: number, className?: string, barColor?: string }) {
     return (
-        <Card className={`relative flex flex-col items-center text-center w-full max-w-[280px] shadow-xl border-t-4 transition-all hover:-translate-y-2 ${isFirst ? 'scale-110 border-yellow-400 bg-gradient-to-b from-yellow-50/50 to-white' : 'bg-white'}`}
-            style={{ borderColor: rank === 1 ? '#eab308' : rank === 2 ? '#94a3b8' : '#d97706' }}
-        >
-            <div className={`absolute -top-5 flex items-center justify-center w-10 h-10 rounded-full border-2 bg-white shadow-sm ${style.color} ${style.border}`}>
-                <span className="font-black text-lg">{rank}</span>
-            </div>
-            <CardHeader className={`pt-12 pb-2 flex flex-col items-center w-full`}>
-                <div className="mb-2">
-                    {style.icon}
-                </div>
-                <Avatar className={`${isFirst ? 'h-24 w-24' : 'h-16 w-16'} border-4 ${style.border}`}>
-                    <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${candidate.name}`} />
-                    <AvatarFallback>{candidate.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                </Avatar>
-            </CardHeader>
-            <CardContent className="space-y-1 pb-6 w-full">
-                <h3 className={`font-bold ${isFirst ? 'text-xl' : 'text-lg'} truncate px-2`} title={candidate.name}>
+        <div className={cn("relative flex flex-col p-6 items-center", className)}>
+            {/* Glowing header effect */}
+            <div className={`absolute top-0 left-0 right-0 h-32 opacity-20 bg-gradient-to-b ${rank === 1 ? 'from-yellow-300' : rank === 2 ? 'from-blue-300' : 'from-orange-300'
+                } to-transparent rounded-t-3xl`} />
+
+            <Avatar className={cn("h-28 w-28 border-4 shadow-xl z-10 mb-4",
+                rank === 1 ? "border-yellow-100 ring-2 ring-yellow-400" :
+                    rank === 2 ? "border-blue-100 ring-2 ring-blue-400" :
+                        "border-orange-100 ring-2 ring-orange-400"
+            )}>
+                <AvatarFallback className="text-3xl font-black bg-white text-slate-800">
+                    {candidate.name.charAt(0)}
+                </AvatarFallback>
+            </Avatar>
+
+            <div className="text-center space-y-1 z-10 w-full mb-auto">
+                <h3 className="font-bold text-xl text-slate-900 px-2 leading-tight" title={candidate.name}>
                     {candidate.name}
                 </h3>
-                <p className="text-sm text-muted-foreground truncate px-4">{candidate.email}</p>
-                <div className="pt-2 flex flex-col gap-1 items-center">
-                    <span className={`text-3xl font-extrabold ${style.color}`}>
-                        {candidate.score}<span className="text-sm text-muted-foreground font-normal">/100</span>
-                    </span>
-                    <Badge variant="outline" className="bg-slate-50">
-                        {candidate.experience_years} năm kinh nghiệm
+                <p className="text-slate-500 font-medium">{candidate.experience_years} năm Exp</p>
+                <div className="pt-2">
+                    <Badge className={cn("px-4 py-1 text-base font-bold shadow-sm border-none",
+                        rank === 1 ? "bg-amber-100 text-amber-700 hover:bg-amber-200" :
+                            rank === 2 ? "bg-blue-50 text-blue-700 hover:bg-blue-100" :
+                                "bg-orange-50 text-orange-700 hover:bg-orange-100"
+                    )}>
+                        {candidate.score} điểm
                     </Badge>
                 </div>
-            </CardContent>
-        </Card>
+            </div>
+
+            {/* Resume Button */}
+            <div className="w-full mt-6 z-10">
+                <CandidateProfile candidate={candidate}>
+                    <Button className={cn("w-full font-bold shadow-md hover:shadow-lg transition-all border-none h-11 rounded-xl",
+                        rank === 1 ? "bg-gradient-to-r from-amber-400 to-yellow-500 text-white hover:from-amber-500 hover:to-yellow-600" :
+                            rank === 2 ? "bg-gradient-to-r from-blue-400 to-cyan-500 text-white hover:from-blue-500 hover:to-cyan-600" :
+                                "bg-gradient-to-r from-orange-400 to-red-400 text-white hover:from-orange-500 hover:to-red-500"
+                    )}>
+                        Xem hồ sơ
+                    </Button>
+                </CandidateProfile>
+            </div>
+        </div>
     )
 }

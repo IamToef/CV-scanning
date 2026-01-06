@@ -1,6 +1,108 @@
 import { APP_CONFIG } from './config';
 import { AnalysisResult, ChatMessage, Candidate, JDAnalysisResult } from '@/types';
 
+
+// Helper to extract questions recursively (Shared)
+function extractQuestions(data: any) {
+    let technical: string[] = [];
+    let soft: string[] = [];
+
+    const add = (target: string[], source: any) => {
+        if (!source) return;
+        if (Array.isArray(source)) {
+            source.forEach(s => {
+                if (typeof s === 'string') target.push(s);
+            });
+        } else if (typeof source === 'string') {
+            if (source.includes('\n')) {
+                source.split('\n').filter(line => line.trim().length > 5).forEach(s => target.push(s));
+            } else if (source.length > 5) {
+                target.push(source);
+            }
+        }
+    };
+
+    const search = (obj: any) => {
+        if (!obj || typeof obj !== 'object') return;
+
+        // Recursively search common nested structures first
+        if (obj.json) search(obj.json);
+        if (obj.output) search(obj.output);
+        if (obj.data) search(obj.data);
+
+        // Scan ALL keys using regex
+        Object.keys(obj).forEach(key => {
+            const lower = key.toLowerCase();
+            const val = obj[key];
+            if (!val) return;
+
+            // Skip known non-question massive objects/arrays to save perf
+            if (key === 'json' || key === 'output' || key === 'data') return;
+
+            // 1. Technical Keywords
+            if (/technical|technolog|hard.*skill|chuyên môn|kỹ thuật/.test(lower)) {
+                // Ensure it's likely a question list (key has 'question' OR value is array OR long string)
+                if (lower.includes('question') || lower.includes('câu hỏi') || Array.isArray(val)) {
+                    add(technical, val);
+                }
+            }
+            // 2. Soft Skills Keywords
+            else if (/soft.*skill|behavior|social|culture|mềm|hành vi|ứng xử/.test(lower)) {
+                if (lower.includes('question') || lower.includes('câu hỏi') || Array.isArray(val)) {
+                    add(soft, val);
+                }
+            }
+            // 3. Generic/Fallback Keywords
+            else if (/question|interview|câu hỏi|phỏng vấn|gợi ý/.test(lower)) {
+                // Heuristic: If value is array or long string context
+                if (Array.isArray(val) || (typeof val === 'string' && val.length > 15)) {
+                    // Avoid things like "question_id"
+                    if (lower.includes('id') || lower.includes('count')) return;
+
+                    // Fallback to soft, as it's safer for generic chats
+                    add(soft, val);
+                }
+            }
+        });
+    };
+
+    if (Array.isArray(data)) {
+        data.forEach(item => search(item));
+    } else {
+        search(data);
+    }
+
+    return {
+        technical: Array.from(new Set(technical)).filter(q => q.trim().length > 0),
+        soft: Array.from(new Set(soft)).filter(q => q.trim().length > 0)
+    };
+}
+
+function sanitizeQuestions(list: any[]): string[] {
+    if (!Array.isArray(list)) return [];
+    return list.map(q => {
+        if (typeof q !== 'string') return '';
+        let str = String(q).trim();
+
+        // Filter out known garbage keys from bad JSON parsing
+        // "oft_skill_questions" is a common truncated key artifact
+        if (str.includes('_questions') || str.includes('":') || str.includes('"[') || str.length > 500) return '';
+        if (str.startsWith('oft_skill_')) return '';
+
+        // Safe cleaning: Remove start bullets/numbers using Regex
+        // Matches:
+        // 1. One or more bullets (*, -, +, •) followed by optional space
+        // 2. Numbered lists (1., 1.1., etc) followed by optional space
+        str = str.replace(/^([*•\-+]+|\d+(\.\d+)*\.)\s*/, '');
+
+        // Remove wrapping quotes if present
+        str = str.replace(/^["']|["']$/g, '');
+
+        return str.trim();
+    }).filter(q => q && q.length > 5);
+}
+
+
 export async function uploadJDAndCVs(jd: string, files: File[]): Promise<AnalysisResult> {
     if (APP_CONFIG.useMockData) {
         console.log('[Mock API] Uploading JD:', jd.substring(0, 50) + '...');
@@ -59,6 +161,7 @@ export async function uploadJDAndCVs(jd: string, files: File[]): Promise<Analysi
 
 function parseCandidates(data: any): AnalysisResult {
     try {
+        console.log('[API] parseCandidates raw data:', JSON.stringify(data, null, 2));
         let items: any[] = [];
 
         // Handle various n8n response structures
@@ -72,8 +175,9 @@ function parseCandidates(data: any): AnalysisResult {
             items = [data.json];
         }
 
+        const globalQuestions = extractQuestions(data);
+
         const candidates: Candidate[] = items.map((item: any) => {
-            // ... (existing map logic) ...
             // Unwrap 'json', 'data', or 'output' if nested
             const raw = item.output || item.json || item.data || item;
 
@@ -99,11 +203,37 @@ function parseCandidates(data: any): AnalysisResult {
             };
 
             // Parse Skills (Direct Array or parsing)
-            const rawSkills = raw['Danh sách kỹ năng'] || raw['skills_found'] || [];
-            let parsedSkills: string[] = [];
-            if (Array.isArray(rawSkills)) {
-                parsedSkills = rawSkills.map(String);
-            }
+            const skillsList = Array.isArray(raw['Danh sách kỹ năng']) ? raw['Danh sách kỹ năng'] : (Array.isArray(raw['skills_found']) ? raw['skills_found'] : []);
+            let parsedSkills: string[] = skillsList.map(String);
+
+            // Local extraction for this specific item (search the WHOLE item, not just unwrapped raw)
+            // This ensures we catch sibling keys like 'technical_questions' alongside 'output'
+            const localQuestions = extractQuestions(item);
+
+            // Determine questions with fallback to global scan
+            // Priority: Parent Item Property -> Raw Property -> Local Extract -> Global fallback
+            const techQ = sanitizeQuestions(
+                item.technical_questions ||
+                raw.technical_questions ||
+                raw.json?.technical_questions ||
+                (localQuestions.technical.length > 0 ? localQuestions.technical : [])
+            );
+
+            const softQ = sanitizeQuestions(
+                item.soft_skill_questions ||
+                item.soft_skills_questions ||
+                item.suggested_interview_questions ||
+                raw.soft_skill_questions ||
+                raw.soft_skills_questions ||
+                raw.json?.soft_skill_questions ||
+                raw.json?.soft_skills_questions ||
+                (localQuestions.soft.length > 0 ? localQuestions.soft : [])
+            );
+
+            // Fallback: If local is empty, try global (only if we have 1 candidate to avoid mixing)
+            const finalTechQ = (techQ.length === 0 && items.length === 1) ? globalQuestions.technical : techQ;
+            const finalSoftQ = (softQ.length === 0 && items.length === 1) ? globalQuestions.soft : softQ;
+
 
             return {
                 id: getStr('id') || Date.now().toString() + Math.random().toString().slice(2, 6),
@@ -136,7 +266,7 @@ function parseCandidates(data: any): AnalysisResult {
                 reward_analysis: parseAnalysis('Reward Factor'),
 
                 skills_found: parsedSkills, // Will be supplemented by markdown parsing if empty
-                skills_missing: [],
+                skills_missing: (Array.isArray(raw['Kỹ năng còn thiếu']) ? raw['Kỹ năng còn thiếu'] : (Array.isArray(raw['skills_missing']) ? raw['skills_missing'] : [])).map(String),
                 experience_years: (() => {
                     const expRaw = String(raw['Số năm kinh nghiệm'] || raw['số năm kinh nghiệm'] || '');
                     const match = expRaw.match(/(\d+(?:[.,]\d+)?)/);
@@ -146,15 +276,38 @@ function parseCandidates(data: any): AnalysisResult {
                     return 0;
                 })(),
 
+                resume_content: getStr('resume_content') || getStr('text'),
+
+                technical_questions: sanitizeQuestions(finalTechQ),
+                soft_skill_questions: sanitizeQuestions(finalSoftQ),
+
                 reasoning
             } as Candidate;
         });
+
+
+
 
         // MERGE LOGIC: If we have multiple items, try to merge "Questions Only" items into "Main" items
         // This handles cases where N8N returns separate items for the same candidate key
         if (candidates.length > 1) {
             const mainCandidate = candidates.find(c => c.name !== 'Unknown Candidate' && c.score > 0);
-
+            if (mainCandidate) {
+                candidates.forEach(c => {
+                    if (c !== mainCandidate) {
+                        if (c.technical_questions && c.technical_questions.length > 0) {
+                            mainCandidate.technical_questions = c.technical_questions;
+                        }
+                        if (c.soft_skill_questions && c.soft_skill_questions.length > 0) {
+                            mainCandidate.soft_skill_questions = c.soft_skill_questions;
+                        }
+                        if (!mainCandidate.resume_content && c.resume_content) {
+                            mainCandidate.resume_content = c.resume_content;
+                        }
+                    }
+                });
+                return { candidates: [mainCandidate] };
+            }
         }
 
         return { candidates };
@@ -166,6 +319,69 @@ function parseCandidates(data: any): AnalysisResult {
 }
 
 export async function sendChatMessage(message: string, history: ChatMessage[] = []): Promise<ChatMessage> {
+    // 1. Check if this is a "Suggest Questions" request
+    if (message.toLowerCase().includes('câu hỏi phỏng vấn') || message.toLowerCase().includes('interview questions')) {
+        // Try to find a candidate context
+        let activeCandidate: Candidate | undefined;
+
+        // 1a. Check if user mentioned a name
+        const nameMatch = history.flatMap(h => h.candidates || []).find(c => message.toLowerCase().includes(c.name.toLowerCase()));
+        if (nameMatch) activeCandidate = nameMatch;
+
+        // 1b. Fallback to the last discussed candidate
+        if (!activeCandidate && history.length > 0) {
+            for (let i = history.length - 1; i >= 0; i--) {
+                if (history[i].candidates && history[i].candidates!.length > 0) {
+                    activeCandidate = history[i].candidates![0];
+                    break;
+                }
+            }
+        }
+
+        if (activeCandidate && activeCandidate.resume_content) {
+            console.log('[API] Routing to HR-CV for Interview Questions for:', activeCandidate.name);
+
+            // Call HR-CV Workflow (score-cv) with resume_content
+            const formData = new FormData();
+            formData.append('jd', "Yêu cầu công việc Business Analyst");
+            formData.append('resume_content', activeCandidate.resume_content);
+
+            const res = await fetch('/api/n8n/score', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (res.ok) {
+                const json = await res.json();
+
+                // Helper to extract questions (reuse existing or defined below)
+                // Note: extractQuestions is defined inside this module, need to ensure it's accessible or move it out
+                // It is currently defined inside sendChatMessage in previous version? No, likely outside based on outline. 
+                // Outline says sendChatMessage.extractQuestions at line 217. It logic is inside?
+
+                // WAIT: Outline says `sendChatMessage.extractQuestions` which implies it might be a nested function or static property if I misread, 
+                // OR it is a helper defined inside. 
+                // Step 295 shows: 217: sendChatMessage.extractQuestions. 
+                // If it is inside, I cannot call it before it is defined if it is `const`.
+                // Let's assume I need to copy or move the extraction logic OR rely on the response structure directly.
+
+                // Simpler approach: manual extraction here to be safe, or just use `extractQuestions` if it is hoisted (function declaration).
+                // Step 295 says `// Helper to extract questions` line 217. 
+
+                const { technical, soft } = extractQuestions(json);
+
+                return {
+                    id: Date.now().toString(),
+                    role: 'assistant',
+                    content: `Dưới đây là các câu hỏi phỏng vấn đề xuất cho ứng viên **${activeCandidate.name}**:`,
+                    timestamp: Date.now(),
+                    technical_questions: sanitizeQuestions(technical),
+                    soft_skill_questions: sanitizeQuestions(soft),
+                    candidates: [activeCandidate]
+                };
+            }
+        }
+    }
     if (APP_CONFIG.useMockData) {
         return new Promise(resolve => setTimeout(() => resolve({
             id: Date.now().toString(),
@@ -214,6 +430,11 @@ export async function sendChatMessage(message: string, history: ChatMessage[] = 
         }
         return text;
     };
+
+    // Helper to extract questions
+    // extractQuestions is now defined at module level
+
+
 
     if (Array.isArray(data) && data.length > 0) {
         // Handle array response: use first item
@@ -464,8 +685,6 @@ export async function sendChatMessage(message: string, history: ChatMessage[] = 
                     }
                 }
 
-                // Final score adjustment based on exp (Example logic, mostly for mock)
-                // if (cand.experience_years >= 4) cand.score = 92;
             });
 
         } catch (e) {
@@ -473,13 +692,63 @@ export async function sendChatMessage(message: string, history: ChatMessage[] = 
         }
     }
 
+    const { technical, soft } = extractQuestions(data);
+
     return {
         id: Date.now().toString(),
         role: 'assistant',
         content,
         timestamp: Date.now(),
-        candidates
+        candidates,
+        technical_questions: technical,
+        soft_skill_questions: soft
     };
+}
+
+
+
+export async function getInterviewQuestions(candidate: Candidate, jd: string = "Yêu cầu công việc Business Analyst"): Promise<{ technical: string[], soft: string[] }> {
+    if (APP_CONFIG.useMockData) {
+        return new Promise(resolve => setTimeout(() => resolve({
+            technical: [
+                "Bạn đã từng xử lý trường hợp yêu cầu thay đổi liên tục từ khách hàng chưa? Hãy chia sẻ cụ thể.",
+                "Làm thế nào để bạn đảm bảo tính chính xác khi phân tích nghiệp vụ cho một hệ thống tài chính?"
+            ],
+            soft: [
+                "Bạn thường làm gì khi gặp xung đột với Developer về tính khả thi của yêu cầu?",
+                "Mô tả một lần bạn phải thuyết phục stakeholder khó tính."
+            ]
+        }), 1000));
+    }
+
+    try {
+        // Call HR-CV Workflow (score-cv) with resume_content
+        const formData = new FormData();
+        formData.append('jd', jd);
+        // Ensure we send content. Check resume_content first, then summary.
+        formData.append('resume_content', candidate.resume_content || candidate.summary || "");
+
+        const res = await fetch('/api/n8n/score', {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!res.ok) {
+            throw new Error(`Failed to fetch questions: ${res.statusText}`);
+        }
+
+        const json = await res.json();
+        console.log("getInterviewQuestions API Response:", JSON.stringify(json, null, 2));
+
+        const { technical, soft } = extractQuestions(json);
+        console.log("Extracted Questions:", { technical, soft });
+
+        return { technical: sanitizeQuestions(technical), soft: sanitizeQuestions(soft) };
+
+    } catch (error) {
+        console.error("Error getting interview questions:", error);
+        return { technical: [], soft: [] };
+    }
 }
 
 export async function extractRequirementsFromJD(jdText: string): Promise<JDAnalysisResult> {
@@ -588,22 +857,21 @@ ${jdText}
                 };
             }
 
-            // Sanity Check / Post-Processing to recover from "Values as Keys" hallucination
-            // Example: { "Figma": [], "React": [], "technical_skills": [] }
+            // Sanity Check / Post-Processing (Hardened)
             if (result.job_requirements) {
                 const jr = result.job_requirements;
                 const raw = (itemObj && (itemObj.output || itemObj.json || itemObj)) || {};
 
-                // 1. Recover Technical Skills from Keys
+                // 1. Recover Technical Skills from Keys (with stricter exclusions)
                 if ((!jr.technical_skills || jr.technical_skills.length === 0) && typeof raw === 'object') {
-                    // Filter keys that look like skills (not standard fields)
                     const potentialSkills = Object.keys(raw).filter(k =>
-                        !['technical_skills', 'soft_skills', 'years_of_experience', 'education', 'job_requirements', 'output', 'json'].includes(k) &&
+                        !['technical_skills', 'soft_skills', 'years_of_experience', 'education', 'job_requirements', 'output', 'json', 'data'].includes(k) &&
                         !k.startsWith('Kỹ năng') &&
                         !k.startsWith('Số năm') &&
-                        !k.match(/experience|education|skill|requirements/i) &&
-                        k.length < 50 && // Skip long sentences
-                        Array.isArray(raw[k]) && raw[k].length === 0 // Check if value is empty array (common in this hallucination)
+                        !k.startsWith('Kinh nghiệm') && // Explicit exclusion
+                        !k.match(/experience|education|skill|requirements|kinh nghiem|hoc van/i) &&
+                        k.length < 50 &&
+                        Array.isArray(raw[k]) && raw[k].length === 0
                     );
 
                     if (potentialSkills.length > 0) {

@@ -23,10 +23,10 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
       "position": [
-        -64,
-        112
+        -4352,
+        400
       ],
-      "id": "1f9081ac-d909-4e1d-a1fe-db4a8784514a",
+      "id": "7f828c72-d3c4-40cb-a70c-2180f5f5af46",
       "name": "Call 'CV Processing LLM Pipeline (Final)'",
       "disabled": true
     },
@@ -49,10 +49,10 @@
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
       "position": [
-        -960,
-        192
+        -5248,
+        464
       ],
-      "id": "a1943d63-f77a-421b-84b5-c40786764199",
+      "id": "7c88622d-d43b-44a3-948b-8eb9a8ce33ad",
       "name": "Search files and folders",
       "credentials": {
         "googleDriveOAuth2Api": {
@@ -68,10 +68,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -736,
-        192
+        -5024,
+        464
       ],
-      "id": "64252e09-ce41-41a5-a91f-13337ebddac7",
+      "id": "b43af897-b91c-44ca-b221-6c51e7118bb5",
       "name": "Loop Over Items"
     },
     {
@@ -83,10 +83,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        -288,
-        112
+        -4576,
+        400
       ],
-      "id": "229fb707-f2d7-46a5-a147-8c6ff8d31a2b",
+      "id": "98bba35c-5c31-4814-be71-bb34af79b602",
       "name": "Merge"
     },
     {
@@ -116,10 +116,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -512,
-        192
+        -4800,
+        464
       ],
-      "id": "f0fd115f-0ab7-47b9-bdc2-21218457e852",
+      "id": "fe0046fd-76dd-40cd-8627-26744f98670e",
       "name": "If"
     },
     {
@@ -144,10 +144,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -288,
-        -320
+        -4576,
+        -48
       ],
-      "id": "2118a5c5-5f57-4926-8529-18924a3962ca",
+      "id": "bebf77ba-8fdd-4dbb-b463-874590d8e611",
       "name": "PDF link"
     },
     {
@@ -157,10 +157,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -512,
-        -320
+        -4800,
+        -48
       ],
-      "id": "7d6518bc-0df6-4d9e-beff-d0c478329643",
+      "id": "ef0ee4a4-77db-4cca-8645-c7f9bf9bc6b6",
       "name": "Rename Binary File"
     },
     {
@@ -172,11 +172,60 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        -736,
-        -320
+        -5024,
+        -48
       ],
-      "id": "6c380517-2516-4fe4-84de-0fd6aaed5ae9",
+      "id": "ae82c178-b12d-4cda-a6e9-9746fbf452cc",
       "name": "Merge2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.resume_content }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -5712,
+        112
+      ],
+      "id": "abb03d3a-6570-4c7d-a73a-9b840af91abe",
+      "name": "Check Input Type"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "resume-content-assign",
+              "name": "text",
+              "value": "={{ $json.body.resume_content }}",
+              "type": "string"
+            },
+            {
+              "id": "file-name-assign",
+              "name": "file_name",
+              "value": "Direct Input",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -5520,
+        -16
+      ],
+      "id": "82409d9d-1e25-4ad3-9310-c28d8c5db428",
+      "name": "Set Resume Content"
     },
     {
       "parameters": {
@@ -188,10 +237,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -1632,
-        -176
+        -5920,
+        112
       ],
-      "id": "b5f95627-eb47-453e-b8ce-3c5ced2f25a5",
+      "id": "72641954-a060-4204-86d4-88a8d2b85560",
       "name": "Webhook",
       "webhookId": "0949afcd-d432-47a0-b0e8-aab90ac6bd4f"
     },
@@ -204,10 +253,10 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
       "position": [
-        -1408,
-        16
+        -5696,
+        304
       ],
-      "id": "6a383af4-137f-428c-add9-73497212f07c",
+      "id": "2bb8b9c1-b184-4e42-94bf-1cd2dbc5ab5e",
       "name": "Lấy thông tin CV"
     },
     {
@@ -233,10 +282,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -1184,
-        16
+        -5472,
+        304
       ],
-      "id": "cd6f7f4d-1934-4eb3-902f-1dbed95c3997",
+      "id": "f39dc11a-cadc-43cb-b916-288911dc54c4",
       "name": "Edit Fields"
     },
     {
@@ -256,10 +305,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        832,
-        -256
+        -3456,
+        32
       ],
-      "id": "32c48a6b-2cf8-45e5-b458-b77c200e77c4",
+      "id": "c32c4075-b6e5-4cb9-b80d-d8a953f81366",
       "name": "candidate CV"
     },
     {
@@ -268,16 +317,16 @@
         "text": "=CV Ứng viên:\n{{ $('candidate CV').item.json.resume_content }}\nBảng giới thiệu công việc (Job Description)\n{{ $('Webhook').item.json.body.jd }}",
         "hasOutputParser": true,
         "options": {
-          "systemMessage": "=Bạn là một hệ thống ATS chuyên nghiệp nhất thế giới dùng để đánh giá mức độ phù hợp của ứng viên với một yêu cầu công việc Business Analyst (Junior/Middle).\n\nNhiệm vụ của bạn:\n1. Phân tích thông tin CV ứng viên.\n2. Phân tích yêu cầu công việc (tập trung vào phần Yêu cầu được cung cấp).\n3. So khớp và chấm điểm theo thang điểm 100.\n4. Trích xuất các kỹ năng chuyên môn và kỹ năng mềm từ CV.\n5. Chỉ trả về đúng một JSON DUY NHẤT theo format quy định.\n\nFORMAT OUTPUT PHẢI TRẢ VỀ (BẮT BUỘC):\n\nLƯU Ý QUAN TRỌNG: \n- TRẢ VỀ JSON GỐC (FLAT OBJECT).\n- TUYỆT ĐỐI KHÔNG BỌC TRONG KEY 'output' HAY 'json'.\n- KHÔNG DÙNG MARKDOWN BLOCK (```).\n\n{\n  \"Họ tên ứng viên\": \"HỌ TÊN VIẾT IN HOA KHÔNG DẤU\",\n  \"Email\": \"email của ứng viên\",\n  \"SĐT\": \"số điện thoại (định dạng 090 - ...)\",\n  \"Số năm kinh nghiệm\": \"Số năm kinh nghiệm làm việc liên quan\",\n  \"Điểm tổng\": 0-100 (Trung bình cộng của 4 đầu điểm thành phần),\n  \"Mức độ phù hợp\": \"Thấp | Trung bình | Cao | Cực kỳ phù hợp\",\n  \"Tóm tắt\": \"Tóm tắt toàn bộ CV của ứng viên chỉ trong 1 câu, tối đa 40 từ\",\n  \"Lý do chấm điểm\": \"Giải thích ngắn gọn tại sao cho mức điểm này\",\n  \"Danh sách kỹ năng\": [\"Kỹ năng 1\", \"Kỹ năng 2\", ...], CHỈ LIỆT KÊ TỐI ĐA 5-7 KỸ NĂNG QUAN TRỌNG NHẤT KHỚP VỚI JD (ưu tiên Hard Skill để phân loại). Format chuẩn (VD: Agile/Scrum, SQL, Figma).,\n  \"Kỹ năng còn thiếu\": [\"Kỹ năng A\", \"Kỹ năng B\", ...], So sánh kỹ với JD, liệt kê các kỹ năng BẮT BUỘC trong JD mà CV KHÔNG CÓ.\n  \"Ưu điểm\": [\"Ưu điểm 1\", \"Ưu điểm 2\", ...],\n  \"Nhược điểm\": [\"Nhược điểm 1\", \"Nhược điểm 2\", ...],\n  \"Chi tiết điểm\": {\n    \"điểm kinh nghiệm\": 0-100,\n    \"điểm kỹ năng\": 0-100,\n    \"điểm học vấn\": 0-100,\n    \"điểm thành tích & tiềm năng\": 0-100\n  }\n}\n\nLƯU Ý QUAN TRỌNG VỀ FORMAT:\n1. Số điện thoại: Nếu có (+84) đổi thành 0. Định dạng bắt buộc: XXX - XXX - XXXX (Ví dụ: 090 - 123 - 4567).\n2. JSON phải hợp lệ, không chứa markdown thừa (như ```json).\n\nTIÊU CHÍ CHẤM ĐIỂM (THANG 100 ĐIỂM)\n\nA. Điểm Kinh nghiệm (Tối đa 100 điểm)\n- Mục tiêu: Đánh giá độ sâu và tính liên quan của kinh nghiệm BA.\n- 90-100: Có 2+ năm kinh nghiệm BA Product VÀ có kinh nghiệm thực tế ứng dụng AI trong Bán lẻ/Phân phối.\n- 70-89: Có kinh nghiệm BA Product VÀ áp dụng Agile/Scrum thuần thục.\n- 50-69: Đạt yêu cầu tối thiểu (2-3 năm BA, hiểu Agile, chưa mạnh về Product/AI).\n- < 50: Thiếu kinh nghiệm hoặc kinh nghiệm không liên quan.\n\nB. Điểm Kỹ năng (Technical & Tool) (Tối đa 100 điểm)\n- Mục tiêu: Đánh giá thành thạo công cụ và tư duy công nghệ.\n- 90-100: Thành thạo AI/LLM trong workflow VÀ có kinh nghiệm tự động hóa (n8n, Zapier, Make).\n- 70-89: Thành thạo công cụ bắt buộc (Jira, Confluence, Figma, SQL, Draw.io) VÀ có tư duy Product Mindset tốt.\n- 40-69: Chỉ biết sử dụng công cụ cơ bản, chưa áp dụng công nghệ mới.\n\nC. Điểm Học vấn (Tối đa 100 điểm)\n- Mục tiêu: Đánh giá nền tảng đào tạo.\n- 90-100: Đại học chuyên ngành CNTT/Hệ thống thông tin/Khoa học dữ liệu.\n- 60-89: Cao đẳng CNTT hoặc Đại học ngành khác nhưng có kinh nghiệm BA dày dặn bù đắp.\n- 40-59: Ngành không liên quan, chỉ có chứng chỉ ngắn hạn.\n\nD. Điểm Thành tích & Tiềm năng (Tối đa 100 điểm)\n- Mục tiêu: Đánh giá sự chủ động (Growth Mindset).\n- 90-100: Có chứng chỉ quốc tế (CBAP, PSPO, CCBA) VÀ dự án cá nhân/thành tích nổi bật (giải thưởng, blog chuyên môn, dự án AI cá nhân).\n- 60-89: Có chứng chỉ cơ bản hoặc thành tích học tập tốt.\n- < 60: Không có thành tích hoặc hoạt động nổi bật.\n\n*Lưu ý: CV dài hơn 3 trang lan man -> Trừ 5-10 điểm vào điểm tổng.*\n\nYÊU CẦU BẮT BUỘC KHI TRẢ LỜI:\n- Ngôn ngữ: Tiếng Việt.\n- Trung thực: Không bịa thông tin.\n- Vai trò: Chuyên gia tuyển dụng khắt khe nhưng công bằng.\n\nDỮ LIỆU ĐẦU VÀO:\n- Mô tả công việc (JD): {{ $('Webhook').item.json.body.jd }}\n- CV Ứng viên: (Dữ liệu CV sẽ được cung cấp ngay sau đây)"
+          "systemMessage": "=Bạn là một hệ thống ATS chuyên nghiệp nhất thế giới dùng để đánh giá mức độ phù hợp của ứng viên với một yêu cầu công việc Business Analyst (Junior/Middle).\n\nNhiệm vụ của bạn:\n1. Phân tích thông tin CV ứng viên.\n2. Phân tích yêu cầu công việc (tập trung vào phần Yêu cầu được cung cấp).\n3. So khớp và chấm điểm theo thang điểm 100.\n4. Trích xuất các kỹ năng chuyên môn và kỹ năng mềm từ CV.\n5. Chỉ trả về đúng một JSON DUY NHẤT theo format quy định.\n\nFORMAT OUTPUT PHẢI TRẢ VỀ (BẮT BUỘC):\n\nLƯU Ý QUAN TRỌNG: \n- TRẢ VỀ JSON GỐC (FLAT OBJECT).\n- TUYỆT ĐỐI KHÔNG BỌC TRONG KEY 'output' HAY 'json'.\n- KHÔNG DÙNG MARKDOWN BLOCK (```).\n\n{\n  \"Họ tên ứng viên\": \"HỌ TÊN VIẾT IN HOA KHÔNG DẤU\",\n  \"Email\": \"email của ứng viên\",\n  \"SĐT\": \"số điện thoại (định dạng 090 - ...)\",\n  \"Số năm kinh nghiệm\": \"Số năm kinh nghiệm làm việc liên quan\",\n  \"Điểm tổng\": 0-100 (Trung bình cộng của 4 đầu điểm thành phần),\n  \"Mức độ phù hợp\": \"Thấp | Trung bình | Cao | Cực kỳ phù hợp\",\n  \"Tóm tắt\": \"Viết đoạn tóm tắt chuyên nghiệp về ứng viên (độ dài khoảng 3 câu, 60-80 từ). Bắt buộc bao gồm đầy đủ: 1. Số năm kinh nghiệm và vai trò chính. 2. Các kỹ năng kỹ thuật (Hard Skills) và công nghệ nổi bật nhất. 3. Kỹ năng mềm hoặc thành tựu định lượng cụ thể. Văn phong trôi chảy, ấn tượng.\",\n  \"Lý do chấm điểm\": \"Nêu 1 điểm mạnh nhất và 1 điểm yếu/thiếu hụt chính ảnh hưởng đến điểm số. Viết súc tích, đi thẳng vào vấn đề. Tối đa 35 từ.\",\n  \"Danh sách kỹ năng\": [\n        \"Chỉ chứa các kỹ năng ĐÃ ĐƯỢC CHUẨN HÓA.\",\n        \"Tuyệt đối KHÔNG đưa vào các kỹ năng CV có mà JD không cần (Ví dụ: CV có 'Bơi lội', JD IT không cần -> Loại bỏ).\",\n        \"Định dạng mảng String JSON.\"\n      ],\n      \"Kỹ năng còn thiếu\": [\n        \"Chỉ liệt kê các kỹ năng BẮT BUỘC (Required) trong JD mà CV không đáp ứng.\",\n        \"Không liệt kê các kỹ năng phụ (Nice-to-have) vào đây.\",\n        \"Dùng tên chuẩn hóa (Ví dụ: ghi thiếu 'AI/Machine Learning' thay vì thiếu 'LLM').\"\n      ]\n  \"Ưu điểm\": [\"Ưu điểm 1\", \"Ưu điểm 2\", ...],\n  \"Nhược điểm\": [\"Nhược điểm 1\", \"Nhược điểm 2\", ...], Diễn đạt nhẹ nhàng, mang tính xây dựng.\n  \"Chi tiết điểm\": {\n    \"điểm kinh nghiệm\": 0-100,\n    \"điểm kỹ năng\": 0-100,\n    \"điểm học vấn\": 0-100,\n    \"điểm thành tích & tiềm năng\": 0-100\n  }\n}\n\nLƯU Ý QUAN TRỌNG VỀ FORMAT:\n1. Số điện thoại: Nếu có (+84) đổi thành 0. Định dạng bắt buộc: XXX - XXX - XXXX (Ví dụ: 090 - 123 - 4567).\n2. JSON phải hợp lệ, không chứa markdown thừa (như ```json).\n3. Logic xử lý kỹ năng:\n  Bước 1: Phân tích JD: Đọc JD để xác định danh sách các từ khóa kỹ năng (Keywords). Phân loại đâu là Kỹ năng Bắt buộc (Must-have/Required) và đâu là Lợi thế (Nice-to-have)\n  Bước 2: Chuẩn hóa từ khóa (Normalization rules): \nKhi trích xuất kỹ năng từ cả JD và CV, bắt buộc quy đổi các biến thể về TÊN GỌI CHUẨN (Canonical Name) theo quy tắc sau:\n   - QUY TRÌNH XỬ LÝ TRÙNG LẶP & CHUẨN HÓA (BẮT BUỘC):\n       + Bước 1: Thu thập tất cả từ khóa từ CV và JD.\n       + Bước 2: Rà soát & Gộp biến thể (Consolidate Variants):\n         * Nếu thấy các cặp từ giống nhau >80% (chỉ khác dấu câu, viết tắt): HỢP NHẤT về 1 tên chuẩn duy nhất.\n         * Ưu tiên dùng dấu gạch chéo `/` cho các công nghệ đi kèm nhau. (Vd: Chọn 'Agile/Scrum' thay vì 'Agile Scrum'; Chọn 'CI/CD' thay vì 'CI CD').\n         * Ưu tiên dùng dấu chấm `.` cho tên công cụ. (Vd: Chọn 'Draw.io' thay vì 'Draw io').\n         * Ưu tiên từ ngữ đầy đủ cho Soft Skills. (Vd: Chọn 'Problem Solving' thay vì 'Problem-solving').\n       + Bước 3: KIỂM TRA CHÉO (SELF-CORRECTION):\n         * Trước khi output, hãy tự hỏi: \"Trong danh sách này có 2 kỹ năng nào nói về cùng 1 thứ không?\". Nếu có -> XÓA 1 cái.\n         * VÍ DỤ SAI (BAD): [\"Agile Scrum\", \"Agile/Scrum\", \"AI\", \"AI/ML\"] -> Trùng lặp!\n         * VÍ DỤ ĐÚNG (GOOD): [\"Agile/Scrum\", \"AI/Machine Learning\"] -> Gọn gàng, chuẩn xác.\n       + Nguyên tắc chung: Thà liệt kê thiếu 1 biến thể phụ còn hơn liệt kê trùng lặp làm loãng báo cáo.\n\n  Bước 3: MATCHING: So sánh danh sách kỹ năng đã chuẩn hóa của CV với JD:\n    - MATCH: Nếu CV có kỹ năng khớp với JD (dù tên gọi khác nhau nhưng đã được chuẩn hóa về cùng 1 nhóm) -> Đưa vào 'Danh sách kỹ năng'.\n    - MISSING: Nếu JD yêu cầu BẮT BUỘC mà CV hoàn toàn không nhắc đến (hoặc không có kỹ năng tương đương trong nhóm) -> Đưa vào 'Kỹ năng còn thiếu'.\n\nTIÊU CHÍ CHẤM ĐIỂM (THANG 100 ĐIỂM)\n\nA. Điểm Kinh nghiệm (Tối đa 100 điểm)\n- Mục tiêu: Đánh giá độ sâu kinh nghiệm BA, đặc biệt là Product & AI.\n- 90-100 (Xuất sắc): >3 năm kinh nghiệm BA Product VÀ có dự án thực tế về AI/Data/Bán lẻ. Am hiểu sâu Agile/Scrum.\n- 75-89 (Giỏi): 2-3 năm kinh nghiệm BA Product, nắm vững quy trình Agile, tư duy sản phẩm tốt.\n- 60-74 (Khá): 1-2 năm kinh nghiệm BA, có kỹ năng phân tích cơ bản, hiểu Agile nhưng chưa sâu.\n- < 60 (Yếu): Dưới 1 năm hoặc kinh nghiệm không liên quan (Tester, Admin...).\n\nB. Điểm Kỹ năng (Technical & Tool) (Tối đa 100 điểm)\n- Mục tiêu: Đánh giá công cụ & khả năng thích ứng công nghệ mới.\n- 90-100: Thành thạo AI/LLM để tối ưu công việc + Có kinh nghiệm Automation (n8n, Zapier) + SQL tốt.\n- 75-89: Thành thạo Jira, Confluence, Figma, Draw.io, SQL cơ bản. Có tư duy UX/UI.\n- 60-74: Chỉ biết công cụ văn phòng và vẽ flowchart cơ bản. Chưa biết SQL hay các tool quản lý hiện đại.\n- < 60: Kỹ năng công cụ yếu.\n\nC. Điểm Học vấn (Tối đa 100 điểm)\n- 90-100: Đại học chuyên ngành CNTT, HTTT, Khoa học dữ liệu.\n- 70-89: Đại học ngành gần (Kinh tế, Kỹ thuật) + Có chứng chỉ BA uy tín / Hoặc Cao đẳng CNTT nhưng kinh nghiệm tốt.\n- < 70: Trái ngành, không có chứng chỉ liên quan.\n\nD. Điểm Thành tích & Tiềm năng (Growth Mindset) (Tối đa 100 điểm)\n- 90-100: Có chứng chỉ quốc tế (CBAP, CCBA, PSPO) HOẶC Blog chuyên môn/Dự án cá nhân Impressive.\n- 70-89: Có chứng chỉ cơ bản (ECBA...) hoặc thành tích học tập/công việc tốt (GPA Giỏi, Best Employee).\n- < 70: Không có thành tích nổi bật.\n\n*Lưu ý: CV trình bày cẩu thả, sai chính tả hoặc dài > 3 trang -> Trừ 10 điểm vào Tổng điểm.*\n\nYÊU CẦU BẮT BUỘC KHI TRẢ LỜI:\n- Ngôn ngữ: Tiếng Việt.\n- Trung thực: Không bịa thông tin.\n- Vai trò: Chuyên gia tuyển dụng khắt khe nhưng công bằng.\n\nDỮ LIỆU ĐẦU VÀO:\n- Mô tả công việc (JD): {{ $('Webhook').item.json.body.jd }}\n- CV Ứng viên: (Dữ liệu CV sẽ được cung cấp ngay sau đây)\n"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 2.2,
       "position": [
-        1056,
-        -256
+        -2880,
+        -224
       ],
-      "id": "717ca92e-fef4-4427-b91e-8493b4811924",
+      "id": "ab0df8f1-c792-433d-8401-4e5d22cd42fd",
       "name": "AI Agent",
       "retryOnFail": true
     },
@@ -289,10 +338,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [
-        1408,
-        -256
+        -2304,
+        32
       ],
-      "id": "266583cf-83b8-4522-aa89-a64d80ed20fa",
+      "id": "ba8f9239-ab10-40f6-a1fe-70f264e47f3e",
       "name": "Respond to Webhook"
     },
     {
@@ -338,10 +387,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -64,
-        -320
+        -4352,
+        -48
       ],
-      "id": "571b07bb-9aed-49f8-bfd7-bd3c8ec9dfc2",
+      "id": "b94a267d-2b58-47c6-8fdb-caeec5e3e85d",
       "name": "Convert PDF2Image"
     },
     {
@@ -351,10 +400,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        160,
-        -320
+        -4128,
+        -48
       ],
-      "id": "dbb6de14-1878-45d8-8891-456183a4d7ea",
+      "id": "19925dc9-4595-47fb-83b5-44c95aedfe74",
       "name": "Get URL"
     },
     {
@@ -372,10 +421,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        384,
-        -320
+        -3904,
+        -48
       ],
-      "id": "79086384-8630-45cd-aa6d-58e80278a954",
+      "id": "952f75a3-9bb2-4881-b36a-5e7758ff0f82",
       "name": "OCR OpenAI"
     },
     {
@@ -406,10 +455,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -960,
-        -176
+        -5248,
+        112
       ],
-      "id": "9bd72b74-8ea4-4330-bd3c-609932ca3923",
+      "id": "88d79313-246e-42dc-b6fe-74e622914435",
       "name": "Check null",
       "onError": "continueRegularOutput"
     },
@@ -420,10 +469,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        608,
-        -320
+        -3680,
+        -48
       ],
-      "id": "b93d56d3-828b-473f-a37a-59dad125ff90",
+      "id": "fb44a575-9b45-4b0f-917b-91d9d72aab4d",
       "name": "FN_Info"
     },
     {
@@ -433,10 +482,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        1200,
-        -32
+        -2736,
+        0
       ],
-      "id": "2400f34c-07a1-4c7c-8bac-48c720b54c02",
+      "id": "fafc4d60-0d94-46f8-9217-de8f6f7235d1",
       "name": "Structured Output Parser"
     },
     {
@@ -448,16 +497,17 @@
         },
         "options": {
           "maxTokens": 2500,
-          "responseFormat": "json_object"
+          "responseFormat": "json_object",
+          "temperature": 0
         }
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
-        1072,
-        -32
+        -2864,
+        0
       ],
-      "id": "67c5fefc-b04a-4da1-9415-08acdcf4d516",
+      "id": "f9ed3c27-2eeb-4420-80ca-03f6b6e2a8cf",
       "name": "OpenAI Chat Model",
       "credentials": {
         "openAiApi": {
@@ -465,6 +515,80 @@
           "name": "OpenAi account 3"
         }
       }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {
+          "maxTokens": 2500,
+          "responseFormat": "json_object",
+          "temperature": 0.4
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -3152,
+        400
+      ],
+      "id": "ced47e30-d662-41ec-89b3-6af40aef67b4",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "iCiSJp2rt9yhPy3g",
+          "name": "OpenAi account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=CV Ứng viên:\n{{ $('candidate CV').item.json.resume_content }}\nBảng giới thiệu công việc (Job Description)\n{{ $('Webhook').item.json.body.jd }}",
+        "options": {
+          "systemMessage": "=Bạn là một chuyên gia tuyển dụng hàng đầu. Dựa vào CV của ứng viên và Mô tả công việc (JD), hãy đề xuất 10 câu hỏi phỏng vấn để đánh giá năng lực của ứng viên.\n\nYêu cầu cụ thể:\n1. 5 câu hỏi chuyên sâu về Kỹ năng chuyên môn (Hard Skills) liên quan trực tiếp đến yêu cầu công việc và kinh nghiệm của ứng viên.\n2. 5 câu hỏi về Kỹ năng mềm (Soft Skills) và cách xử lý tình huống (Situational/Behavioral questions).\n\nOutput trả về định dạng JSON như sau (không dùng markdown code block):\n{\n  \"technical_questions\": [\n    \"Câu 1\",\n    \"Câu 2\",\n    \"Câu 3\",\n    \"Câu 4\",\n    \"Câu 5\"\n  ],\n  \"soft_skill_questions\": [\n    \"Câu 1\",\n    \"Câu 2\",\n    \"Câu 3\",\n    \"Câu 4\",\n    \"Câu 5\"\n  ]\n}\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -3232,
+        176
+      ],
+      "id": "7050818b-84de-478c-b86b-1fcf26492a28",
+      "name": "AI Question",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -2528,
+        32
+      ],
+      "id": "459ff492-988c-4cc4-a071-c46f59470e8d",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Helper to parse JSON from AI output\nfor (const item of items) {\n  const response = item.json.output || item.json.text || \"\";\n  \n  // Try to find JSON block between first { and last }\n  const start = response.indexOf('{');\n  const end = response.lastIndexOf('}');\n  \n  if (start !== -1 && end !== -1) {\n    try {\n      const jsonStr = response.substring(start, end + 1);\n      const data = JSON.parse(jsonStr);\n      \n      // Merge parsed data into item.json\n      Object.assign(item.json, data);\n      \n      // Remove raw output\n      delete item.json.output;\n      delete item.json.text;\n    } catch (e) {\n      item.json.error = \"Failed to parse JSON: \" + e.message;\n    }\n  }\n}\n\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2816,
+        176
+      ],
+      "id": "12370693-af48-4c30-9367-99e12d60fb38",
+      "name": "Code in JavaScript"
     }
   ],
   "pinData": {
@@ -597,6 +721,24 @@
       "main": [
         [
           {
+            "node": "Check Input Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Input Type": {
+      "main": [
+        [
+          {
+            "node": "Set Resume Content",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
             "node": "Lấy thông tin CV",
             "type": "main",
             "index": 0
@@ -605,6 +747,17 @@
             "node": "Merge2",
             "type": "main",
             "index": 1
+          }
+        ]
+      ]
+    },
+    "Set Resume Content": {
+      "main": [
+        [
+          {
+            "node": "candidate CV",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -648,6 +801,11 @@
             "node": "AI Agent",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "AI Question",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -656,7 +814,7 @@
       "main": [
         [
           {
-            "node": "Respond to Webhook",
+            "node": "Merge1",
             "type": "main",
             "index": 0
           }
@@ -725,17 +883,6 @@
         ]
       ]
     },
-    "Structured Output Parser": {
-      "ai_outputParser": [
-        [
-          {
-            "node": "AI Agent",
-            "type": "ai_outputParser",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "OpenAI Chat Model": {
       "ai_languageModel": [
         [
@@ -746,13 +893,68 @@
           }
         ]
       ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Question",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Question": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "a58973a8-effd-417d-9dcc-ab9278c50864",
+  "versionId": "94c1f37b-4eea-4741-9a2f-ed01335b06f5",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "df174d571e95541c805919aa88d99c6ff9e79e2c1ffc42837bb92614d24bb4eb"

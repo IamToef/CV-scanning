@@ -38,6 +38,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         },
       }}
       closeButton
+      position="top-right"
       {...props}
     />
   )

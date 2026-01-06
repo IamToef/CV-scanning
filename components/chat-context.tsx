@@ -15,14 +15,7 @@ interface ChatContextType {
 const ChatContext = createContext<ChatContextType | undefined>(undefined)
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
-    const [messages, setMessages] = useState<ChatMessage[]>([
-        {
-            id: '1',
-            role: 'assistant',
-            content: 'Xin chào! Tôi là RecruitPRO Agent. Tôi có thể giúp gì cho bạn? Ví dụ: "Ai có kinh nghiệm React?"',
-            timestamp: Date.now()
-        }
-    ])
+    const [messages, setMessages] = useState<ChatMessage[]>([])
     const [isLoading, setIsLoading] = useState(false)
 
     const sendMessage = async (content: string) => {
@@ -58,14 +51,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     }
 
     const clearMessages = () => {
-        setMessages([
-            {
-                id: '1',
-                role: 'assistant',
-                content: 'Xin chào! Tôi là RecruitPRO Agent. Tôi có thể giúp gì cho bạn? Ví dụ: "Ai có kinh nghiệm React?"',
-                timestamp: Date.now()
-            }
-        ])
+        setMessages([])
     }
 
     return (

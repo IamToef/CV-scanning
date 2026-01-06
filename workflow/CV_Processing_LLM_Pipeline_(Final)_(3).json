@@ -2,16 +2,27 @@
   "name": "CV Processing LLM Pipeline (Final)",
   "nodes": [
     {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        1744,
+        1456
+      ],
+      "id": "33dbb8c8-4f88-4d4e-8171-71a40787d32f",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
       "parameters": {
-        "jsCode": "// --- 1. CÁC HÀM HELPER ---\nfunction uuid() {\n  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {\n    const r = Math.random() * 16 | 0;\n    const v = c === 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n  });\n}\n\nfunction clean(str) {\n  if (!str) return \"\";\n  if (Array.isArray(str)) return str.join(\", \"); \n  return String(str).replace(/[“”‘’]/g, '\"').replace(/'/g, \"''\").replace(/[\\u0000-\\u0019]+/g, \" \").trim();\n}\n\nfunction normalizeObjectKeys(obj) {\n    if (!obj || typeof obj !== 'object') return {};\n    const newObj = {};\n    Object.keys(obj).forEach(key => {\n        const cleanKey = key.toLowerCase().trim().replace(/_/g, \"\"); \n        newObj[cleanKey] = obj[key];\n    });\n    return newObj;\n}\n\n// [FIX] HÀM XỬ LÝ NĂM KINH NGHIỆM VỚI LOGIC LÀM TRÒN ĐẶC BIỆT\nfunction parseExperienceYears(str) {\n    if (!str) return 0;\n    const s = String(str).toLowerCase().trim();\n\n    // Helper: Logic làm tròn theo yêu cầu\n    // - Nếu là 0.5 -> Giữ nguyên 0.5\n    // - Nếu khác 0.5 -> Math.round ( <0.5 về 0, >0.5 lên 1)\n    const applyRounding = (val) => {\n        if (val === 0.5) return 0.5;\n        return Math.round(val);\n    };\n\n    // Regex tìm số\n    const numberPattern = /(\\d+(?:[.,]\\d+)?)\\s*(?:năm|year|yr|yrs|\\+)/gi;\n\n    // CHIẾN THUẬT 1: Tìm sau từ khóa \"Tổng/Total/Khoảng\"\n    const keywordIndex = s.search(/(?:tổng|total|khoảng)/i);\n    if (keywordIndex !== -1) {\n        const subString = s.substring(keywordIndex);\n        const matchesInSubString = [...subString.matchAll(numberPattern)];\n        if (matchesInSubString.length > 0) {\n             const lastMatch = matchesInSubString[matchesInSubString.length - 1];\n             const floatVal = parseFloat(lastMatch[1].replace(',', '.'));\n             return applyRounding(floatVal);\n        }\n    }\n\n    // CHIẾN THUẬT 2: Tìm tất cả các số có đơn vị \"năm\"\n    const allMatches = [...s.matchAll(numberPattern)];\n    if (allMatches.length > 0) {\n        const lastMatch = allMatches[allMatches.length - 1];\n        const floatVal = parseFloat(lastMatch[1].replace(',', '.'));\n        return applyRounding(floatVal);\n    }\n\n    // CHIẾN THUẬT 3: Fallback tìm số bất kỳ\n    const allNumbers = s.match(/(\\d+(?:[.,]\\d+)?)/g);\n    if (allNumbers && allNumbers.length > 0) {\n        for (const numStr of allNumbers) {\n            const val = parseFloat(numStr.replace(',', '.'));\n            if (val > 0 && val < 80) {\n                return applyRounding(val);\n            }\n        }\n    }\n    \n    return 0;\n}\n\n// --- 2. XỬ LÝ DATA ---\nconst items = $input.all();\nconst out = [];\n\nfor (const item of items) {\n  const inputJson = item.json;\n  let data = {};\n  \n  if (inputJson.contact_info && (inputJson.experience || inputJson.skills)) {\n      data = inputJson;\n  } else if (inputJson.parsed_json) {\n      data = inputJson.parsed_json;\n  } else {\n    const rawContent = inputJson.output || inputJson.text || JSON.stringify(inputJson);\n    let jsonString = String(rawContent).replace(/^```json\\s*/i, '').replace(/^```\\s*/i, '').replace(/```\\s*$/, '').trim();\n    try { data = JSON.parse(jsonString); } catch (e) { \n        const match = jsonString.match(/\\{[\\s\\S]*\\}/);\n        if (match) try { data = JSON.parse(match[0]); } catch (err) {}\n    }\n  }\n\n  if (!data || !data.contact_info) continue;\n\n  const candidateId = uuid(); \n  const timestamp = new Date().toISOString();\n  const contact = data.contact_info || {};\n  const candidateName = clean(contact.name || 'Unknown');\n\n  // LẤY SỐ ĐIỆN THOẠI\n  const phone = clean(contact.phone || data.phone || \"Không có SĐT\");\n\n  const rawLink = data.link_cv || data.link || \"\";\n  const linkCV = clean(Array.isArray(rawLink) ? rawLink[0] : rawLink);\n\n  // Xử lý tổng năm kinh nghiệm\n  let globalTotalExpString = \"Không xác định\";\n  if (data.total) {\n      if (Array.isArray(data.total) && data.total.length > 0) {\n          const t = data.total[0];\n          globalTotalExpString = (typeof t === 'object') ? (normalizeObjectKeys(t).totalexp || normalizeObjectKeys(t).total) : String(t);\n      } else if (typeof data.total === 'object') {\n          globalTotalExpString = normalizeObjectKeys(data.total).totalexp || normalizeObjectKeys(data.total).total;\n      } else {\n          globalTotalExpString = String(data.total);\n      }\n  }\n  \n  // Gọi hàm parse đã chỉnh sửa\n  const experienceYearsNum = parseExperienceYears(globalTotalExpString);\n\n  // === TẠO HEADER INFO ===\n  const headerInfo = `\n  Name: ${candidateName}\n  Phone: ${phone}              \n  Link CV: ${linkCV}\n  Total Experience: ${globalTotalExpString}\n  `;\n\n  const baseMetadata = {\n    candidate_id: candidateId,\n    candidate_name: candidateName,\n    candidate_email: clean(contact.email),\n    candidate_phone: phone, \n    link_cv: linkCV, \n    imported_at: timestamp,\n    global_total_experience: globalTotalExpString,\n    experience_years: experienceYearsNum \n  };\n\n  // 1. SKILLS\n  if (data.skills && Array.isArray(data.skills) && data.skills.length > 0) {\n      const allSkillsString = data.skills.join(\", \");\n      const txt = `${headerInfo} Candidate Skills Set: ${allSkillsString}. This candidate is proficient in: ${allSkillsString}.`;\n\n      out.push({\n        json: {\n          id: uuid(),\n          text: txt,\n          payload: {\n            ...baseMetadata,\n            key: 'skill_set',\n            type: 'skill',\n            skills_list: data.skills,\n            text: txt\n          }\n        }\n      });\n  }\n\n  // 2. EXPERIENCE\n  if (data.experience && Array.isArray(data.experience)) {\n    data.experience.forEach((exp) => {\n      const normExp = normalizeObjectKeys(exp);\n      const localDuration = normExp.total || normExp.duration || null;\n      \n      let expStr = \"\";\n      if (localDuration) expStr += `Role Duration: ${localDuration}.`;\n\n      const desc = exp.description || \"\";\n      const sentences = desc.split(/(?:\\. |\\.\\n|\\n+)/).map(s => s.trim()).filter(s => s.length > 5);\n      \n      const chunkPayload = {\n          ...baseMetadata, \n          key: 'experience',\n          company: exp.company,\n          role: exp.role\n      };\n\n      if (sentences.length > 0) {\n        sentences.forEach((sentence) => {\n           const txt = `${headerInfo} Work Experience: ${exp.role} at ${exp.company}. ${expStr} Detail: ${sentence}.`;\n           out.push({ json: { id: uuid(), text: txt, payload: { ...chunkPayload, text: txt } } });\n        });\n      } else {\n        const txt = `${headerInfo} Work Experience: ${exp.role} at ${exp.company}. ${expStr}`;\n        out.push({ json: { id: uuid(), text: txt, payload: { ...chunkPayload, text: txt } } });\n      }\n    });\n  }\n}\n\nif (out.length === 0) return [{ json: { warning: \"No valid vectors created.\" } }];\nreturn out;"
+        "jsCode": "// --- 1. CÁC HÀM HELPER ---\nfunction uuid() {\n  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {\n    const r = Math.random() * 16 | 0;\n    const v = c === 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n  });\n}\n\nfunction clean(str) {\n  if (!str) return \"\";\n  if (Array.isArray(str)) return str.join(\", \"); \n  return String(str).replace(/[“”‘’]/g, '\"').replace(/'/g, \"''\").replace(/[\\u0000-\\u0019]+/g, \" \").trim();\n}\n\nfunction normalizeObjectKeys(obj) {\n    if (!obj || typeof obj !== 'object') return {};\n    const newObj = {};\n    Object.keys(obj).forEach(key => {\n        const cleanKey = key.toLowerCase().trim().replace(/_/g, \"\"); \n        newObj[cleanKey] = obj[key];\n    });\n    return newObj;\n}\n\n// [FIX QUAN TRỌNG] HÀM CHUYỂN ĐỔI SANG SỐ NGUYÊN (INTEGER)\nfunction parseExperienceYears(str) {\n    if (!str) return 0;\n    const s = String(str).toLowerCase().trim();\n\n    // Hàm làm tròn bắt buộc về số nguyên\n    // 2.5 -> 3, 2.4 -> 2\n    const toInteger = (val) => {\n        return Math.round(val); \n    };\n\n    const numberPattern = /(\\d+(?:[.,]\\d+)?)\\s*(?:năm|year|yr|yrs|\\+)/gi;\n\n    // Ưu tiên tìm trong câu có từ khóa \"tổng/total\"\n    const keywordIndex = s.search(/(?:tổng|total|khoảng)/i);\n    if (keywordIndex !== -1) {\n        const subString = s.substring(keywordIndex);\n        const matchesInSubString = [...subString.matchAll(numberPattern)];\n        if (matchesInSubString.length > 0) {\n             const lastMatch = matchesInSubString[matchesInSubString.length - 1];\n             const floatVal = parseFloat(lastMatch[1].replace(',', '.'));\n             return toInteger(floatVal); // Ép về số nguyên\n        }\n    }\n\n    // Tìm match cuối cùng trong chuỗi\n    const allMatches = [...s.matchAll(numberPattern)];\n    if (allMatches.length > 0) {\n        const lastMatch = allMatches[allMatches.length - 1];\n        const floatVal = parseFloat(lastMatch[1].replace(',', '.'));\n        return toInteger(floatVal); // Ép về số nguyên\n    }\n\n    // Fallback: Tìm số bất kỳ hợp lý (0 < x < 80)\n    const allNumbers = s.match(/(\\d+(?:[.,]\\d+)?)/g);\n    if (allNumbers && allNumbers.length > 0) {\n        for (const numStr of allNumbers) {\n            const val = parseFloat(numStr.replace(',', '.'));\n            if (val > 0 && val < 80) {\n                return toInteger(val); // Ép về số nguyên\n            }\n        }\n    }\n    return 0; // Mặc định là 0 nếu không tìm thấy\n}\n\n// --- 2. XỬ LÝ DATA ---\nconst items = $input.all();\nconst out = [];\n\nfor (const item of items) {\n  const inputJson = item.json;\n  let data = {};\n  \n  if (inputJson.contact_info && (inputJson.experience || inputJson.skills)) {\n      data = inputJson;\n  } else if (inputJson.parsed_json) {\n      data = inputJson.parsed_json;\n  } else {\n    const rawContent = inputJson.output || inputJson.text || JSON.stringify(inputJson);\n    let jsonString = String(rawContent).replace(/^```json\\s*/i, '').replace(/^```\\s*/i, '').replace(/```\\s*$/, '').trim();\n    try { data = JSON.parse(jsonString); } catch (e) { \n        const match = jsonString.match(/\\{[\\s\\S]*\\}/);\n        if (match) try { data = JSON.parse(match[0]); } catch (err) {}\n    }\n  }\n\n  if (!data || !data.contact_info) continue;\n\n  const candidateId = uuid(); \n  const timestamp = new Date().toISOString();\n  const contact = data.contact_info || {};\n  const candidateName = clean(contact.name || 'Unknown');\n  const phone = clean(contact.phone || data.phone || \"Không có SĐT\");\n  const rawLink = data.link_cv || data.link || \"\";\n  const linkCV = clean(Array.isArray(rawLink) ? rawLink[0] : rawLink);\n\n  // Xử lý chuỗi tổng kinh nghiệm thô\n  let globalTotalExpString = \"Không xác định\";\n  if (data.total) {\n      if (Array.isArray(data.total) && data.total.length > 0) {\n          const t = data.total[0];\n          globalTotalExpString = (typeof t === 'object') ? (normalizeObjectKeys(t).totalexp || normalizeObjectKeys(t).total) : String(t);\n      } else if (typeof data.total === 'object') {\n          globalTotalExpString = normalizeObjectKeys(data.total).totalexp || normalizeObjectKeys(data.total).total;\n      } else {\n          globalTotalExpString = String(data.total);\n      }\n  }\n  \n  // [KẾT QUẢ] Biến này bây giờ chắc chắn là INT (Ví dụ: 3, 4, 5)\n  const experienceYearsInt = parseExperienceYears(globalTotalExpString);\n\n  // Tạo header info\n  const headerInfo = `\n  Name: ${candidateName}\n  Phone: ${phone}              \n  Link CV: ${linkCV}\n  Total Experience Years: ${experienceYearsInt}\n  `;\n\n  // Payload Base\n  const baseMetadata = {\n    candidate_id: candidateId,\n    candidate_name: candidateName,\n    candidate_email: clean(contact.email),\n    candidate_phone: phone, \n    link_cv: linkCV, \n    imported_at: timestamp,\n    global_total_experience: globalTotalExpString,\n    experience_years: experienceYearsInt // <-- Số nguyên được lưu vào đây\n  };\n\n  // 1. SKILLS\n  if (data.skills && Array.isArray(data.skills) && data.skills.length > 0) {\n      const allSkillsString = data.skills.join(\", \");\n      const txt = `${headerInfo} Candidate Skills Set: ${allSkillsString}. This candidate is proficient in: ${allSkillsString}.`;\n\n      out.push({\n        json: {\n          id: uuid(),\n          text: txt,\n          payload: {\n            ...baseMetadata,\n            key: 'skill_set',\n            type: 'skill',\n            skills_list: data.skills,\n            text: txt\n          }\n        }\n      });\n  }\n\n  // 2. EXPERIENCE\n  if (data.experience && Array.isArray(data.experience)) {\n    data.experience.forEach((exp) => {\n      const normExp = normalizeObjectKeys(exp);\n      const localDuration = normExp.total || normExp.duration || null;\n      let expStr = \"\";\n      if (localDuration) expStr += `Role Duration: ${localDuration}.`;\n\n      const desc = exp.description || \"\";\n      const sentences = desc.split(/(?:\\. |\\.\\n|\\n+)/).map(s => s.trim()).filter(s => s.length > 5);\n      \n      const chunkPayload = {\n          ...baseMetadata, \n          key: 'experience',\n          company: exp.company,\n          role: exp.role\n      };\n\n      if (sentences.length > 0) {\n        sentences.forEach((sentence) => {\n           const txt = `${headerInfo} Work Experience: ${exp.role} at ${exp.company}. ${expStr} Detail: ${sentence}.`;\n           out.push({ json: { id: uuid(), text: txt, payload: { ...chunkPayload, text: txt } } });\n        });\n      } else {\n        const txt = `${headerInfo} Work Experience: ${exp.role} at ${exp.company}. ${expStr}`;\n        out.push({ json: { id: uuid(), text: txt, payload: { ...chunkPayload, text: txt } } });\n      }\n    });\n  }\n\n  // 3. EDUCATION\n  if (data.education && Array.isArray(data.education)) {\n      data.education.forEach((edu) => {\n          const school = clean(edu.school || edu.institution);\n          const major = clean(edu.major || edu.degree);\n          const time = clean(edu.time || edu.year);\n          \n          if (school || major) {\n              const txt = `${headerInfo} Education: ${major} at ${school}. Period: ${time}.`;\n              out.push({\n                  json: {\n                      id: uuid(),\n                      text: txt,\n                      payload: {\n                          ...baseMetadata,\n                          key: 'education',\n                          type: 'education',\n                          school: school,\n                          major: major,\n                          time: time,\n                          text: txt\n                      }\n                  }\n              });\n          }\n      });\n  }\n\n  // 4. CERTIFICATION\n  if (data.certification && Array.isArray(data.certification)) {\n      data.certification.forEach((cert) => {\n          let certName = \"\";\n          let org = \"\";\n          let time = \"\";\n          if (typeof cert === 'string') {\n              certName = clean(cert);\n          } else {\n              certName = clean(cert.name || cert.title);\n              org = clean(cert.organization || cert.issuer);\n              time = clean(cert.time || cert.date);\n          }\n          if (certName) {\n              const txt = `${headerInfo} Certification: ${certName}${org ? ' from ' + org : ''}${time ? ' (' + time + ')' : ''}.`;\n              out.push({\n                  json: {\n                      id: uuid(),\n                      text: txt,\n                      payload: {\n                          ...baseMetadata,\n                          key: 'certification',\n                          type: 'certificate',\n                          certificate: certName,\n                          organization: org,\n                          time: time,\n                          text: txt\n                      }\n                  }\n              });\n          }\n      });\n  }\n}\n\nif (out.length === 0) return [{ json: { warning: \"No valid vectors created.\" } }];\nreturn out;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2832,
-        0
+        5488,
+        1424
       ],
-      "id": "35ba52f5-cf89-48b9-8de0-a329ca935678",
+      "id": "a42da9dd-2f68-435c-9bbe-b11e493d798f",
       "name": "Fn_Format"
     },
     {
@@ -44,10 +55,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3072,
-        0
+        5728,
+        1424
       ],
-      "id": "9f67420b-cea4-461f-96cc-d733e0479339",
+      "id": "53dea51f-06de-4f89-b67d-4e0227dc5819",
       "name": "OpenAI Embedding",
       "retryOnFail": true,
       "credentials": {
@@ -69,10 +80,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3488,
-        0
+        6144,
+        1424
       ],
-      "id": "e4f94698-1dfe-47f0-8bf4-147fa053e15c",
+      "id": "2d29fb89-7e2d-4790-8f72-fd24d978deeb",
       "name": "Qdrant Upsert",
       "retryOnFail": true,
       "onError": "continueRegularOutput"
@@ -84,10 +95,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3296,
-        0
+        5952,
+        1424
       ],
-      "id": "6c407757-3f23-4a6a-ad54-681869370d0f",
+      "id": "da1ee3ab-f40d-4c3b-b403-aaf9b26a52cd",
       "name": "Fn_Info"
     },
     {
@@ -98,10 +109,10 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
       "position": [
-        800,
-        96
+        3456,
+        1520
       ],
-      "id": "4adbc71a-4508-4bf7-9a48-d5fa55a0824e",
+      "id": "2b3c5ae8-933f-40a7-8d69-187744b9789a",
       "name": "Lấy thông tin CV"
     },
     {
@@ -121,10 +132,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        976,
-        112
+        3632,
+        1536
       ],
-      "id": "7c4d89a1-81bc-4987-8251-5f5e1fc1b740",
+      "id": "0042fae4-dfdd-42f5-aa98-cc1cfed09d78",
       "name": "Edit Fields"
     },
     {
@@ -186,10 +197,10 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.3,
       "position": [
-        576,
-        32
+        3232,
+        1456
       ],
-      "id": "ad78aa31-86b3-460f-a07a-2597d999eafa",
+      "id": "57650f39-cd01-47f2-aeac-3ed0b669fbf5",
       "name": "Switch"
     },
     {
@@ -199,22 +210,11 @@
       "type": "n8n-nodes-docx-converter.docxToText",
       "typeVersion": 1,
       "position": [
-        896,
-        -32
+        3552,
+        1392
       ],
-      "id": "94890b9f-d1db-46f1-a5dd-a9b0e33e80fd",
+      "id": "a82e2474-4ea9-4703-8d86-a7c527c02980",
       "name": "DOCX to Text"
-    },
-    {
-      "parameters": {},
-      "type": "n8n-nodes-base.manualTrigger",
-      "typeVersion": 1,
-      "position": [
-        -608,
-        0
-      ],
-      "id": "33dbb8c8-4f88-4d4e-8171-71a40787d32f",
-      "name": "When clicking ‘Execute workflow’"
     },
     {
       "parameters": {
@@ -223,10 +223,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -224,
-        0
+        2432,
+        1424
       ],
-      "id": "307cbae1-fc92-4739-97ad-d705b643c8cc",
+      "id": "b80e8dd3-f228-448e-b641-16ba0bc33caf",
       "name": "Loop Over Items1"
     },
     {
@@ -234,16 +234,16 @@
         "promptType": "define",
         "text": "=Link CV:\n{{ $node['Upload file'].json.webViewLink }}\n",
         "options": {
-          "systemMessage": "=Bạn là một Chuyên gia Phân tích CV và Trích xuất Dữ liệu (CV Parsing & OCR Expert) với nguyên tắc \"Zero-Shot Accuracy\". Nhiệm vụ của bạn là chuyển đổi văn bản thô của hồ sơ ứng viên thành cấu trúc JSON chuẩn.\n\n---\nNGUYÊN TẮC CỐT LÕI (BẮT BUỘC TUÂN THỦ):\n\n1. CHỐNG BỊA ĐẶT (ANTI-HALLUCINATION):\n   - CHỈ trích xuất thông tin CÓ THẬT trong văn bản.\n   - Tuyệt đối KHÔNG tự suy luận cảm tính, NHƯNG việc tính toán tổng thời gian từ các mốc ngày tháng có sẵn là HỢP LỆ và BẮT BUỘC.\n   - Nếu thông tin bị thiếu hoàn toàn, hãy để giá trị là `null` hoặc chuỗi rỗng `\"\"`.\n   - Đối với Kỹ năng/Công nghệ: Chỉ liệt kê những gì ứng viên viết ra.\n\n2. XỬ LÝ NGÔN NGỮ & DỊCH THUẬT:\n   - Phần mô tả (Description/Summary/Project): Dịch sang TIẾNG VIỆT trôi chảy.\n   - KỸ NĂNG (Hard Skills): GIỮ NGUYÊN tên gốc.\n   - KỸ NĂNG MỀM (Soft Skills): DỊCH SANG TIẾNG VIỆT.\n   - Tên riêng: Giữ nguyên.\n\n3. ĐỊNH DẠNG OUTPUT:\n   - Trả về DUY NHẤT một chuỗi JSON hợp lệ.\n   - Không bao bọc bởi markdown.\n\n---\nCẤU TRÚC JSON MỤC TIÊU:\n\n{\n  \"link_cv\": \"URL/Link CV nếu có trong văn bản (nếu không: null)\",\n  \"contact_info\": {\n    \"name\": \"Họ và tên đầy đủ (Viết Hoa Chữ Cái Đầu). Nếu không tìm thấy: 'Unknown'\",\n    \"email\": \"Email chính xác (nếu không: null)\",\n    \"phone\": \"Số điện thoại (nếu không: null)\"\n  },\n  \"skills\": [\n    // Mảng phẳng các kỹ năng (VD: [\"Java\", \"Spring Boot\", \"Tiếng Anh\"])\n  ],\n  \"experience\": [\n    {\n      \"company\": \"Tên công ty\",\n      \"role\": \"Chức danh/Vị trí\",\n      \"time\": \"Thời gian làm việc (Giữ nguyên định dạng gốc)\",\n      \"description\": \"Mô tả chi tiết nhiệm vụ và thành tựu bằng TIẾNG VIỆT.\"\n    }\n  ],\n  \"total\": [\n    {\n      \"total_exp\": \"LOGIC TÍNH NĂM KINH NGHIỆM (Thực hiện tuần tự):\\n1. ƯU TIÊN 1 (Tìm kiếm): Tìm câu văn khẳng định tổng số năm kinh nghiệm trong Summary (VD: 'Hơn 5 năm kinh nghiệm').Nếu có từ 2 loại kinh nghiệm thì tính tổng gộp nó lại. Còn có 1 loại kinh nghiệm thì nếu thấy -> Lấy ngay con số đó kèm chữ 'năm' và DỪNG LẠI.\\n2. ƯU TIÊN 2 (Tính toán - BẮT BUỘC): Nếu Ưu tiên 1 không có dữ liệu, bạn PHẢI tự tính toán bằng cách cộng dồn thời gian làm việc thực tế trên đề cập trong CV (End Date - Start Date) của các vị trí trong phần Experience. \\n   - Quy đổi 'Present'/'Current'/'Nay' là thời điểm hiện tại là tháng 12/2025 để tính cho chính xác.\\n   - Cộng tổng thời gian thực tế (chú ý trừ thời gian trùng lặp).\\n   - Làm tròn kết quả (VD: 2 năm 6 tháng -> '2.5 năm').\"\n    }\n  ],\n  \"projects\": [\n    {\n      \"name\": \"Tên dự án\",\n      \"role\": \"Vai trò\",\n      \"time\": \"Thời gian\",\n      \"link\": \"Link demo (nếu có)\",\n      \"technologies\": [\n         // Mảng công nghệ\n      ],\n      \"description\": \"Mô tả dự án (Tiếng Việt).\"\n    }\n  ],\n  \"education\": [\n    {\n      \"school\": \"Tên trường\",\n      \"major\": \"Chuyên ngành\",\n      \"time\": \"Niên khóa\"\n    }\n  ],\n  \"certification\": [\n    {\n      \"name\": \"Tên chứng chỉ\",\n      \"issuer\": \"Tổ chức cấp\",\n      \"time\": \"Thời gian\"\n    }\n  ]\n}\n\n---\nDỮ LIỆU ĐẦU VÀO CẦN XỬ LÝ:\n{{ $json.resume_content }}"
+          "systemMessage": "=Bạn là một Chuyên gia Phân tích CV và Trích xuất Dữ liệu (CV Parsing & OCR Expert) với nguyên tắc \"Zero-Shot Accuracy\". Nhiệm vụ của bạn là chuyển đổi văn bản thô của hồ sơ ứng viên thành cấu trúc JSON chuẩn.\n\n---\nNGUYÊN TẮC CỐT LÕI (BẮT BUỘC TUÂN THỦ):\n\n1. CHỐNG BỊA ĐẶT (ANTI-HALLUCINATION):\n   - CHỈ trích xuất thông tin CÓ THẬT trong văn bản.\n   - Tuyệt đối KHÔNG tự suy luận cảm tính, NHƯNG việc tính toán tổng thời gian từ các mốc ngày tháng có sẵn là HỢP LỆ và BẮT BUỘC.\n   - Nếu thông tin bị thiếu hoàn toàn, hãy để giá trị là `null` hoặc chuỗi rỗng `\"\"`.\n   - Đối với Kỹ năng/Công nghệ: Chỉ liệt kê những gì ứng viên viết ra.\n\n2. XỬ LÝ NGÔN NGỮ & DỊCH THUẬT:\n   - Phần mô tả (Description/Summary/Project): Dịch sang TIẾNG VIỆT trôi chảy.\n   - KỸ NĂNG (Hard Skills): GIỮ NGUYÊN tên gốc.\n   - KỸ NĂNG MỀM (Soft Skills): DỊCH SANG TIẾNG VIỆT.\n   - Tên riêng: Giữ nguyên.\n\n3. ĐỊNH DẠNG OUTPUT:\n   - Trả về DUY NHẤT một chuỗi JSON hợp lệ.\n   - Không bao bọc bởi markdown.\n\n---\nCẤU TRÚC JSON MỤC TIÊU:\n\n{\n  \"link_cv\": \"URL/Link CV nếu có trong văn bản (nếu không: null)\",\n  \"contact_info\": {\n    \"name\": \"Họ và tên đầy đủ (In hoa tất cả chữ cái và không có dấu). Nếu không tìm thấy: 'Unknown'\",\n    \"email\": \"Email chính xác (nếu không: null)\",\n    \"phone\": \"Số điện thoại (nếu không: null)\"\n  },\n  \"skills\": [\n    // Mảng phẳng các kỹ năng (VD: [\"Java\", \"Spring Boot\", \"Tiếng Anh\"])\n  ],\n  \"experience\": [\n    {\n      \"company\": \"Tên công ty\",\n      \"role\": \"Chức danh/Vị trí\",\n      \"time\": \"Thời gian làm việc (Giữ nguyên định dạng gốc)\",\n      \"description\": \"Mô tả chi tiết nhiệm vụ và thành tựu bằng TIẾNG VIỆT.\"\n    }\n  ],\n  \"total\": [\n    {\n      \"total_exp\": \"LOGIC TÍNH NĂM KINH NGHIỆM (Thực hiện tuần tự):\\n1. ƯU TIÊN 1 (Tìm kiếm): Tìm câu văn khẳng định tổng số năm kinh nghiệm trong Summary (VD: 'Hơn 5 năm kinh nghiệm').Nếu có từ 2 loại kinh nghiệm thì tính tổng gộp nó lại. Còn có 1 loại kinh nghiệm thì nếu thấy -> Lấy ngay con số đó kèm chữ 'năm' và DỪNG LẠI.\\n2. ƯU TIÊN 2 (Tính toán - BẮT BUỘC): Nếu Ưu tiên 1 không có dữ liệu, bạn PHẢI tự tính toán bằng cách cộng dồn thời gian làm việc thực tế trên đề cập trong CV (End Date - Start Date) của các vị trí trong phần Experience. \\n   - Quy đổi 'Present'/'Current'/'Nay' là thời điểm hiện tại là tháng 12/2025 để tính cho chính xác.\\n   - Cộng tổng thời gian thực tế (chú ý trừ thời gian trùng lặp).\\n   - Làm tròn kết quả (VD: 2 năm 6 tháng -> '2.5 năm').\"\n    }\n  ],\n  \"projects\": [\n    {\n      \"name\": \"Tên dự án\",\n      \"role\": \"Vai trò\",\n      \"time\": \"Thời gian\",\n      \"link\": \"Link demo (nếu có)\",\n      \"technologies\": [\n         // Mảng công nghệ\n      ],\n      \"description\": \"Mô tả dự án (Tiếng Việt).\"\n    }\n  ],\n  \"education\": [\n    {\n      \"school\": \"Tên trường\",\n      \"major\": \"Chuyên ngành\",\n      \"time\": \"Niên khóa\"\n    }\n  ],\n  \"certification\": [\n    {\n      \"name\": \"Tên chứng chỉ\",\n      \"issuer\": \"Tổ chức cấp\",\n      \"time\": \"Thời gian\"\n    }\n  ]\n}\n\n---\nDỮ LIỆU ĐẦU VÀO CẦN XỬ LÝ:\n{{ $json.resume_content }}"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 2.2,
       "position": [
-        2496,
-        0
+        5152,
+        1424
       ],
-      "id": "f916c44c-0a43-4e5e-ab3a-5177e921fbe4",
+      "id": "aa760e60-c439-42f7-a6ea-b86a8838ed69",
       "name": "AI Agent"
     },
     {
@@ -258,10 +258,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
-        2352,
-        240
+        5008,
+        1664
       ],
-      "id": "aad63fd0-d17e-4940-9ec6-78b139a21a1f",
+      "id": "61d00d7b-3b0a-4f08-9a2c-66c062bc4d91",
       "name": "OpenAI Chat Model",
       "credentials": {
         "openAiApi": {
@@ -298,10 +298,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1216,
-        -80
+        3872,
+        1344
       ],
-      "id": "63599e9a-6c39-4655-bc11-2e557587ffb7",
+      "id": "9d1383a4-224e-4515-bd2d-572c0137114b",
       "name": "Check null",
       "onError": "continueRegularOutput"
     },
@@ -348,10 +348,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1360,
-        64
+        4016,
+        1488
       ],
-      "id": "9f83b9c1-8f14-423e-9776-f3e0ca376689",
+      "id": "8022a212-52cf-476f-a0b9-44d72d6ae7a9",
       "name": "Convert PDF2Image"
     },
     {
@@ -361,10 +361,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1968,
-        64
+        4624,
+        1488
       ],
-      "id": "b1d61f8d-8f1d-4c59-b388-7e3e9bfd26b8",
+      "id": "ff68a214-9a49-44d8-a30b-ff39dae8e360",
       "name": "FN_Info"
     },
     {
@@ -382,10 +382,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1760,
-        64
+        4416,
+        1488
       ],
-      "id": "4e20014e-0566-4412-9ce9-073ed5a41c93",
+      "id": "85fefc34-9b6f-49f4-9e36-ba377adec0c2",
       "name": "OCR OpenAI"
     },
     {
@@ -395,10 +395,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1568,
-        64
+        4224,
+        1488
       ],
-      "id": "2a39ca35-3455-49aa-9edf-8abf736be523",
+      "id": "1330a6fc-0139-46e5-8f24-051389bd3acf",
       "name": "Get URL"
     },
     {
@@ -418,10 +418,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        2128,
-        0
+        4784,
+        1424
       ],
-      "id": "5ae52dfa-7d29-4109-88be-fe2bd9167cc4",
+      "id": "de2555e2-b4a8-4c7e-90a3-6c5a0196a70d",
       "name": "candidate CV"
     },
     {
@@ -437,10 +437,10 @@
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
       "position": [
-        48,
-        32
+        2704,
+        1456
       ],
-      "id": "791bf8b1-2a44-4329-9510-5335a2c0c47e",
+      "id": "a2d98028-6146-4bff-be15-504a21a8788a",
       "name": "Download file",
       "retryOnFail": true,
       "credentials": {
@@ -469,10 +469,10 @@
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
       "position": [
-        208,
-        32
+        2864,
+        1456
       ],
-      "id": "78d13539-14b1-424d-9ee3-5bb282022d4c",
+      "id": "856bc83f-c6ca-44b4-b8a8-aecd457fba8e",
       "name": "Upload file",
       "credentials": {
         "googleDriveOAuth2Api": {
@@ -494,10 +494,10 @@
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
       "position": [
-        416,
-        32
+        3072,
+        1456
       ],
-      "id": "4d6ccf99-8304-4e75-af87-0f4e2e21ce44",
+      "id": "60245228-5bda-4115-a34b-75a8c52b3b7a",
       "name": "Download file1",
       "credentials": {
         "googleDriveOAuth2Api": {
@@ -531,10 +531,10 @@
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
       "position": [
-        -448,
-        224
+        2208,
+        1648
       ],
-      "id": "ddcd04e8-a2a2-4a14-926a-458ea89d6e50",
+      "id": "0ea09d2a-12eb-471f-936b-f2947d9edcb8",
       "name": "Search files and folders",
       "credentials": {
         "googleDriveOAuth2Api": {
@@ -552,6 +552,17 @@
     ]
   },
   "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Fn_Format": {
       "main": [
         [
@@ -619,17 +630,6 @@
         [
           {
             "node": "Lấy thông tin CV",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "When clicking ‘Execute workflow’": {
-      "main": [
-        [
-          {
-            "node": "Search files and folders",
             "type": "main",
             "index": 0
           }
@@ -814,7 +814,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "d5caad10-eb89-4766-b9d0-438b30a591a3",
+  "versionId": "68e79aa5-e6c3-489b-82c6-e7fab0db9774",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "df174d571e95541c805919aa88d99c6ff9e79e2c1ffc42837bb92614d24bb4eb"

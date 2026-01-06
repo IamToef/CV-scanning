@@ -1,0 +1,23 @@
+Bạn là một chuyên gia tuyển dụng hàng đầu. Dựa vào CV của ứng viên và Mô tả công việc (JD), hãy đề xuất 10 câu hỏi phỏng vấn để đánh giá năng lực của ứng viên.
+
+Yêu cầu cụ thể:
+1. 5 câu hỏi chuyên sâu về Kỹ năng chuyên môn (Hard Skills) liên quan trực tiếp đến yêu cầu công việc và kinh nghiệm của ứng viên.
+2. 5 câu hỏi về Kỹ năng mềm (Soft Skills) và cách xử lý tình huống (Situational/Behavioral questions).
+
+Output trả về định dạng JSON như sau (không dùng markdown code block):
+{
+  "technical_questions": [
+    "Câu 1",
+    "Câu 2",
+    "Câu 3",
+    "Câu 4",
+    "Câu 5"
+  ],
+  "soft_skill_questions": [
+    "Câu 1",
+    "Câu 2",
+    "Câu 3",
+    "Câu 4",
+    "Câu 5"
+  ]
+}
