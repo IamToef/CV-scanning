@@ -327,23 +327,36 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
                                 {isEditingCriteria ? "Chỉnh sửa tiêu chí" : "JD Đang chọn"}
                             </CardTitle>
                             {!isEditingCriteria && (
-                                <Button variant="ghost" size="sm" onClick={() => {
-                                    // Initialize form
-                                    if (jobRequirements) {
-                                        setEditForm(JSON.parse(JSON.stringify(jobRequirements)));
-                                    } else {
-                                        // Try to parse from fallback bullets
-                                        setEditForm({
-                                            technical_skills: extractedRequirements,
-                                            soft_skills: [],
-                                            years_of_experience: { min_years: 0, description: "" },
-                                            education: { degree_level: "", major: "", certifications: [] }
-                                        })
-                                    }
-                                    setIsEditingCriteria(true)
-                                }} className="h-8 w-8 p-0 rounded-full hover:bg-background/50" title="Chỉnh sửa JD">
-                                    <Edit2 className="h-4 w-4 text-primary" />
-                                </Button>
+                                <div className="flex gap-1">
+                                    <Button variant="ghost" size="sm" onClick={() => {
+                                        // Reset JD Logic
+                                        setJd("");
+                                        setJobRequirements(null as any);
+                                        setExtractedRequirements([]);
+                                        setSelectedJDFile(null);
+                                        setStep('jd');
+                                        toast.info("Đã hủy chọn JD hiện tại");
+                                    }} className="h-8 w-8 p-0 rounded-full hover:bg-background/50 hover:text-red-500 transition-colors" title="Đổi file JD khác">
+                                        <FileType className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => {
+                                        // Initialize form
+                                        if (jobRequirements) {
+                                            setEditForm(JSON.parse(JSON.stringify(jobRequirements)));
+                                        } else {
+                                            // Try to parse from fallback bullets
+                                            setEditForm({
+                                                technical_skills: extractedRequirements,
+                                                soft_skills: [],
+                                                years_of_experience: { min_years: 0, description: "" },
+                                                education: { degree_level: "", major: "", certifications: [] }
+                                            })
+                                        }
+                                        setIsEditingCriteria(true)
+                                    }} className="h-8 w-8 p-0 rounded-full hover:bg-background/50" title="Chỉnh sửa chi tiết">
+                                        <Edit2 className="h-4 w-4 text-primary" />
+                                    </Button>
+                                </div>
                             )}
                         </div>
                     </CardHeader>

@@ -17,15 +17,19 @@ export default function UploadPage() {
     }
 
     return (
-        <div className="container mx-auto py-10 space-y-8 max-w-6xl">
-            <div className="space-y-4 text-center">
-                <h1 className="text-3xl font-bold tracking-tight">Tải lên JD & Hồ sơ</h1>
-                <p className="text-muted-foreground">
-                    Cung cấp Mô tả công việc (JD) và CV ứng viên để bắt đầu phân tích.
-                </p>
-            </div>
+        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-6 md:p-8 font-sans">
+            <div className="max-w-6xl mx-auto space-y-8">
+                <div className="space-y-4 text-center">
+                    <h1 className="text-4xl font-black bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent drop-shadow-sm pb-1 leading-relaxed">
+                        Tải lên JD & Hồ sơ
+                    </h1>
+                    <p className="text-indigo-600/80 font-medium text-lg">
+                        Cung cấp Mô tả công việc (JD) và CV ứng viên để bắt đầu phân tích.
+                    </p>
+                </div>
 
-            <UploadZone onAnalysisComplete={handleAnalysisComplete} />
+                <UploadZone onAnalysisComplete={handleAnalysisComplete} />
+            </div>
         </div>
     )
 }
