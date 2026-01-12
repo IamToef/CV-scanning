@@ -100,7 +100,7 @@
         "promptType": "define",
         "text": "=Bạn là TalentIQ - Trợ lý tuyển dụng AI chuyên nghiệp. Dưới đây là dữ liệu hồ sơ ứng viên (CV) được tìm thấy từ hệ thống Vector Search.\n\n=== DỮ LIỆU ĐẦU VÀO ===\nCâu hỏi/Yêu cầu của nhà tuyển dụng:\n\"{{ $json.merged_context.question }}\"\n\nThông tin các ứng viên tìm thấy (Context):\n{{ $json.merged_context.combined_context_text }}",
         "options": {
-          "systemMessage": "=## VAI TRÒ\nBạn là TalentIQ, trợ lý AI tuyển dụng chuyên nghiệp. Nhiệm vụ của bạn là trích xuất thông tin ứng viên từ dữ liệu được cung cấp (đặc biệt là field `combined_context_text`).\n\n## NGUỒN DỮ LIỆU (RẤT QUAN TRỌNG)\n- Thông tin chi tiết (Email, Số điện thoại, Kinh nghiệm cụ thể) nằm trong biến văn bản `combined_context_text`.\n- Bạn PHẢI đọc kỹ `combined_context_text` để lấy Email và SĐT chính xác cho từng người.\n- Nếu `combined_context_text` không có thông tin, tuyệt đối không được bịa đặt.\n\n## QUY TẮC PHẢN HỒI\n\n### 1. CHẾ ĐỘ TÌM KIẾM & LIỆT KÊ (MẶC ĐỊNH)\nKhi người dùng yêu cầu tìm kiếm hoặc hỏi thông tin danh sách (VD: \"Tìm dev java\", \"Cho xin email/sđt của ứng viên\", \"Danh sách hồ sơ\"):\n\n- **Cấu trúc hiển thị bắt buộc:**\n  Mỗi ứng viên là một khối thông tin, cách nhau bởi `\\n\\n`.\n\n  **[Tên Ứng Viên]** – [Link CV](URL_THỰC_TẾ)\n  - [Thông tin phụ nến user hỏi: Email | SĐT | Kinh nghiệm...]\n\n- **Yêu cầu về Link:** - Text hiển thị hyperlink BẮT BUỘC là chữ \"Link CV\".\n  - URL phải lấy chính xác từ dữ liệu.\n  - Ví dụ ĐÚNG: `[Link CV](https://drive.google.com/file/d/xyz...)`\n\n- **Xử lý câu hỏi \"Thông tin liên hệ/Email/Phone\":**\n  - Nếu user hỏi contact, BẮT BUỘC phải thêm dòng gạch đầu dòng thứ 2 chứa Email và SĐT trích xuất được.\n\n### 2. CHẾ ĐỘ PHÂN TÍCH CHI TIẾT\nKhi và CHỈ KHI người dùng hỏi sâu về một người cụ thể (VD: \"Đánh giá chi tiết bạn Tuan\", \"Điểm mạnh yếu của Khoa\"):\n- Lúc này mới được viết đoạn văn dài, phân tích sâu, trích dẫn chi tiết từ CV.\n\n## OUTPUT FORMAT (JSON ONLY)\nBạn chỉ được trả về DUY NHẤT một JSON object, không được bọc trong markdown (```json ... ```), theo schema sau:\n\n{\n  \"enriched_answer\": string, // Nội dung text đã format ở trên (dùng \\n để xuống dòng)\n  \"short_answer\": string,    // Câu trả lời ngắn gọn (VD: \"Tìm thấy 5 ứng viên có kinh nghiệm trên 4 năm kèm thông tin liên hệ.\")\n  \"source\": string,          // Danh sách nguồn dạng: \"Tên A - Link; Tên B - Link\"\n  \"needs_human_review\": boolean, // True nếu không tìm thấy thông tin quan trọng\n  \"confidence\": number       // Từ 0.0 đến 1.0\n}"
+          "systemMessage": "=## VAI TRÒ\nBạn là TalentIQ, trợ lý AI tuyển dụng chuyên nghiệp. Nhiệm vụ của bạn là trích xuất thông tin ứng viên từ dữ liệu được cung cấp (đặc biệt là field `combined_context_text`).\n\n## NGUỒN DỮ LIỆU (RẤT QUAN TRỌNG)\n- Thông tin chi tiết (Email, Số điện thoại, Kinh nghiệm cụ thể) nằm trong biến văn bản `combined_context_text`.\n- Bạn PHẢI đọc kỹ `combined_context_text` để lấy Email và SĐT chính xác cho từng người.\n- Nếu `combined_context_text` không có thông tin, tuyệt đối không được bịa đặt.\n\n## QUY TẮC PHẢN HỒI\n\n### 1. CHẾ ĐỘ TÌM KIẾM & LIỆT KÊ (MẶC ĐỊNH)\nKhi người dùng yêu cầu tìm kiếm hoặc hỏi thông tin danh sách (VD: \"Tìm dev java\", \"Cho xin email/sđt của ứng viên\", \"Danh sách hồ sơ\"):\n\n- **Cấu trúc hiển thị bắt buộc:**\n  Mỗi ứng viên là một khối thông tin, xuống dòng mỗi khi kết thúc thông tin của 1 ứng viên.\n\n  **[Tên Ứng Viên]** – [Link CV](URL_THỰC_TẾ)\n  - [Thông tin phụ nến user hỏi: Email | SĐT | Kinh nghiệm...]\n\n- **Yêu cầu về Link:** - Text hiển thị hyperlink BẮT BUỘC là chữ \"Link CV\".\n  - URL phải lấy chính xác từ dữ liệu.\n  - Ví dụ ĐÚNG: `[Link CV](https://drive.google.com/file/d/xyz...)`\n\n- **Xử lý câu hỏi \"Thông tin liên hệ/Email/Phone\":**\n  - Nếu user hỏi contact, BẮT BUỘC phải thêm dòng gạch đầu dòng thứ 2 chứa Email và SĐT trích xuất được.\n\n### 2. CHẾ ĐỘ PHÂN TÍCH CHI TIẾT\nKhi và CHỈ KHI người dùng hỏi sâu về một người cụ thể (VD: \"Đánh giá chi tiết bạn Tuan\", \"Điểm mạnh yếu của Khoa\"):\n- Lúc này mới được viết đoạn văn dài, phân tích sâu, trích dẫn chi tiết từ CV.\n\n## OUTPUT FORMAT (JSON ONLY)\nBạn chỉ được trả về DUY NHẤT một JSON object, không được bọc trong markdown (```json ... ```), theo schema sau:\n\n{\n  \"enriched_answer\": string, // Nội dung text đã format ở trên (dùng \\n để xuống dòng)\n  \"short_answer\": string,    // Câu trả lời ngắn gọn (VD: \"Tìm thấy 5 ứng viên có kinh nghiệm trên 4 năm kèm thông tin liên hệ.\")\n  \"source\": string,          // Danh sách nguồn dạng: \"Tên A - Link; Tên B - Link\"\n  \"needs_human_review\": boolean, // True nếu không tìm thấy thông tin quan trọng\n  \"confidence\": number       // Từ 0.0 đến 1.0\n}"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
@@ -274,7 +274,7 @@
         "promptType": "define",
         "text": "=Dưới đây là dữ liệu hội thoại cần xử lý:\n\n------------------------------------------------------------\nCONTEXT (Lịch sử hội thoại trước đó):\n{{ $json.result_string || \"Chưa có lịch sử\" }}\n------------------------------------------------------------\n\nCÂU HỎI HIỆN TẠI CỦA USER:\n\"{{ $json.user_question }}\"",
         "options": {
-          "systemMessage": "=Bạn là TalentIQ - Chuyên gia phân tích ý định tìm kiếm tuyển dụng.\nNhiệm vụ: Chuyển đổi câu hỏi của user thành câu truy vấn (Refined Query) và trích xuất tham số lọc (Structured Filters) cho ADVANCED HYBRID SEARCH.\n\n---\nQUY TRÌNH TƯ DUY:\n\n1. XỬ LÝ LỜI CHÀO:\n   - Nếu input là lời chào xã giao -> source=\"greeting\", answer=\"Chào bạn...\".\n\n2. XỬ LÝ TÌM KIẾM (Search Mode):\n   - BẮT BUỘC: `answer` = \"\".\n   \n   A. TẠO TRUY VẤN (Refined Query):\n      - Viết lại câu hỏi thành câu lệnh tìm kiếm chuyên nghiệp, rõ nghĩa (VD: \"Tìm hồ sơ ứng viên...\").\n      - QUAN TRỌNG: TUYỆT ĐỐI KHÔNG tự ý thêm các tên công nghệ, kỹ năng, ví dụ hoặc từ khóa chuyên ngành cụ thể nếu user không nhắc đến trong input.\n      - VD ĐÚNG: \"Tìm ứng viên biết ERP\" -> \"Tìm hồ sơ ứng viên có kinh nghiệm về hệ thống ERP\".\n      - VD SAI: \"Tìm ứng viên biết ERP\" -> \"...như SAP, Oracle...\" (SAI vì tự bịa thêm).\n\n   B. TRÍCH XUẤT BỘ LỌC (Structured Filters):\n      Trích xuất thông tin để điền vào 4 trường lọc sau. Nếu không có thông tin, BẮT BUỘC trả về `null`.\n\n      1. `filter_candidate_name`: Tên riêng ứng viên (dựa trên nội dung từ refined_question).\n      \n      2. `filter_skills` (Array[String]): Danh sách Kỹ năng, Công nghệ, Chức danh. \n         - NGUYÊN TẮC ĐỊNH DẠNG: \n           + Kỹ năng <= 3 ký tự: Viết IN HOA toàn bộ (VD: LLM, AI, SQL).\n           + Kỹ năng > 3 ký tự: Viết Hoa Chữ Cái Đầu (VD: Jira, React, Prompt Engineering).\n           + Kỹ năng mềm: Giữ nguyên tiếng Việt, bỏ từ thừa (khả năng, kỹ năng).\n\n         QUY TẮC KẾT NỐI VÀ GỘP CHUỖI (LOGIC OR PRIORITY) - XỬ LÝ THEO THỨ TỰ SAU:\n\n         ƯU TIÊN 1: CHUỖI LIÊN HOÀN (3 SKILL TRỞ LÊN: A, B hoặc C / A hoặc B hoặc C)\n         - Dấu hiệu: Danh sách 3+ kỹ năng có chứa từ \"hoặc\" ở cuối hoặc lặp lại từ \"hoặc\" liên tiếp.\n         - HÀNH ĐỘNG: Gộp TOÀN BỘ danh sách thành 1 chuỗi duy nhất. Thay thế dấu phẩy (,) bằng từ \"hoặc\".\n         - TUYỆT ĐỐI KHÔNG tách phần tử đầu tiên ra khỏi chuỗi.\n         - VD Input: \"Kinh nghiệm Prompt Engineering hoặc API OpenAI hoặc Gemini\"\n           -> Output ĐÚNG: [\"Prompt Engineering hoặc API OpenAI hoặc Gemini\"]\n         - VD Input: \"DMS, ERP hoặc SQL\" \n           -> Output ĐÚNG: [\"DMS hoặc ERP hoặc SQL\"]\n\n         ƯU TIÊN 2: LỰA CHỌN ĐÔI (A hoặc B)\n         - Dấu hiệu: 2 kỹ năng nối bằng \"hoặc/hay\".\n         - HÀNH ĐỘNG: Gộp thành 1 chuỗi.\n         - VD: \"Java hoặc Python\" -> [\"Java hoặc Python\"]\n         - VD: \"Lãnh đạo hoặc Quản lý team\" -> [\"Lãnh đạo hoặc Quản lý team\"]\n\n         ƯU TIÊN 3: DANH SÁCH RỜI RẠC (AND)\n         - Dấu hiệu: Nối bằng \"và\", \",\", \"cả\" (KHÔNG CÓ từ \"hoặc\" trong cụm đó).\n         - HÀNH ĐỘNG: Tách thành mảng các phần tử riêng biệt.\n         - VD: \"Figma, Jira\" -> [\"Figma\", \"Jira\"]\n         - VD: \"Bộ công cụ Atlassian (Jira, Confluence)\" -> [\"Jira\", \"Confluence\"]\n\n         ---\n         VÍ DỤ KIỂM CHỨNG (FEW-SHOT):\n         Input: \"Tìm người biết n8n hoặc Zapier\"\n         Output filter_skills: [\"n8n hoặc Zapier\"]\n\n         Input: \"Tìm ứng viên có kinh nghiệm về DMS, ERP hay CRM\"\n         Output filter_skills: [\"DMS hoặc ERP hoặc CRM\"]\n\n         Input: \"Tìm ứng viên có tố chất lãnh đạo hoặc quản lý team\"\n         Output filter_skills: [\"Lãnh đạo hoặc Quản lý team\"]\n\n         Input: \"Yêu cầu biết Figma và (biết Sketch hoặc Adobe XD)\"\n         Output filter_skills: [\"Figma\", \"Sketch hoặc Adobe XD\"]\n         ---\n\n      3. `filter_experience`: Kinh nghiệm làm việc thực tế (Số năm, Cấp bậc, Công ty cũ, Lĩnh vực).\n         - NGUYÊN TẮC GHÉP CHUỖI: Nếu tìm thấy nhiều thông tin kinh nghiệm khác nhau (ví dụ: vừa có Số năm, vừa có Tên công ty), hãy nối chúng lại thành một chuỗi duy nhất, sử dụng từ \"và\" để ngăn cách.\n         - VD: \"trên 3 năm kinh nghiệm làm việc tại FPT\" -> Lấy \"trên 3 năm và FPT\".\n         - VD: \"Có kinh nghiệm Banking và từng làm ở Viettel\" -> Lấy \"Banking và Viettel\".\n         \n         - NGUYÊN TẮC TRÍCH XUẤT: Chỉ trích xuất DANH TỪ hoặc CỤM DANH TỪ định danh (Con số cụ thể, Tên riêng công ty, Tên ngành).\n         - TUYỆT ĐỐI KHÔNG: Không trích xuất cả câu văn mô tả hành động.\n           + VD SAI: \"đã từng quản lý nhóm\", \"có kinh nghiệm làm việc tại...\"\n         - SUY LUẬN CHỨC DANH (ROLE): Nếu user mô tả hành động, hãy chuyển đổi nó thành Chức danh tương ứng rồi mới ghép chuỗi.\n           + VD: \"từng quản lý team 3 người\" -> Lấy \"Team Lead\" (hoặc Manager).\n           + VD: \"biết lead team\" -> Lấy \"Leader\".\n\n      4. `filter_education`: Trường học, bằng cấp, Chứng chỉ Ngoại ngữ.\n         - Bao gồm tên trường, chuyên ngành VÀ các chứng chỉ cấp độ (Language Certificates). Chỉ lấy tên riêng của trường đại học và chứng chỉ, không cần phải thêm từ \"đại học\".\n         - VD: \"Bách Khoa\", \"Cử nhân CNTT\", \"N3\", \"N2\", \"IELTS 7.0\", \"TOEIC\".\n         - Nếu user hỏi \"Bằng tiếng Nhật\" hay \"ai biết tiếng Nhật\" -> Lấy [\"N3\"] (tùy ngữ cảnh, nhưng ưu tiên tên chứng chỉ).\n         - - Nếu user hỏi \"Bằng tiếng Anh\" hay \"ai biết tiếng Anh\" -> Lấy [\"Toeic hoặc IELTS\"] (tùy ngữ cảnh, nhưng ưu tiên tên chứng chỉ).\n         - XỬ LÝ LOGIC \"VÀ\" (AND): Tách mảng [\"A\", \"B\"].\n         - XỬ LÝ LOGIC \"HOẶC\" (OR): Gộp chuỗi [\"A hoặc B\"] (áp dụng quy tắc ưu tiên như phần skills).\n\n---\nOUTPUT FORMAT (BẮT BUỘC JSON ONLY):\nBạn phải trả về DUY NHẤT chuỗi JSON này, không markdown, không giải thích thêm:\n\n{\n  \"answer\": string,                   // \"\" nếu là search\n  \"refined_question\": string,         // Câu truy vấn ngữ nghĩa\n  \"filter_candidate_name\": string|null,\n  \"filter_skills\": string[]|null,     // Luôn là mảng chuỗi hoặc null\n  \"filter_experience\": string|null,   // Chuỗi kết hợp (VD: \"5 năm và FPT\") hoặc null\n  \"filter_education\": string|string[]|null,\n  \"source\": \"search\" | \"greeting\",\n  \"needs_clarification\": boolean\n}"
+          "systemMessage": "=Bạn là TalentIQ - Chuyên gia phân tích ý định tìm kiếm tuyển dụng.\nNhiệm vụ: Chuyển đổi câu hỏi của user thành câu truy vấn (Refined Query) và trích xuất tham số lọc (Structured Filters) cho ADVANCED HYBRID SEARCH.\n\n---\nQUY TRÌNH TƯ DUY:\n\n1. XỬ LÝ LỜI CHÀO:\n   - Nếu input là lời chào xã giao -> source=\"greeting\", answer=\"Chào bạn...\".\n\n2. XỬ LÝ TÌM KIẾM (Search Mode):\n   - BẮT BUỘC: `answer` = \"\".\n   \n   A. TẠO TRUY VẤN (Refined Query):\n      - Viết lại câu hỏi thành câu lệnh tìm kiếm chuyên nghiệp, rõ nghĩa (VD: \"Tìm hồ sơ ứng viên...\").\n      - QUAN TRỌNG: TUYỆT ĐỐI KHÔNG tự ý thêm các tên công nghệ, kỹ năng, ví dụ hoặc từ khóa chuyên ngành cụ thể nếu user không nhắc đến trong input.\n      - VD ĐÚNG: \"Tìm ứng viên biết ERP\" -> \"Tìm hồ sơ ứng viên có kinh nghiệm về hệ thống ERP\".\n      - VD SAI: \"Tìm ứng viên biết ERP\" -> \"...như SAP, Oracle...\" (SAI vì tự bịa thêm).\n\n   B. TRÍCH XUẤT BỘ LỌC (Structured Filters):\n      Trích xuất thông tin để điền vào 4 trường lọc sau. Nếu không có thông tin, BẮT BUỘC trả về `null`.\n\n      1. `filter_candidate_name`: Tên riêng ứng viên (dựa trên nội dung từ refined_question).\n      \n      2. `filter_skills` (Array[String]): Danh sách Kỹ năng, Công nghệ, Chức danh. \n         - NGUYÊN TẮC ĐỊNH DẠNG: \n           + Kỹ năng <= 3 ký tự: Viết IN HOA toàn bộ (VD: LLM, AI, SQL).\n           + Kỹ năng > 3 ký tự: Viết Hoa Chữ Cái Đầu (VD: Jira, React, Prompt Engineering).\n           + Kỹ năng mềm: Giữ nguyên tiếng Việt, bỏ từ thừa (khả năng, kỹ năng).\n\n         QUY TẮC KẾT NỐI VÀ GỘP CHUỖI (LOGIC OR PRIORITY) - XỬ LÝ THEO THỨ TỰ SAU:\n\n         ƯU TIÊN 1: CHUỖI LIÊN HOÀN (3 SKILL TRỞ LÊN: A, B hoặc C / A hoặc B hoặc C)\n         - Dấu hiệu: Danh sách 3+ kỹ năng có chứa từ \"hoặc\" ở cuối hoặc lặp lại từ \"hoặc\" liên tiếp.\n         - HÀNH ĐỘNG: Gộp TOÀN BỘ danh sách thành 1 chuỗi duy nhất. Thay thế dấu phẩy (,) bằng từ \"hoặc\".\n         - TUYỆT ĐỐI KHÔNG tách phần tử đầu tiên ra khỏi chuỗi.\n         - VD Input: \"Kinh nghiệm Prompt Engineering hoặc API OpenAI hoặc Gemini\"\n           -> Output ĐÚNG: [\"Prompt Engineering hoặc API OpenAI hoặc Gemini\"]\n         - VD Input: \"DMS, ERP hoặc SQL\" \n           -> Output ĐÚNG: [\"DMS hoặc ERP hoặc SQL\"]\n\n         ƯU TIÊN 2: LỰA CHỌN ĐÔI (A hoặc B)\n         - Dấu hiệu: 2 kỹ năng nối bằng \"hoặc/hay\".\n         - HÀNH ĐỘNG: Gộp thành 1 chuỗi.\n         - VD: \"Java hoặc Python\" -> [\"Java hoặc Python\"]\n         - VD: \"Lãnh đạo hoặc Quản lý team\" -> [\"Lãnh đạo hoặc Quản lý team\"]\n\n         ƯU TIÊN 3: DANH SÁCH RỜI RẠC (AND)\n         - Dấu hiệu: Nối bằng \"và\", \",\", \"cả\" (KHÔNG CÓ từ \"hoặc\" trong cụm đó).\n         - HÀNH ĐỘNG: Tách thành mảng các phần tử riêng biệt.\n         - VD: \"Figma, Jira\" -> [\"Figma\", \"Jira\"]\n         - VD: \"Bộ công cụ Atlassian (Jira, Confluence)\" -> [\"Jira\", \"Confluence\"]\n\n         ---\n         VÍ DỤ KIỂM CHỨNG (FEW-SHOT):\n         Input: \"Tìm người biết n8n hoặc Zapier\"\n         Output filter_skills: [\"n8n hoặc Zapier\"]\n\n         Input: \"Tìm ứng viên có kinh nghiệm về DMS, ERP hay CRM\"\n         Output filter_skills: [\"DMS hoặc ERP hoặc CRM\"]\n\n         Input: \"Tìm ứng viên có tố chất lãnh đạo hoặc quản lý team\"\n         Output filter_skills: [\"Lãnh đạo hoặc Quản lý team\"]\n\n         Input: \"Yêu cầu biết Figma và (biết Sketch hoặc Adobe XD)\"\n         Output filter_skills: [\"Figma\", \"Sketch hoặc Adobe XD\"]\n         ---\n      - Nếu user hỏi \"kĩ năng tiếng Nhật\" hay \"ai có kĩ năng tiếng Nhật\" -> Lấy [\"N3 hoặc Tiếng Nhật\"] .\n         - - Nếu user hỏi \"ai có kĩ năng tiếng Anh\" -> Lấy [\"Toeic hoặc IELTS hoặc Tiếng Anh\"]. \n\n      3. `filter_experience`: Kinh nghiệm làm việc thực tế (Số năm, Cấp bậc, Công ty cũ, Lĩnh vực).\n         - NGUYÊN TẮC GHÉP CHUỖI: Nếu tìm thấy nhiều thông tin kinh nghiệm khác nhau (ví dụ: vừa có Số năm, vừa có Tên công ty), hãy nối chúng lại thành một chuỗi duy nhất, sử dụng từ \"và\" để ngăn cách.\n         - VD: \"trên 3 năm kinh nghiệm làm việc tại FPT\" -> Lấy \"trên 3 năm và FPT\".\n         - VD: \"Có kinh nghiệm Banking và từng làm ở Viettel\" -> Lấy \"Banking và Viettel\".\n         \n         - NGUYÊN TẮC TRÍCH XUẤT: Chỉ trích xuất DANH TỪ hoặc CỤM DANH TỪ định danh (Con số cụ thể, Tên riêng công ty, Tên ngành).\n         - TUYỆT ĐỐI KHÔNG: Không trích xuất cả câu văn mô tả hành động.\n           + VD SAI: \"đã từng quản lý nhóm\", \"có kinh nghiệm làm việc tại...\"\n         - SUY LUẬN CHỨC DANH (ROLE): Nếu user mô tả hành động, hãy chuyển đổi nó thành Chức danh tương ứng rồi mới ghép chuỗi.\n           + VD: \"từng quản lý team 3 người\" -> Lấy \"Team Lead\" (hoặc Manager).\n           + VD: \"biết lead team\" -> Lấy \"Leader\".\n\n      4. `filter_education`: Trường học, bằng cấp, Chứng chỉ Ngoại ngữ.\n         - Bao gồm tên trường, chuyên ngành VÀ các chứng chỉ cấp độ (Language Certificates). Chỉ lấy tên riêng của trường đại học và chứng chỉ, không cần phải thêm từ \"đại học\".\n         - VD: \"Bách Khoa\", \"Cử nhân CNTT\", \"N3\", \"N2\", \"IELTS 7.0\", \"TOEIC\".\n         \n         - XỬ LÝ LOGIC \"VÀ\" (AND): Tách mảng [\"A\", \"B\"].\n         - XỬ LÝ LOGIC \"HOẶC\" (OR): Gộp chuỗi [\"A hoặc B\"] (áp dụng quy tắc ưu tiên như phần skills).\n          - Nếu user hỏi \"Bằng tiếng Nhật\" hay \"ai biết tiếng Nhật\" -> Lấy [\"N3 hoặc Tiếng Nhật\"].\n         - - Nếu user hỏi \"Bằng tiếng Anh\" hay \"ai biết tiếng Anh\" -> Lấy [\"Toeic hoặc IELTS hoặc Tiếng Anh\"].\n---\nOUTPUT FORMAT (BẮT BUỘC JSON ONLY):\nBạn phải trả về DUY NHẤT chuỗi JSON này, không markdown, không giải thích thêm:\n\n{\n  \"answer\": string,                   // \"\" nếu là search\n  \"refined_question\": string,         // Câu truy vấn ngữ nghĩa\n  \"filter_candidate_name\": string|null,\n  \"filter_skills\": string[]|null,     // Luôn là mảng chuỗi hoặc null\n  \"filter_experience\": string|null,   // Chuỗi kết hợp (VD: \"5 năm và FPT\") hoặc null\n  \"filter_education\": string|string[]|null,\n  \"source\": \"search\" | \"greeting\",\n  \"needs_clarification\": boolean\n}"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
@@ -300,7 +300,7 @@
             {
               "id": "e6b045cc-a7aa-4574-862c-64dce78ef5fe",
               "name": "limit",
-              "value": 50,
+              "value": 200,
               "type": "number"
             },
             {
@@ -334,7 +334,7 @@
         "url": "https://idiochromatic-cody-uninspiringly.ngrok-free.dev/collections/RAG_FOR_CV/points/search",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{\n  (() => {\n    // =====================================================================\n    // 1. HELPER FUNCTIONS\n    // =====================================================================\n    \n    function removeAccents(str) {\n      if (!str) return \"\";\n      return str.normalize(\"NFD\").replace(/[\\u0300-\\u036f]/g, \"\").replace(/đ/g, \"d\").replace(/Đ/g, \"D\").trim();\n    }\n\n    function generateMatchClauses(keyword, targetFields) {\n        const rawKey = keyword.trim();\n        if (!rawKey) return [];\n        const variants = [...new Set([rawKey, rawKey.toLowerCase(), removeAccents(rawKey), removeAccents(rawKey).toLowerCase()])];\n        const conditions = [];\n        targetFields.forEach(field => {\n            variants.forEach(v => {\n                conditions.push({ \"key\": field, \"match\": { \"text\": v } });\n            });\n        });\n        return conditions;\n    }\n\n    function processLogicFilter(textArray, fields, targetMustArray) {\n        if (!textArray) return;\n        const items = Array.isArray(textArray) ? textArray : [textArray];\n        items.forEach(item => {\n            if (!item || String(item).length > 150) return;\n            if (item.match(/\\s+(?:hoặc|or)\\s+/i)) {\n                const parts = item.split(/\\s+(?:hoặc|or)\\s+/i);\n                let aggregatedShoulds = [];\n                parts.forEach(part => { aggregatedShoulds.push(...generateMatchClauses(part, fields)); });\n                if (aggregatedShoulds.length > 0) targetMustArray.push({ \"should\": aggregatedShoulds });\n            } else {\n                const parts = item.split(/\\s*(?:và|and|,)\\s*/i);\n                parts.forEach(part => {\n                    if(part.trim()) {\n                        const clauses = generateMatchClauses(part, fields);\n                        if (clauses.length > 0) targetMustArray.push({ \"should\": clauses });\n                    }\n                });\n            }\n        });\n    }\n\n    // =====================================================================\n    // 2. MAIN LOGIC\n    // =====================================================================\n\n    // A. Vector\n    let vector = $json.query_vector || $json.vector;\n    if (!vector || vector.length === 0) { vector = new Array(1536).fill(0); }\n\n    // B. AI Input\n    let aiJson = {};\n    try {\n        const rawSource = $('message refined').item.json; \n        aiJson = rawSource.parsed_json || rawSource.output || {};\n        if (typeof aiJson === 'string') { try { aiJson = JSON.parse(aiJson); } catch(e) {} }\n    } catch (e) { aiJson = {}; }\n\n    let mustConditions = [];\n\n    // [CẤU HÌNH] Unified Fields\n    const unifiedFields = [\"text\", \"skills_list\", \"role\", \"company\", \"school\", \"major\"];\n\n    // ---------------------------------------------------------------------\n    // [STRICT MODE] SO SÁNH TRỰC TIẾP VỚI INDEX (VÌ DATA KHÔNG NULL)\n    // ---------------------------------------------------------------------\n    if (aiJson.filter_experience) {\n        const expStr = String(aiJson.filter_experience).trim();\n        \n        // Cải thiện Regex:\n        // 1. Bắt dấu toán học: > 3, < 2.5\n        const mathMatch = expStr.match(/^([<>=]+)\\s*(\\d+(?:[.,]\\d+)?)$/);\n        // 2. Bắt số thuần: \"3\", \"3.5\"\n        const numberOnlyMatch = expStr.match(/^(\\d+(?:[.,]\\d+)?)$/);\n\n        let rangeQuery = null;\n\n        if (mathMatch) {\n            const operator = mathMatch[1];\n            const number = parseFloat(mathMatch[2].replace(',', '.'));\n\n            if (operator.includes('>')) {\n                 // Nếu >= dùng gte, nếu > dùng gt\n                 rangeQuery = operator.includes('=') ? { \"gte\": number } : { \"gt\": number };\n            } else if (operator.includes('<')) {\n                 // Nếu <= dùng lte, nếu < dùng lt\n                 rangeQuery = operator.includes('=') ? { \"lte\": number } : { \"lt\": number };\n            } else if (operator.includes('=')) {\n                 // Bằng chính xác\n                 rangeQuery = { \"gte\": number, \"lte\": number };\n            }\n        } \n        else if (numberOnlyMatch) {\n            const number = parseFloat(numberOnlyMatch[1].replace(',', '.'));\n            // Mặc định: Nếu chỉ nói \"3 năm\", ta hiểu là \"tối thiểu 3 năm\" (>= 3)\n            rangeQuery = { \"gte\": number };\n        }\n\n        // Áp dụng Filter cứng (VÌ DATA ĐÃ SẠCH)\n        if (rangeQuery) {\n             mustConditions.push({ \"key\": \"experience_years\", \"range\": rangeQuery });\n        }\n    }\n    // ---------------------------------------------------------------------\n\n    // Xử lý Skill\n    if (aiJson.filter_skills) {\n        const skills = Array.isArray(aiJson.filter_skills) ? aiJson.filter_skills : [aiJson.filter_skills];\n        processLogicFilter(skills, unifiedFields, mustConditions);\n    }\n\n    // Xử lý Company\n    if (aiJson.filter_company) {\n        const companies = Array.isArray(aiJson.filter_company) ? aiJson.filter_company : [aiJson.filter_company];\n        processLogicFilter(companies, [\"company\", \"text\"], mustConditions);\n    }\n\n    // Output\n    // Threshold có thể để cao hơn một chút vì data sạch, filter chính xác\n    let smartThreshold = (mustConditions.length > 0) ? 0.55 : 0.75; \n    if ($json.score_threshold !== undefined) smartThreshold = $json.score_threshold;\n\n    let body = {\n      \"vector\": vector,\n      \"limit\": 50, \n      \"with_payload\": true,\n      \"score_threshold\": smartThreshold,\n      \"group_by\": \"candidate_id\", \n      \"group_size\": 1 \n    };\n\n    if (mustConditions.length > 0) {\n      body.filter = { \"must\": mustConditions };\n    }\n\n    return JSON.stringify(body);\n  })()\n}}",
+        "jsonBody": "={{\n  (() => {\n    // =====================================================================\n    // 1. HELPER FUNCTIONS (GIỮ NGUYÊN)\n    // =====================================================================\n    function removeAccents(str) {\n      if (!str) return \"\";\n      return str.normalize(\"NFD\").replace(/[\\u0300-\\u036f]/g, \"\").replace(/đ/g, \"d\").replace(/Đ/g, \"D\").trim();\n    }\n\n    function generateMatchClauses(keyword, targetFields) {\n        const rawKey = keyword.trim();\n        if (!rawKey) return [];\n        const variants = [...new Set([rawKey, rawKey.toLowerCase(), removeAccents(rawKey), removeAccents(rawKey).toLowerCase()])];\n        const conditions = [];\n        targetFields.forEach(field => {\n            variants.forEach(v => { conditions.push({ \"key\": field, \"match\": { \"text\": v } }); });\n        });\n        return conditions;\n    }\n\n    function processLogicFilter(textArray, fields, targetMustArray) {\n        if (!textArray) return;\n        const items = Array.isArray(textArray) ? textArray : [textArray];\n        items.forEach(item => {\n            if (!item || String(item).length > 150) return;\n            if (item.match(/\\s+(?:hoặc|or)\\s+/i)) {\n                const parts = item.split(/\\s+(?:hoặc|or)\\s+/i);\n                let aggregatedShoulds = [];\n                parts.forEach(part => { aggregatedShoulds.push(...generateMatchClauses(part, fields)); });\n                if (aggregatedShoulds.length > 0) targetMustArray.push({ \"should\": aggregatedShoulds });\n            } else {\n                const parts = item.split(/\\s*(?:và|and|,)\\s*/i);\n                parts.forEach(part => {\n                    if(part.trim()) {\n                        const clauses = generateMatchClauses(part, fields);\n                        if (clauses.length > 0) targetMustArray.push({ \"should\": clauses });\n                    }\n                });\n            }\n        });\n    }\n\n    // =====================================================================\n    // 2. MAIN LOGIC\n    // =====================================================================\n\n    let vector = $json.query_vector || $json.vector;\n    if (!vector || vector.length === 0) { vector = new Array(1536).fill(0); }\n\n    let aiJson = {};\n    try {\n        const rawSource = $('message refined').item.json; \n        aiJson = rawSource.parsed_json || rawSource.output || {};\n        if (typeof aiJson === 'string') { try { aiJson = JSON.parse(aiJson); } catch(e) {} }\n    } catch (e) { aiJson = {}; }\n\n    let mustConditions = [];\n    const universalFields = [\"skills_list\", \"certificate\", \"education\", \"school\", \"major\", \"text\", \"role\"];\n\n    // ---------------------------------------------------------------------\n    // [UPDATE] 1. KINH NGHIỆM (FIX LỖI LOGIC & PARSING)\n    // ---------------------------------------------------------------------\n    if (aiJson.filter_experience) {\n        let expStr = String(aiJson.filter_experience).toLowerCase().trim();\n        \n        // Bước 1: Phát hiện Operator dựa trên từ ngữ (nếu AI trả về text)\n        let operator = \"gte\"; // Mặc định là >= (ít nhất)\n        \n        if (expStr.includes(\">\") || expStr.includes(\"trên\") || expStr.includes(\"over\") || expStr.includes(\"hơn\")) {\n            operator = expStr.includes(\"=\") ? \"gte\" : \"gt\"; \n        } else if (expStr.includes(\"<\") || expStr.includes(\"dưới\") || expStr.includes(\"under\") || expStr.includes(\"ít hơn\")) {\n            operator = expStr.includes(\"=\") ? \"lte\" : \"lt\";\n        }\n\n        // Bước 2: Lấy số (chấp nhận phẩy hoặc chấm)\n        // Regex này lỏng hơn: chỉ cần tìm thấy số trong chuỗi\n        const numberMatch = expStr.match(/(\\d+(?:[.,]\\d+)?)/);\n\n        if (numberMatch) {\n            const number = parseFloat(numberMatch[1].replace(',', '.'));\n            let rangeQuery = {};\n\n            // Bước 3: Map operator vào query Qdrant\n            // Nếu chuỗi gốc có dấu cụ thể (>, <, =) thì ưu tiên dấu đó\n            if (expStr.includes(\">=\")) rangeQuery = { \"gte\": number };\n            else if (expStr.includes(\"<=\")) rangeQuery = { \"lte\": number };\n            else if (expStr.includes(\">\")) rangeQuery = { \"gt\": number };\n            else if (expStr.includes(\"<\")) rangeQuery = { \"lt\": number };\n            else {\n                // Nếu không có dấu toán học, dùng operator đã đoán từ text ở Bước 1\n                rangeQuery[operator] = number;\n            }\n\n            mustConditions.push({ \"key\": \"experience_years\", \"range\": rangeQuery });\n        }\n    }\n    // ---------------------------------------------------------------------\n\n    // 2. SKILL / EDU / CERT (GIỮ NGUYÊN)\n    let combinedCompetencies = [];\n    if (aiJson.filter_skills) combinedCompetencies.push(...(Array.isArray(aiJson.filter_skills) ? aiJson.filter_skills : [aiJson.filter_skills]));\n    if (aiJson.filter_education) combinedCompetencies.push(...(Array.isArray(aiJson.filter_education) ? aiJson.filter_education : [aiJson.filter_education]));\n    combinedCompetencies = [...new Set(combinedCompetencies)].filter(item => item);\n    if (combinedCompetencies.length > 0) processLogicFilter(combinedCompetencies, universalFields, mustConditions);\n\n    // 3. COMPANY (GIỮ NGUYÊN)\n    if (aiJson.filter_company) {\n        const companies = Array.isArray(aiJson.filter_company) ? aiJson.filter_company : [aiJson.filter_company];\n        processLogicFilter(companies, [\"company\", \"text\"], mustConditions);\n    }\n\n    // =========================================================\n    // [FIX LIMIT] TĂNG LIMIT LÊN 500\n    // =========================================================\n    \n    // Mặc định cho search vector thường\n    let finalLimit = 50; \n    let finalThreshold = 0.6;\n\n    if (mustConditions.length > 0) {\n        // KHI CÓ FILTER:\n        // 1. Tắt ngưỡng điểm (để không bỏ sót người vector thấp nhưng đúng tiêu chí cứng)\n        finalThreshold = 0.0; \n        \n        // 2. Tăng Limit lên cực đại\n        finalLimit = 500; \n    }\n\n    let body = {\n      \"vector\": vector,\n      \"limit\": finalLimit,      \n      \"with_payload\": true,\n      \"group_by\": \"candidate_id\", \n      \"group_size\": 1 \n    };\n\n    if (mustConditions.length === 0) {\n         if ($json.score_threshold !== undefined) finalThreshold = $json.score_threshold;\n         body.score_threshold = finalThreshold;\n    }\n\n    if (mustConditions.length > 0) {\n      body.filter = { \"must\": mustConditions };\n    }\n\n    return JSON.stringify(body);\n  })()\n}}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -396,7 +396,7 @@
             "x-real-ip": "10.86.6.73",
             "x-forwarded-for": "10.86.6.73",
             "x-forwarded-proto": "https",
-            "content-length": "107335",
+            "content-length": "11370",
             "x-n8n-api-key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NDc5YTc1My05MDJkLTQ1NDItYTlkYy03Y2Y2ZWI2YTI5YjgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzY1NTA1MDY1fQ.2jvuZTRLH5v1aEp6aGO_-M6d8XT9e9JT8wVCDMcydBg",
             "content-type": "application/json",
             "accept": "*/*",
@@ -408,1979 +408,153 @@
           "params": {},
           "query": {},
           "body": {
-            "message": "Sếp muốn tuyển một người có tiềm năng làm Product Owner trong tương lai. Ai trong danh sách này có tố chất lãnh đạo hoặc quản lý backlog tốt nhất?",
+            "message": "ai biet tieng anh",
             "history": [
               {
-                "id": "1",
-                "role": "assistant",
-                "content": "Xin chào! Tôi là RecruitPRO Agent. Tôi có thể giúp gì cho bạn? Ví dụ: \"Ai có kinh nghiệm React?\"",
-                "timestamp": 1767156198944
-              },
-              {
-                "id": "1767156200485",
+                "id": "1768182574158",
                 "role": "user",
-                "content": "Tìm các ứng viên biết sử dụng Figma để thiết kế và thành thạo Jira/Confluence để quản lý tài liệu",
-                "timestamp": 1767156200485
+                "content": "Ứng viên có kỹ năng về AI/LLM",
+                "timestamp": 1768182574158
               },
               {
-                "id": "1767156217704",
+                "id": "1768182607658",
                 "role": "assistant",
-                "content": "Tìm thấy 5 ứng viên có kỹ năng sử dụng Figma, Jira và Confluence với thông tin liên hệ đầy đủ.\n\nTran Quoc Kiet – [Link CV](https://drive.google.com/file/d/11d3X85PYTzGWuy9z1MgHU7ELUGOXnkDP/view?usp=drivesdk)\n- Email: kiettran27101999@gmail.com | Phone: 0903854218\nHoang Nguyen Phuong Thanh – [Link CV](https://drive.google.com/file/d/1_jgAWRIqxX9rGqv5xh4x-iv1Q1fb3E4T/view?usp=drivesdk)\n- Email: hoangthanh6102003@gmail.com | Phone: 0838 299 280\nNguyen Trung Hieu – [Link CV](https://drive.google.com/file/d/19Vi1yTz6K0Qf2vr_mbZmucuYOW0nW-fr/view?usp=drivesdk)\n- Email: hieunt07101999@gmail.com | Phone: 0942002794\nDinh Hoang Tien – [Link CV](https://drive.google.com/file/d/1QiKESMTh6Ml00iFtLIMT_E0cUTEHFpPa/view?usp=drivesdk)\n- Email: tien.dh95@gmail.com | Phone: +84 703 844 100\nVo Hoang Nhan – [Link CV](https://drive.google.com/file/d/1BUMNG6iDpc7YL2bP2eep46BmiDP5uHwm/view?usp=drivesdk)\n- Email: chrisvo.hoang@gmail.com | Phone: +84 97 292 9219",
-                "timestamp": 1767156217704,
+                "content": "Tìm thấy 10 ứng viên có kỹ năng và kinh nghiệm liên quan đến AI hoặc LLM, kèm thông tin liên hệ đầy đủ.\n\nLE QUANG HAI DANG – [Link CV](https://drive.google.com/file/d/1oSmpr5i5FOUwKLtKP7xHLgAzLEQ_tHm2)\n- Email: lequanghaidang2502@gmail.com\n- Phone: +84708520743\n- Kinh nghiệm: 1 năm, có kinh nghiệm Data Analyst và Data/AI Technical Specialist Intern tại IBM Vietnam, sử dụng các công cụ Data/AI Cloud của IBM, xây dựng mô hình dữ liệu, Machine Learning, MLOPs trên IBM Cloud Pak for Data.\nVO MINH TAN – [Link CV](https://drive.google.com/file/d/1Zy1acKhrrGr-4Eub0hHKUcbdgzIWidzN)\n- Email: vominhtan3105@gmail.com\n- Phone: 0339016535\n- Kinh nghiệm: 3 năm, có kinh nghiệm làm Business Analyst và Project Manager tại NEURONS AI COMPANY LIMITED, tham gia vào chiến lược sản phẩm và tối ưu hóa quy trình cho hệ thống AI doanh nghiệp.\nNGUYEN DANG KHOA – [Link CV](https://drive.google.com/file/d/1Dv8gksWvvY-1DO3uzWCNjtwOObRrpNxU)\n- Email: ngdkhoa3979@gmail.com\n- Phone: +84979398692\n- Kinh nghiệm: 5 năm, có kỹ năng Prompting AI, sử dụng Google AI Studio, NotebookLM, Claude, Perplexity, Lovable, Azure Data Lakehouse, Databricks, AI-Driven decision making, phân tích dữ liệu và quản lý dự án Agile/Scrum.\nVAN PHONG BUI – [Link CV](https://drive.google.com/file/d/1J4kPD3PeO6LIOoMwLsNSrO8r2nz7zJCW)\n- Email: phongbv.j4s@gmail.com\n- Phone: +84 389 813 641\n- Kinh nghiệm: 9 năm, có kinh nghiệm AI Trainer & RLHF Specialist, tạo prompt và bảng chấm điểm, đánh giá kết quả, chỉnh sửa phản hồi, quản lý dự án gán nhãn dữ liệu, thiết kế quy trình kiểm soát chất lượng cho dữ liệu AI.\nPHAM ANH TUAN – [Link CV](https://drive.google.com/file/d/1tGsXlk_dtmJT8jS2pqnjoRdrlCdiL8oh)\n- Email: phamtuanhp1994@gmail.com\n- Phone: +84 816 501 816\n- Kinh nghiệm: 5 năm, Data Scientist với kinh nghiệm xây dựng mô hình dự báo, dự đoán học máy, phát triển đại lý AI tăng năng suất qua ChatGPT.\nNGUYEN THI ANH DAO – [Link CV](https://drive.google.com/file/d/1fGfoGu9T8dVCTKw01MtKNcxIjlOLLJem)\n- Email: daohtttql@gmail.com\n- Phone: 0528871169\n- Kinh nghiệm: 3 năm, sử dụng Python, pandas, numpy, matplotlib, PowerBI, có kỹ năng phân tích dữ liệu và đề xuất giải pháp dựa trên API Gateway và Cloudflare flows.\nNGUYEN DUC NHAN – [Link CV](https://drive.google.com/file/d/1fsOx-vfHeINAcP2Wlyfuk5UW78k0bm4w)\n- Email: nhannguyen14.dev@gmail.com\n- Phone: 0877522662\n- Kinh nghiệm: 4 năm, có kiến thức cơ bản về kiến trúc hệ thống, thiết kế API, phân tích dữ liệu và sử dụng SQL Server, Postman.\nTRAN QUOC KIET – [Link CV](https://drive.google.com/file/d/1wH6kXzs_qk8DbCyApRvhe6MNedpYjygX)\n- Email: kiettran27101999@gmail.com\n- Phone: 0903854218\n- Kinh nghiệm: 5 năm, sử dụng trí tuệ nhân tạo để tối ưu hóa các nhiệm vụ nghiên cứu, sơ đồ luồng, mô phỏng và tạo các trường hợp kiểm thử.\nHUY DOAN – [Link CV](https://drive.google.com/file/d/1afFkTiJoAWSacuzgFay_Bo8fFGNGRozH)\n- Email: nhathuyvn100497@gmail.com\n- Phone: +84 776 965 785\n- Kinh nghiệm: 6 năm, phát triển phần mềm với C# và Python, tối ưu hóa xử lý dữ liệu và API REST.\nTRAN VAN DUC – [Link CV](https://drive.google.com/file/d/1TbUo9a-BLeX6aHPzjoJ7wCkkJZnO5JQF)\n- Email: ducforwork@gmail.com\n- Phone: +84 905 955 256\n- Kinh nghiệm: 4 năm, Associate Product Manager tại Chative.IO, SaaS Company, quản lý lộ trình sản phẩm, phỏng vấn người dùng toàn cầu, xây dựng tài liệu chi tiết cho sản phẩm.\nSummary: Các ứng viên trên có kỹ năng hoặc kinh nghiệm liên quan đến AI, Machine Learning, hoặc các công nghệ LLM, bao gồm phát triển mô hình AI, huấn luyện AI, sử dụng công cụ AI, và quản lý dự án AI.",
+                "timestamp": 1768182607658,
                 "candidates": [
                   {
-                    "id": "1767156217703139244727697725",
-                    "name": "Tran Quoc Kiet",
-                    "summary": "",
+                    "id": "17681826076564162082431771369",
+                    "name": "LE QUANG HAI DANG",
+                    "summary": "• Kinh nghiệm: 1 năm, có kinh nghiệm Data Analyst và Data/AI Technical Specialist Intern tại IBM Vietnam, sử dụng các công cụ Data/AI Cloud của IBM, xây dựng mô hình dữ liệu, Machine Learning, MLOPs trên IBM Cloud Pak for Data.",
                     "strengths": [],
                     "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "kiettran27101999@gmail.com",
-                    "phone": "0903854218",
-                    "link_cv": "https://drive.google.com/file/d/11d3X85PYTzGWuy9z1MgHU7ELUGOXnkDP/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/11d3X85PYTzGWuy9z1MgHU7ELUGOXnkDP/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671562177047008463806074172",
-                    "name": "Hoang Nguyen Phuong Thanh",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "hoangthanh6102003@gmail.com",
-                    "phone": "0838 299 280",
-                    "link_cv": "https://drive.google.com/file/d/1_jgAWRIqxX9rGqv5xh4x-iv1Q1fb3E4T/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1_jgAWRIqxX9rGqv5xh4x-iv1Q1fb3E4T/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176715621770435398146990688495",
-                    "name": "Nguyen Trung Hieu",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "hieunt07101999@gmail.com",
-                    "phone": "0942002794",
-                    "link_cv": "https://drive.google.com/file/d/19Vi1yTz6K0Qf2vr_mbZmucuYOW0nW-fr/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/19Vi1yTz6K0Qf2vr_mbZmucuYOW0nW-fr/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176715621770422988066970206766",
-                    "name": "Dinh Hoang Tien",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "tien.dh95@gmail.com",
-                    "phone": "+84 703 844 100",
-                    "link_cv": "https://drive.google.com/file/d/1QiKESMTh6Ml00iFtLIMT_E0cUTEHFpPa/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1QiKESMTh6Ml00iFtLIMT_E0cUTEHFpPa/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176715621770418453077202623902",
-                    "name": "Vo Hoang Nhan",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "chrisvo.hoang@gmail.com",
-                    "phone": "+84 97 292 9219",
-                    "link_cv": "https://drive.google.com/file/d/1BUMNG6iDpc7YL2bP2eep46BmiDP5uHwm/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1BUMNG6iDpc7YL2bP2eep46BmiDP5uHwm/view?usp=drivesdk"
-                  }
-                ]
-              },
-              {
-                "id": "1767156352516",
-                "role": "user",
-                "content": "Lọc riêng những ứng viên có kinh nghiệm thực tế với n8n hoặc Zapier.",
-                "timestamp": 1767156352516
-              },
-              {
-                "id": "1767156358480",
-                "role": "assistant",
-                "content": "{\"status\":\"ok\",\"tenantCode\":\"\",\"chatid\":\"\",\"question_message\":\"\",\"answer_url\":[],\"source\":\"UN_ANSWER\",\"needs_clarification\":false,\"clarify_question\":null,\"handoff_note\":null,\"employeeId\":\"\",\"timestamp\":\"2025-12-31T04:45:59.181Z\"}",
-                "timestamp": 1767156358480,
-                "candidates": []
-              },
-              {
-                "id": "1767156371844",
-                "role": "user",
-                "content": "Tìm những bạn đã từng sử dụng ChatGPT/Claude để hỗ trợ công việc BA (viết BRD, user story...).",
-                "timestamp": 1767156371844
-              },
-              {
-                "id": "1767156379027",
-                "role": "assistant",
-                "content": "{\"status\":\"ok\",\"tenantCode\":\"\",\"chatid\":\"\",\"question_message\":\"\",\"answer_url\":[],\"source\":\"UN_ANSWER\",\"needs_clarification\":false,\"clarify_question\":null,\"handoff_note\":null,\"employeeId\":\"\",\"timestamp\":\"2025-12-31T04:46:19.754Z\"}",
-                "timestamp": 1767156379027,
-                "candidates": []
-              },
-              {
-                "id": "1767156387516",
-                "role": "user",
-                "content": "Tìm những bạn đã từng sử dụng ChatGPT để hỗ trợ công việc BA (viết BRD, user story...).",
-                "timestamp": 1767156387516
-              },
-              {
-                "id": "1767156394924",
-                "role": "assistant",
-                "content": "{\"status\":\"ok\",\"tenantCode\":\"\",\"chatid\":\"\",\"question_message\":\"\",\"answer_url\":[],\"source\":\"UN_ANSWER\",\"needs_clarification\":false,\"clarify_question\":null,\"handoff_note\":null,\"employeeId\":\"\",\"timestamp\":\"2025-12-31T04:46:35.651Z\"}",
-                "timestamp": 1767156394924,
-                "candidates": []
-              },
-              {
-                "id": "1767156408375",
-                "role": "user",
-                "content": "Chỉ hiện những ứng viên tốt nghiệp đúng chuyên ngành CNTT hoặc Hệ thống thông tin.",
-                "timestamp": 1767156408375
-              },
-              {
-                "id": "1767156417564",
-                "role": "assistant",
-                "content": "Tìm thấy 1 ứng viên có bằng cấp đúng chuyên ngành CNTT hoặc Hệ thống thông tin: Lê Quang Hải Đăng với thông tin liên hệ và bằng cấp rõ ràng.\n\nLê Quang Hải Đăng – [Link CV](https://drive.google.com/file/d/18_1f5T0xpeQUpdJSFZgvfzZFAMFsKnun/view?usp=drivesdk)\n- Email: lequanghaidang2502@gmail.com | Phone: +84708520743\n- Education: Bachelor in Computer & Information Science, Minor in IT Service Science, Software Development at Auckland University of Technology (2020-2024).",
-                "timestamp": 1767156417564,
-                "candidates": [
-                  {
-                    "id": "17671564175639385002728769936",
-                    "name": "Tìm thấy 1 ứng viên có bằng cấp đúng chuyên ngành CNTT hoặc Hệ thống thông tin",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "",
-                    "phone": ""
-                  },
-                  {
-                    "id": "17671564175638161200357457459",
-                    "name": "Lê Quang Hải Đăng",
-                    "summary": "• Education: Bachelor in Computer & Information Science, Minor in IT Service Science, Software Development at Auckland University of Technology (2020-2024).",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
+                    "experience_years": 1,
                     "skills_found": [],
                     "email": "lequanghaidang2502@gmail.com",
                     "phone": "+84708520743",
-                    "link_cv": "https://drive.google.com/file/d/18_1f5T0xpeQUpdJSFZgvfzZFAMFsKnun/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/18_1f5T0xpeQUpdJSFZgvfzZFAMFsKnun/view?usp=drivesdk"
-                  }
-                ]
-              },
-              {
-                "id": "1767156447900",
-                "role": "user",
-                "content": "Tìm ứng viên có kinh nghiệm từ 2 đến 3 năm. Tôi không cần Junior mới ra trường (<1 năm) và cũng không cần Senior quá cứng (>5 năm).",
-                "timestamp": 1767156447900
-              },
-              {
-                "id": "1767156474300",
-                "role": "assistant",
-                "content": "Tìm thấy 4 ứng viên có kinh nghiệm làm việc từ 2 đến 3 năm kèm thông tin liên hệ.\n\nLê Quang Hải Đăng – [Link CV](https://drive.google.com/file/d/18_1f5T0xpeQUpdJSFZgvfzZFAMFsKnun/view?usp=drivesdk)\n- SĐT: +84708520743\n- Kinh nghiệm: 3 năm\nDinh Hoang Tien – [Link CV](https://drive.google.com/file/d/1hpmeKlxwXZ8u7ZkzEvkyvK8CNyxYR-Rt/view?usp=drivesdk)\n- SĐT: +84 703 844 100\n- Kinh nghiệm: 3 năm\nNguyen Thi Thuy Trang – [Link CV](https://drive.google.com/file/d/1a8jcs9Kr3JJgKO7pqn5xogH-ETsgRXbU/view?usp=drivesdk)\n- SĐT: 0338121441\n- Kinh nghiệm: 3 năm\nNguyen Duc Nhan – [Link CV](https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk)\n- SĐT: 0877522662\n- Kinh nghiệm: 3 năm",
-                "timestamp": 1767156474300,
-                "candidates": [
-                  {
-                    "id": "17671564743007322163115570994",
-                    "name": "Lê Quang Hải Đăng",
-                    "summary": "• Kinh nghiệm: 3 năm",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 3,
-                    "skills_found": [],
-                    "email": "",
-                    "phone": "+84708520743",
-                    "link_cv": "https://drive.google.com/file/d/18_1f5T0xpeQUpdJSFZgvfzZFAMFsKnun/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/18_1f5T0xpeQUpdJSFZgvfzZFAMFsKnun/view?usp=drivesdk"
+                    "link_cv": "https://drive.google.com/file/d/1oSmpr5i5FOUwKLtKP7xHLgAzLEQ_tHm2",
+                    "file_url": "https://drive.google.com/file/d/1oSmpr5i5FOUwKLtKP7xHLgAzLEQ_tHm2"
                   },
                   {
-                    "id": "17671564743004067610519686212",
-                    "name": "Dinh Hoang Tien",
-                    "summary": "• Kinh nghiệm: 3 năm",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 3,
-                    "skills_found": [],
-                    "email": "",
-                    "phone": "+84 703 844 100",
-                    "link_cv": "https://drive.google.com/file/d/1hpmeKlxwXZ8u7ZkzEvkyvK8CNyxYR-Rt/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1hpmeKlxwXZ8u7ZkzEvkyvK8CNyxYR-Rt/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176715647430020778714417628874",
-                    "name": "Nguyen Thi Thuy Trang",
-                    "summary": "• Kinh nghiệm: 3 năm",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 3,
-                    "skills_found": [],
-                    "email": "",
-                    "phone": "0338121441",
-                    "link_cv": "https://drive.google.com/file/d/1a8jcs9Kr3JJgKO7pqn5xogH-ETsgRXbU/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1a8jcs9Kr3JJgKO7pqn5xogH-ETsgRXbU/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "1767156474300457711238523708",
-                    "name": "Nguyen Duc Nhan",
-                    "summary": "• Kinh nghiệm: 3 năm",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 3,
-                    "skills_found": [],
-                    "email": "",
-                    "phone": "0877522662",
-                    "link_cv": "https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk"
-                  }
-                ]
-              },
-              {
-                "id": "1767156495953",
-                "role": "user",
-                "content": "Ưu tiên tìm những ứng viên đã làm các dự án liên quan đến Bán lẻ (Retail), Chuỗi cung ứng (Supply Chain) hoặc Phân phối.",
-                "timestamp": 1767156495953
-              },
-              {
-                "id": "1767156530706",
-                "role": "assistant",
-                "content": "Tìm thấy 7 ứng viên có kinh nghiệm làm dự án liên quan đến Bán lẻ, Chuỗi cung ứng hoặc Phân phối kèm thông tin liên hệ.\n\nTran Thi Thu Oanh – [Link CV](https://drive.google.com/file/d/1sI7sndxoGQ64YINiuyMilE0p-z4H4W8p/view?usp=drivesdk)\n- SĐT: 0979283870 | Email: thuoanh06032001@gmail.com\n- Kinh nghiệm: 5 năm\n- Kinh nghiệm liên quan: Business Analyst tại CLOUDGO COMPANY với các dự án tích hợp ERP, WMS, TMS đồng bộ dữ liệu tồn kho, đơn hàng và khách hàng trên các hệ thống; nâng cao tính nhất quán dữ liệu giữa các hệ thống; tại TESO GLOBAL COMPANY hỗ trợ khách hàng Go-live, theo dõi hiệu suất hệ thống, cải thiện yêu cầu giảm công việc làm lại, tạo BRD, SRS, BPMN, sơ đồ Use Case.\nTran Quoc Kiet – [Link CV](https://drive.google.com/file/d/11d3X85PYTzGWuy9z1MgHU7ELUGOXnkDP/view?usp=drivesdk)\n- SĐT: 0903854218 | Email: kiettran27101999@gmail.com\n- Kinh nghiệm: 6 năm\n- Kinh nghiệm liên quan: IT Business Analyst chuyên về Wholesale Digital Business Solutions (B2B) tại VIB - VIETNAM INTERNATIONAL BANK (liên quan đến chuỗi cung ứng, phân phối bán lẻ); sử dụng Jira, Confluence quản lý dự án; tư vấn vận hành; lập tài liệu, kiểm thử UAT; hỗ trợ QA và phát triển; đào tạo nhân viên.\nNguyen Dang Khoa – [Link CV](https://drive.google.com/file/d/125A7Ry1wM7Z1cguJX4gAGGcJ8Ke3FpJO/view?usp=drivesdk)\n- SĐT: +84 979 398 692 | Email: ngdkhoa3979@gmail.com\n- Kinh nghiệm: 5 năm\n- Kinh nghiệm liên quan: Business Data Analyst tại Prudential Vietnam Assurance Private Ltd., chuyên về mô hình dữ liệu, thiết kế schema và quy trình mapping (có thể áp dụng cho chuỗi cung ứng và phân phối).\nNguyen Trung Hieu – [Link CV](https://drive.google.com/file/d/19Vi1yTz6K0Qf2vr_mbZmucuYOW0nW-fr/view?usp=drivesdk)\n- SĐT: 0942002794 | Email: hieunt07101999@gmail.com\n- Kinh nghiệm: 6 năm\n- Kinh nghiệm liên quan: Business Analyst tại Nexcel Solutions, thu thập yêu cầu, làm rõ phạm vi dự án, tạo BRD, URD, Functional Specification, wireframe, hỗ trợ kiểm thử, làm việc với SQL, phù hợp với dự án chuỗi cung ứng/phân phối.\nNguyen Thi Thuy Trang – [Link CV](https://drive.google.com/file/d/1a8jcs9Kr3JJgKO7pqn5xogH-ETsgRXbU/view?usp=drivesdk)\n- SĐT: 0338121441 | Email: ntthuytrang247@gmail.com\n- Kinh nghiệm: 3 năm\n- Kinh nghiệm liên quan: Business Analyst tại Techspark Technology và IMS Solution Company, nghiên cứu, phân tích yêu cầu, viết user story, wireframe, mockup, tài liệu SRS, hỗ trợ nhóm thiết kế.\nDinh Hoang Tien – [Link CV](https://drive.google.com/file/d/1hpmeKlxwXZ8u7ZkzEvkyvK8CNyxYR-Rt/view?usp=drivesdk)\n- SĐT: +84 703 844 100 | Email: tien.dh95@gmail.com\n- Kinh nghiệm: 3 năm\n- Kinh nghiệm liên quan: Project Manager & Business Analyst tại Devtify Corporation, phân tích nghiệp vụ, thu thập yêu cầu, hợp tác với Product Owner, mô phỏng yêu cầu bằng wireframe, viết tài liệu hướng dẫn sử dụng.\nNguyen Duc Nhan – [Link CV](https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk)\n- SĐT: 0877522662 | Email: nhannguyen14.dev@gmail.com\n- Kinh nghiệm: 3 năm\n- Kinh nghiệm liên quan: Business Analyst tại IIG Viet Nam, chuẩn bị tài liệu URD, BRD, SRS, Use Case, thiết kế wireframes.\nNhững ứng viên trên có kinh nghiệm liên quan đến các dự án trong lĩnh vực Bán lẻ, Chuỗi cung ứng hoặc Phân phối dựa trên mô tả công việc và chi tiết dự án trong hồ sơ.",
-                "timestamp": 1767156530706,
-                "candidates": [
-                  {
-                    "id": "176715653070627864599567034176",
-                    "name": "Tran Thi Thu Oanh",
-                    "summary": "• Kinh nghiệm: 5 năm\n• Kinh nghiệm: liên quan: Business Analyst tại CLOUDGO COMPANY với các dự án tích hợp ERP, WMS, TMS đồng bộ dữ liệu tồn kho, đơn hàng và khách hàng trên các hệ thống; nâng cao tính nhất quán dữ liệu giữa các hệ thống; tại TESO GLOBAL COMPANY hỗ trợ khách hàng Go-live, theo dõi hiệu suất hệ thống, cải thiện yêu cầu giảm công việc làm lại, tạo BRD, SRS, BPMN, sơ đồ Use Case.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 5,
-                    "skills_found": [],
-                    "email": "thuoanh06032001@gmail.com",
-                    "phone": "0979283870",
-                    "link_cv": "https://drive.google.com/file/d/1sI7sndxoGQ64YINiuyMilE0p-z4H4W8p/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1sI7sndxoGQ64YINiuyMilE0p-z4H4W8p/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176715653070624317634674866473",
-                    "name": "Tran Quoc Kiet",
-                    "summary": "• Kinh nghiệm: 6 năm\n• Kinh nghiệm: liên quan: IT Business Analyst chuyên về Wholesale Digital Business Solutions (B2B) tại VIB - VIETNAM INTERNATIONAL BANK (liên quan đến chuỗi cung ứng, phân phối bán lẻ); sử dụng Jira, Confluence quản lý dự án; tư vấn vận hành; lập tài liệu, kiểm thử UAT; hỗ trợ QA và phát triển; đào tạo nhân viên.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 6,
-                    "skills_found": [],
-                    "email": "kiettran27101999@gmail.com",
-                    "phone": "0903854218",
-                    "link_cv": "https://drive.google.com/file/d/11d3X85PYTzGWuy9z1MgHU7ELUGOXnkDP/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/11d3X85PYTzGWuy9z1MgHU7ELUGOXnkDP/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671565307068149362399890645",
-                    "name": "Nguyen Dang Khoa",
-                    "summary": "• Kinh nghiệm: 5 năm\n• Kinh nghiệm: liên quan: Business Data Analyst tại Prudential Vietnam Assurance Private Ltd., chuyên về mô hình dữ liệu, thiết kế schema và quy trình mapping (có thể áp dụng cho chuỗi cung ứng và phân phối).",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 5,
-                    "skills_found": [],
-                    "email": "ngdkhoa3979@gmail.com",
-                    "phone": "+84 979 398 692",
-                    "link_cv": "https://drive.google.com/file/d/125A7Ry1wM7Z1cguJX4gAGGcJ8Ke3FpJO/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/125A7Ry1wM7Z1cguJX4gAGGcJ8Ke3FpJO/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671565307062470091366647984",
-                    "name": "Nguyen Trung Hieu",
-                    "summary": "• Kinh nghiệm: 6 năm\n• Kinh nghiệm: liên quan: Business Analyst tại Nexcel Solutions, thu thập yêu cầu, làm rõ phạm vi dự án, tạo BRD, URD, Functional Specification, wireframe, hỗ trợ kiểm thử, làm việc với SQL, phù hợp với dự án chuỗi cung ứng/phân phối.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 6,
-                    "skills_found": [],
-                    "email": "hieunt07101999@gmail.com",
-                    "phone": "0942002794",
-                    "link_cv": "https://drive.google.com/file/d/19Vi1yTz6K0Qf2vr_mbZmucuYOW0nW-fr/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/19Vi1yTz6K0Qf2vr_mbZmucuYOW0nW-fr/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176715653070622886238489191524",
-                    "name": "Nguyen Thi Thuy Trang",
-                    "summary": "• Kinh nghiệm: 3 năm\n• Kinh nghiệm: liên quan: Business Analyst tại Techspark Technology và IMS Solution Company, nghiên cứu, phân tích yêu cầu, viết user story, wireframe, mockup, tài liệu SRS, hỗ trợ nhóm thiết kế.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 3,
-                    "skills_found": [],
-                    "email": "ntthuytrang247@gmail.com",
-                    "phone": "0338121441",
-                    "link_cv": "https://drive.google.com/file/d/1a8jcs9Kr3JJgKO7pqn5xogH-ETsgRXbU/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1a8jcs9Kr3JJgKO7pqn5xogH-ETsgRXbU/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "1767156530706346326036854552",
-                    "name": "Dinh Hoang Tien",
-                    "summary": "• Kinh nghiệm: 3 năm\n• Kinh nghiệm: liên quan: Project Manager & Business Analyst tại Devtify Corporation, phân tích nghiệp vụ, thu thập yêu cầu, hợp tác với Product Owner, mô phỏng yêu cầu bằng wireframe, viết tài liệu hướng dẫn sử dụng.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 3,
-                    "skills_found": [],
-                    "email": "tien.dh95@gmail.com",
-                    "phone": "+84 703 844 100",
-                    "link_cv": "https://drive.google.com/file/d/1hpmeKlxwXZ8u7ZkzEvkyvK8CNyxYR-Rt/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1hpmeKlxwXZ8u7ZkzEvkyvK8CNyxYR-Rt/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176715653070611885887213397606",
-                    "name": "Nguyen Duc Nhan",
-                    "summary": "• Kinh nghiệm: 3 năm\n• Kinh nghiệm: liên quan: Business Analyst tại IIG Viet Nam, chuẩn bị tài liệu URD, BRD, SRS, Use Case, thiết kế wireframes. Những ứng viên trên có kinh nghiệm liên quan đến các dự án trong lĩnh vực Bán lẻ, Chuỗi cung ứng hoặc Phân phối dựa trên mô tả công việc và chi tiết dự án trong hồ sơ.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 3,
-                    "skills_found": [],
-                    "email": "nhannguyen14.dev@gmail.com",
-                    "phone": "0877522662",
-                    "link_cv": "https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk"
-                  }
-                ]
-              },
-              {
-                "id": "1767156684711",
-                "role": "user",
-                "content": "Tìm những ứng viên thể hiện rõ tư duy sản phẩm (Product Mindset). Ví dụ: biết quan tâm đến metrics, trải nghiệm người dùng cuối, hoặc đề xuất tính năng mới.",
-                "timestamp": 1767156684711
-              },
-              {
-                "id": "1767156692964",
-                "role": "assistant",
-                "content": "{\"status\":\"ok\",\"tenantCode\":\"\",\"chatid\":\"\",\"question_message\":\"\",\"answer_url\":[],\"source\":\"UN_ANSWER\",\"needs_clarification\":false,\"clarify_question\":null,\"handoff_note\":null,\"employeeId\":\"\",\"timestamp\":\"2025-12-31T04:51:33.669Z\"}",
-                "timestamp": 1767156692964,
-                "candidates": []
-              },
-              {
-                "id": "1767156700224",
-                "role": "user",
-                "content": "Tìm những ứng viên thể hiện rõ tư duy sản phẩm (Product Mindset). ",
-                "timestamp": 1767156700224
-              },
-              {
-                "id": "1767156707269",
-                "role": "assistant",
-                "content": "{\"status\":\"ok\",\"tenantCode\":\"\",\"chatid\":\"\",\"question_message\":\"\",\"answer_url\":[],\"source\":\"UN_ANSWER\",\"needs_clarification\":false,\"clarify_question\":null,\"handoff_note\":null,\"employeeId\":\"\",\"timestamp\":\"2025-12-31T04:51:47.995Z\"}",
-                "timestamp": 1767156707269,
-                "candidates": []
-              },
-              {
-                "id": "1767156720654",
-                "role": "user",
-                "content": "Ai là người có kinh nghiệm làm việc trực tiếp để lấy yêu cầu (Elicitation) từ khách hàng khó tính hoặc các bên liên quan (Stakeholders)?",
-                "timestamp": 1767156720655
-              },
-              {
-                "id": "1767156727285",
-                "role": "assistant",
-                "content": "{\"status\":\"ok\",\"tenantCode\":\"\",\"chatid\":\"\",\"question_message\":\"\",\"answer_url\":[],\"source\":\"UN_ANSWER\",\"needs_clarification\":false,\"clarify_question\":null,\"handoff_note\":null,\"employeeId\":\"\",\"timestamp\":\"2025-12-31T04:52:08.005Z\"}",
-                "timestamp": 1767156727285,
-                "candidates": []
-              },
-              {
-                "id": "1767156773367",
-                "role": "user",
-                "content": "Tìm ứng viên có khả năng giải quyết vấn đề kỹ thuật phức tạp bằng giải pháp đơn giản.",
-                "timestamp": 1767156773367
-              },
-              {
-                "id": "1767156780738",
-                "role": "assistant",
-                "content": "{\"status\":\"ok\",\"tenantCode\":\"\",\"chatid\":\"\",\"question_message\":\"\",\"answer_url\":[],\"source\":\"UN_ANSWER\",\"needs_clarification\":false,\"clarify_question\":null,\"handoff_note\":null,\"employeeId\":\"\",\"timestamp\":\"2025-12-31T04:53:01.453Z\"}",
-                "timestamp": 1767156780738,
-                "candidates": []
-              },
-              {
-                "id": "1767156937379",
-                "role": "user",
-                "content": "Tìm ứng viên có khả năng giải quyết vấn đề kỹ thuật phức tạp bằng giải pháp đơn giản.",
-                "timestamp": 1767156937379
-              },
-              {
-                "id": "1767156993034",
-                "role": "assistant",
-                "content": "Tìm thấy 18 ứng viên có kinh nghiệm và kỹ năng phù hợp khả năng giải quyết vấn đề kỹ thuật phức tạp bằng giải pháp đơn giản, kèm thông tin liên hệ chi tiết.\n\nNguyen Chau Giang – [Link CV](https://drive.google.com/file/d/1qVQ5bh6u2vDS7T81KR_uzCChk8xb9dch/view?usp=drivesdk)\n- Email: nguyenchaugiang5211@gmail.com | Phone: (+84) 0373 075 225\n- Kinh nghiệm: 4 năm với kỹ năng đa dạng bao gồm Product Strategy, Agile, Scrum, Kanban, Backlog Prioritization, Stakeholder Management, API Documentation, Workshop Facilitation, Cross-team Collaboration, Mentorship, Presentation, Client Consulting, Jira, Github, Swagger, Postman, Figma, Miro, PostgreSQL, và tư duy đổi mới sáng tạo, định hướng phát triển người dùng.\nPham Anh Tuan – [Link CV](https://drive.google.com/file/d/1fKTEjrFRr6l10lvUnqm_pfWmZyWpI9Lt/view?usp=drivesdk)\n- Email: phamtuanhp1994@gmail.com | Phone: +84 816 501 816\n- Kinh nghiệm: 4 năm với nhiều vai trò như Data Scientist, Intern tại Boston Consulting Group, Senior Client Service Associate tại Dialectica. Thành tựu nổi bật bao gồm phát triển các mô hình dự báo máy học tối ưu lịch trình vận hành, mô hình marketing phân tích bán hàng, và phối hợp tiết kiệm dự án tại Đông Nam Á. Có chứng chỉ Google Project Management.\nTran Quoc Kiet – [Link CV](https://drive.google.com/file/d/11d3X85PYTzGWuy9z1MgHU7ELUGOXnkDP/view?usp=drivesdk)\n- Email: kiettran27101999@gmail.com | Phone: 0903854218\n- Kinh nghiệm: 6 năm làm IT Business Analyst với kỹ năng quản lý công việc, tư vấn, kiểm thử cơ sở dữ liệu và API, đào tạo nhân viên, thiết kế UX, wireframe, phối hợp đặc tả API và hỗ trợ phát triển các giải pháp kỹ thuật phức tạp.\nNguyen Trung Hieu – [Link CV](https://drive.google.com/file/d/19Vi1yTz6K0Qf2vr_mbZmucuYOW0nW-fr/view?usp=drivesdk)\n- Email: hieunt07101999@gmail.com | Phone: 0942002794\n- Kinh nghiệm: 6 năm Business Analyst với nhiệm vụ thu thập, làm rõ yêu cầu, định nghĩa phạm vi dự án, làm việc với SQL, tạo tài liệu BRD, URD, Functional Specification, wireframe, hỗ trợ kiểm thử và theo dõi.\nDinh Hoang Tien – [Link CV](https://drive.google.com/file/d/1hpmeKlxwXZ8u7ZkzEvkyvK8CNyxYR-Rt/view?usp=drivesdk)\n- Email: tien.dh95@gmail.com | Phone: +84 703 844 100\n- Kinh nghiệm: 3 năm Project Manager & Business Analyst, phân tích nghiệp vụ, thu thập yêu cầu, hợp tác với Product Owner định hướng lộ trình sản phẩm, mô phỏng yêu cầu bằng wireframe, viết tài liệu hướng dẫn sử dụng.\nLê Quang Hải Đăng – [Link CV](https://drive.google.com/file/d/18_1f5T0xpeQUpdJSFZgvfzZFAMFsKnun/view?usp=drivesdk)\n- Email: lequanghaidang2502@gmail.com | Phone: +84708520743\n- Kinh nghiệm: 3 năm, tốt nghiệp Cử nhân Khoa học Máy tính & Thông tin, chuyên ngành IT Service Science, Software Development.\nNguyen Dang Khoa – [Link CV](https://drive.google.com/file/d/125A7Ry1wM7Z1cguJX4gAGGcJ8Ke3FpJO/view?usp=drivesdk)\n- Email: ngdkhoa3979@gmail.com | Phone: +84 979 398 692\n- Kinh nghiệm: 5 năm Business Data Analyst chuyên về mô hình dữ liệu, thiết kế schema và quy trình mapping.\nNguyen Thi Thuy Trang – [Link CV](https://drive.google.com/file/d/1a8jcs9Kr3JJgKO7pqn5xogH-ETsgRXbU/view?usp=drivesdk)\n- Email: ntthuytrang247@gmail.com | Phone: 0338121441\n- Kinh nghiệm: 3 năm Business Analyst với kỹ năng nghiên cứu, thu thập, phân tích yêu cầu, viết user story, wireframe, mockup, tài liệu SRS, hỗ trợ nhóm thiết kế.\nTran Thi Thu Oanh – [Link CV](https://drive.google.com/file/d/1sI7sndxoGQ64YINiuyMilE0p-z4H4W8p/view?usp=drivesdk)\n- Email: thuoanh06032001@gmail.com | Phone: 0979283870\n- Kinh nghiệm: 5 năm Business Analyst, tham gia thảo luận tích hợp hệ thống ERP, WMS, TMS, thiết kế wireframe, UI mockup, tạo BRD, SRS, BPMN, use case, cải thiện logic tích hợp và quy trình mô phỏng.\nNguyen Duc Nhan – [Link CV](https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk)\n- Email: nhannguyen14.dev@gmail.com | Phone: 0877522662\n- Kinh nghiệm: 3 năm Business Analyst, chuẩn bị tài liệu URD, BRD, SRS, Use Case, thiết kế wireframes.\nNguyễn Thị Anh Đào – [Link CV](https://drive.google.com/file/d/16OvV0LnXZHm5R3HAHHOZliqV_olju7Yw/view?usp=drivesdk)\n- Email: daohtttql@gmail.com | Phone: 0528871169\n- Kinh nghiệm: 4 năm Business Analyst cum Quality Control, áp dụng SCRUM, phân tích nghiệp vụ, đảm bảo chất lượng, thu thập yêu cầu BRD, SRS, GAP, thiết kế báo cáo và quản lý tích hợp dữ liệu.\nNguyễn Hoàng Ân – [Link CV](https://drive.google.com/file/d/1Nypqe8Fc8A_gYP9voODpHHxO0qB6Z-By/view?usp=drivesdk)\n- Email: annguyenhoang20@gmail.com | Phone: 0983336120\n- Kinh nghiệm: 3 năm, có chứng chỉ Business Analyst Foundation Course.\nHa Nguyen Hai Dang – [Link CV](https://drive.google.com/file/d/10klNPyimL6gfbW7GOEg6o-4tQ9AGVzhp/view?usp=drivesdk)\n- Email: danghanguyenhai@gmail.com | Phone: 0833996989\n- Kinh nghiệm: 4 năm Business Analyst, thu thập và khai thác yêu cầu, tạo tài liệu yêu cầu người dùng và định nghĩa backlog sản phẩm.\nKhang Trương Hữu – [Link CV](https://drive.google.com/file/d/1NAm8ODj5XH59F_HG_Syen66qnMc64Y1W/view?usp=drivesdk)\n- Email: khang.truong128000@gmail.com | Phone: 0888 077 924\n- Kinh nghiệm: 4 năm Business Analyst, khảo sát quy trình kinh doanh, xác định khó khăn trong vận hành.\nVo Hoang Nhan – [Link CV](https://drive.google.com/file/d/1BUMNG6iDpc7YL2bP2eep46BmiDP5uHwm/view?usp=drivesdk)\n- Email: chrisvo.hoang@gmail.com | Phone: +84 97 292 9219\n- Kinh nghiệm: 10 năm Dispute Supervisor tại Shopee Vietnam, thực hiện kiểm thử chấp nhận người dùng đảm bảo hệ thống đáp ứng yêu cầu đề ra.",
-                "timestamp": 1767156993034,
-                "candidates": [
-                  {
-                    "id": "17671569930349329037256970768",
-                    "name": "Nguyen Chau Giang",
-                    "summary": "• Kinh nghiệm: 4 năm với kỹ năng đa dạng bao gồm Product Strategy, Agile, Scrum, Kanban, Backlog Prioritization, Stakeholder Management, API Documentation, Workshop Facilitation, Cross-team Collaboration, Mentorship, Presentation, Client Consulting, Jira, Github, Swagger, Postman, Figma, Miro, PostgreSQL, và tư duy đổi mới sáng tạo, định hướng phát triển người dùng.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 4,
-                    "skills_found": [],
-                    "email": "nguyenchaugiang5211@gmail.com",
-                    "phone": "(+84) 0373 075 225",
-                    "link_cv": "https://drive.google.com/file/d/1qVQ5bh6u2vDS7T81KR_uzCChk8xb9dch/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1qVQ5bh6u2vDS7T81KR_uzCChk8xb9dch/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671569930347350263952203543",
-                    "name": "Pham Anh Tuan",
-                    "summary": "• Kinh nghiệm: 4 năm với nhiều vai trò như Data Scientist, Intern tại Boston Consulting Group, Senior Client Service Associate tại Dialectica. Thành tựu nổi bật bao gồm phát triển các mô hình dự báo máy học tối ưu lịch trình vận hành, mô hình marketing phân tích bán hàng, và phối hợp tiết kiệm dự án tại Đông Nam Á. Có chứng chỉ Google Project Management.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 4,
-                    "skills_found": [],
-                    "email": "phamtuanhp1994@gmail.com",
-                    "phone": "+84 816 501 816",
-                    "link_cv": "https://drive.google.com/file/d/1fKTEjrFRr6l10lvUnqm_pfWmZyWpI9Lt/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1fKTEjrFRr6l10lvUnqm_pfWmZyWpI9Lt/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671569930347631239377156598",
-                    "name": "Tran Quoc Kiet",
-                    "summary": "• Kinh nghiệm: 6 năm làm IT Business Analyst với kỹ năng quản lý công việc, tư vấn, kiểm thử cơ sở dữ liệu và API, đào tạo nhân viên, thiết kế UX, wireframe, phối hợp đặc tả API và hỗ trợ phát triển các giải pháp kỹ thuật phức tạp.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 6,
-                    "skills_found": [],
-                    "email": "kiettran27101999@gmail.com",
-                    "phone": "0903854218",
-                    "link_cv": "https://drive.google.com/file/d/11d3X85PYTzGWuy9z1MgHU7ELUGOXnkDP/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/11d3X85PYTzGWuy9z1MgHU7ELUGOXnkDP/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176715699303436274101010713233",
-                    "name": "Nguyen Trung Hieu",
-                    "summary": "• Kinh nghiệm: 6 năm Business Analyst với nhiệm vụ thu thập, làm rõ yêu cầu, định nghĩa phạm vi dự án, làm việc với SQL, tạo tài liệu BRD, URD, Functional Specification, wireframe, hỗ trợ kiểm thử và theo dõi.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 6,
-                    "skills_found": [],
-                    "email": "hieunt07101999@gmail.com",
-                    "phone": "0942002794",
-                    "link_cv": "https://drive.google.com/file/d/19Vi1yTz6K0Qf2vr_mbZmucuYOW0nW-fr/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/19Vi1yTz6K0Qf2vr_mbZmucuYOW0nW-fr/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671569930348000368267820909",
-                    "name": "Dinh Hoang Tien",
-                    "summary": "• Kinh nghiệm: 3 năm Project Manager & Business Analyst, phân tích nghiệp vụ, thu thập yêu cầu, hợp tác với Product Owner định hướng lộ trình sản phẩm, mô phỏng yêu cầu bằng wireframe, viết tài liệu hướng dẫn sử dụng.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 3,
-                    "skills_found": [],
-                    "email": "tien.dh95@gmail.com",
-                    "phone": "+84 703 844 100",
-                    "link_cv": "https://drive.google.com/file/d/1hpmeKlxwXZ8u7ZkzEvkyvK8CNyxYR-Rt/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1hpmeKlxwXZ8u7ZkzEvkyvK8CNyxYR-Rt/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671569930347779884744552877",
-                    "name": "Lê Quang Hải Đăng",
-                    "summary": "• Kinh nghiệm: 3 năm, tốt nghiệp Cử nhân Khoa học Máy tính & Thông tin, chuyên ngành IT Service Science, Software Development.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 3,
-                    "skills_found": [],
-                    "email": "lequanghaidang2502@gmail.com",
-                    "phone": "+84708520743",
-                    "link_cv": "https://drive.google.com/file/d/18_1f5T0xpeQUpdJSFZgvfzZFAMFsKnun/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/18_1f5T0xpeQUpdJSFZgvfzZFAMFsKnun/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671569930346538253633851423",
-                    "name": "Nguyen Dang Khoa",
-                    "summary": "• Kinh nghiệm: 5 năm Business Data Analyst chuyên về mô hình dữ liệu, thiết kế schema và quy trình mapping.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 5,
-                    "skills_found": [],
-                    "email": "ngdkhoa3979@gmail.com",
-                    "phone": "+84 979 398 692",
-                    "link_cv": "https://drive.google.com/file/d/125A7Ry1wM7Z1cguJX4gAGGcJ8Ke3FpJO/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/125A7Ry1wM7Z1cguJX4gAGGcJ8Ke3FpJO/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176715699303409868961248287911",
-                    "name": "Nguyen Thi Thuy Trang",
-                    "summary": "• Kinh nghiệm: 3 năm Business Analyst với kỹ năng nghiên cứu, thu thập, phân tích yêu cầu, viết user story, wireframe, mockup, tài liệu SRS, hỗ trợ nhóm thiết kế.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 3,
-                    "skills_found": [],
-                    "email": "ntthuytrang247@gmail.com",
-                    "phone": "0338121441",
-                    "link_cv": "https://drive.google.com/file/d/1a8jcs9Kr3JJgKO7pqn5xogH-ETsgRXbU/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1a8jcs9Kr3JJgKO7pqn5xogH-ETsgRXbU/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176715699303414075644042602797",
-                    "name": "Tran Thi Thu Oanh",
-                    "summary": "• Kinh nghiệm: 5 năm Business Analyst, tham gia thảo luận tích hợp hệ thống ERP, WMS, TMS, thiết kế wireframe, UI mockup, tạo BRD, SRS, BPMN, use case, cải thiện logic tích hợp và quy trình mô phỏng.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 5,
-                    "skills_found": [],
-                    "email": "thuoanh06032001@gmail.com",
-                    "phone": "0979283870",
-                    "link_cv": "https://drive.google.com/file/d/1sI7sndxoGQ64YINiuyMilE0p-z4H4W8p/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1sI7sndxoGQ64YINiuyMilE0p-z4H4W8p/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671569930342521896947959843",
-                    "name": "Nguyen Duc Nhan",
-                    "summary": "• Kinh nghiệm: 3 năm Business Analyst, chuẩn bị tài liệu URD, BRD, SRS, Use Case, thiết kế wireframes.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 3,
-                    "skills_found": [],
-                    "email": "nhannguyen14.dev@gmail.com",
-                    "phone": "0877522662",
-                    "link_cv": "https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176715699303414307215816972352",
-                    "name": "Nguyễn Thị Anh Đào",
-                    "summary": "• Kinh nghiệm: 4 năm Business Analyst cum Quality Control, áp dụng SCRUM, phân tích nghiệp vụ, đảm bảo chất lượng, thu thập yêu cầu BRD, SRS, GAP, thiết kế báo cáo và quản lý tích hợp dữ liệu.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 4,
-                    "skills_found": [],
-                    "email": "daohtttql@gmail.com",
-                    "phone": "0528871169",
-                    "link_cv": "https://drive.google.com/file/d/16OvV0LnXZHm5R3HAHHOZliqV_olju7Yw/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/16OvV0LnXZHm5R3HAHHOZliqV_olju7Yw/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671569930347218391731833113",
-                    "name": "Nguyễn Hoàng Ân",
-                    "summary": "• Kinh nghiệm: 3 năm, có chứng chỉ Business Analyst Foundation Course.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 3,
-                    "skills_found": [],
-                    "email": "annguyenhoang20@gmail.com",
-                    "phone": "0983336120",
-                    "link_cv": "https://drive.google.com/file/d/1Nypqe8Fc8A_gYP9voODpHHxO0qB6Z-By/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1Nypqe8Fc8A_gYP9voODpHHxO0qB6Z-By/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176715699303402327663899478738",
-                    "name": "Ha Nguyen Hai Dang",
-                    "summary": "• Kinh nghiệm: 4 năm Business Analyst, thu thập và khai thác yêu cầu, tạo tài liệu yêu cầu người dùng và định nghĩa backlog sản phẩm.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 4,
-                    "skills_found": [],
-                    "email": "danghanguyenhai@gmail.com",
-                    "phone": "0833996989",
-                    "link_cv": "https://drive.google.com/file/d/10klNPyimL6gfbW7GOEg6o-4tQ9AGVzhp/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/10klNPyimL6gfbW7GOEg6o-4tQ9AGVzhp/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671569930345239750422122311",
-                    "name": "Khang Trương Hữu",
-                    "summary": "• Kinh nghiệm: 4 năm Business Analyst, khảo sát quy trình kinh doanh, xác định khó khăn trong vận hành.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 4,
-                    "skills_found": [],
-                    "email": "khang.truong128000@gmail.com",
-                    "phone": "0888 077 924",
-                    "link_cv": "https://drive.google.com/file/d/1NAm8ODj5XH59F_HG_Syen66qnMc64Y1W/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1NAm8ODj5XH59F_HG_Syen66qnMc64Y1W/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671569930346701507756243846",
-                    "name": "Vo Hoang Nhan",
-                    "summary": "• Kinh nghiệm: 10 năm Dispute Supervisor tại Shopee Vietnam, thực hiện kiểm thử chấp nhận người dùng đảm bảo hệ thống đáp ứng yêu cầu đề ra.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 10,
-                    "skills_found": [],
-                    "email": "chrisvo.hoang@gmail.com",
-                    "phone": "+84 97 292 9219",
-                    "link_cv": "https://drive.google.com/file/d/1BUMNG6iDpc7YL2bP2eep46BmiDP5uHwm/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1BUMNG6iDpc7YL2bP2eep46BmiDP5uHwm/view?usp=drivesdk"
-                  }
-                ]
-              },
-              {
-                "id": "1767157044260",
-                "role": "user",
-                "content": "Ai là người có kinh nghiệm làm việc trực tiếp để lấy yêu cầu (Elicitation) từ khách hàng khó tính hoặc các bên liên quan (Stakeholders)",
-                "timestamp": 1767157044260
-              },
-              {
-                "id": "1767157050963",
-                "role": "assistant",
-                "content": "{\"status\":\"ok\",\"tenantCode\":\"\",\"chatid\":\"\",\"question_message\":\"\",\"answer_url\":[],\"source\":\"UN_ANSWER\",\"needs_clarification\":false,\"clarify_question\":null,\"handoff_note\":null,\"employeeId\":\"\",\"timestamp\":\"2025-12-31T04:57:31.678Z\"}",
-                "timestamp": 1767157050963,
-                "candidates": []
-              },
-              {
-                "id": "1767157065163",
-                "role": "user",
-                "content": "Dự án bonbon shop đang cần gấp một bạn BA có thể nhảy vào làm Agile/Scrum ngay lập tức và biết vẽ Flow bằng Draw.io. Ai là ứng viên phù hợp nhất để phỏng vấn vào ngày mai?",
-                "timestamp": 1767157065163
-              },
-              {
-                "id": "1767157073972",
-                "role": "assistant",
-                "content": "Tìm thấy 1 ứng viên Business Analyst có kinh nghiệm Agile/Scrum và kỹ năng vẽ Flow bằng Draw.io phù hợp phỏng vấn ngay.\n\nNguyen Thi Thuy Trang – [Link CV](https://drive.google.com/file/d/1a8jcs9Kr3JJgKO7pqn5xogH-ETsgRXbU/view?usp=drivesdk)\n- Kinh nghiệm: 3 năm\n- Kỹ năng: Business Analyst, Agile-Scrum, Draw.io, UML, BPMN, ERD, Requirements gathering, Process modeling\n- Thông tin liên hệ: Email: ntthuytrang247@gmail.com | SĐT: 0338121441",
-                "timestamp": 1767157073972,
-                "candidates": [
-                  {
-                    "id": "17671570739723316320745688739",
-                    "name": "Nguyen Thi Thuy Trang",
-                    "summary": "• Kinh nghiệm: 3 năm\n• Thông tin liên hệ:",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 3,
-                    "skills_found": [
-                      "Business Analyst",
-                      "Agile-Scrum",
-                      "Draw.io",
-                      "UML",
-                      "BPMN",
-                      "ERD",
-                      "Requirements gathering",
-                      "Process modeling"
-                    ],
-                    "email": "ntthuytrang247@gmail.com",
-                    "phone": "0338121441",
-                    "link_cv": "https://drive.google.com/file/d/1a8jcs9Kr3JJgKO7pqn5xogH-ETsgRXbU/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1a8jcs9Kr3JJgKO7pqn5xogH-ETsgRXbU/view?usp=drivesdk"
-                  }
-                ]
-              },
-              {
-                "id": "1767157086372",
-                "role": "user",
-                "content": "Tôi cần một bạn thiên về kỹ thuật (Tech BA) để làm việc với đội Dev về tích hợp AI. Hãy tìm ứng viên có nền tảng CNTT vững và hiểu về API/Integration",
-                "timestamp": 1767157086372
-              },
-              {
-                "id": "1767157102925",
-                "role": "assistant",
-                "content": "{\"status\":\"ok\",\"tenantCode\":\"\",\"chatid\":\"\",\"question_message\":\"\",\"answer_url\":[],\"source\":\"UN_ANSWER\",\"needs_clarification\":false,\"clarify_question\":null,\"handoff_note\":null,\"employeeId\":\"\",\"timestamp\":\"2025-12-31T04:58:23.639Z\"}",
-                "timestamp": 1767157102925,
-                "candidates": []
-              },
-              {
-                "id": "1767157127443",
-                "role": "user",
-                "content": "Tìm BA có 2 năm kinh nghiệm nhưng KHÔNG tuyển những người chưa từng làm việc với Agile/Scrum",
-                "timestamp": 1767157127443
-              },
-              {
-                "id": "1767157148007",
-                "role": "assistant",
-                "content": "Tìm thấy 9 ứng viên Business Analyst có kinh nghiệm từ 2 năm trở lên và đã từng làm việc với Agile hoặc Scrum, kèm thông tin liên hệ.\n\nHoang Nguyen Phuong Thanh – [Link CV](https://drive.google.com/file/d/1_jgAWRIqxX9rGqv5xh4x-iv1Q1fb3E4T/view?usp=drivesdk)\n- Kinh nghiệm: 2 năm\n- Email: hoangthanh6102003@gmail.com | SĐT: 0838 299 280\nTruong Le Hoang Van – [Link CV](https://drive.google.com/file/d/1hjat1eTkW4ZO6fQQbyQW0F2G_3rvirNQ/view?usp=drivesdk)\n- Kinh nghiệm: 2 năm\n- Email: hoangvantruong.work@gmail.com | SĐT: 0981 194 912\nNguyen Thi Thuy Trang – [Link CV](https://drive.google.com/file/d/1a8jcs9Kr3JJgKO7pqn5xogH-ETsgRXbU/view?usp=drivesdk)\n- Kinh nghiệm: 3 năm\n- Email: ntthuytrang247@gmail.com | SĐT: 0338121441\nVo Minh Tan – [Link CV](https://drive.google.com/file/d/1C2q59pOqKBn4fnUGhVd5R34zunc_dY7l/view?usp=drivesdk)\n- Kinh nghiệm: 3 năm\n- Email: vominhtan3105@gmail.com | SĐT: 0339016535\nPhạm Đỗ Khoa – [Link CV](https://drive.google.com/file/d/1-BX_hgh9v8-Av1e7OQMQPistM0xqx3rN/view?usp=drivesdk)\n- Kinh nghiệm: 4 năm\n- Email: dokhoapham@gmail.com | SĐT: 0346 73 23 80\nNguyen Dang Khoa – [Link CV](https://drive.google.com/file/d/125A7Ry1wM7Z1cguJX4gAGGcJ8Ke3FpJO/view?usp=drivesdk)\n- Kinh nghiệm: 5 năm\n- Email: ngdkhoa3979@gmail.com | SĐT: +84 979 398 692\nNguyen Trung Hieu – [Link CV](https://drive.google.com/file/d/19Vi1yTz6K0Qf2vr_mbZmucuYOW0nW-fr/view?usp=drivesdk)\n- Kinh nghiệm: 6 năm\n- Email: hieunt07101999@gmail.com | SĐT: 0942002794\nTran Van Duc – [Link CV](https://drive.google.com/file/d/1GWCThbZ87HhNKd-mE0s3RADF3mQJ39H7/view?usp=drivesdk)\n- Kinh nghiệm: 4 năm\n- Email: ducforwork@gmail.com | SĐT: +84 905 955 256",
-                "timestamp": 1767157148008,
-                "candidates": [
-                  {
-                    "id": "17671571480071369309259595093",
-                    "name": "Hoang Nguyen Phuong Thanh",
-                    "summary": "• Kinh nghiệm: 2 năm",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 2,
-                    "skills_found": [],
-                    "email": "hoangthanh6102003@gmail.com",
-                    "phone": "0838 299 280",
-                    "link_cv": "https://drive.google.com/file/d/1_jgAWRIqxX9rGqv5xh4x-iv1Q1fb3E4T/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1_jgAWRIqxX9rGqv5xh4x-iv1Q1fb3E4T/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671571480078025998746145842",
-                    "name": "Truong Le Hoang Van",
-                    "summary": "• Kinh nghiệm: 2 năm",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 2,
-                    "skills_found": [],
-                    "email": "hoangvantruong.work@gmail.com",
-                    "phone": "0981 194 912",
-                    "link_cv": "https://drive.google.com/file/d/1hjat1eTkW4ZO6fQQbyQW0F2G_3rvirNQ/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1hjat1eTkW4ZO6fQQbyQW0F2G_3rvirNQ/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176715714800722699365969855312",
-                    "name": "Nguyen Thi Thuy Trang",
-                    "summary": "• Kinh nghiệm: 3 năm",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 3,
-                    "skills_found": [],
-                    "email": "ntthuytrang247@gmail.com",
-                    "phone": "0338121441",
-                    "link_cv": "https://drive.google.com/file/d/1a8jcs9Kr3JJgKO7pqn5xogH-ETsgRXbU/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1a8jcs9Kr3JJgKO7pqn5xogH-ETsgRXbU/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671571480073323878806482563",
-                    "name": "Vo Minh Tan",
-                    "summary": "• Kinh nghiệm: 3 năm",
+                    "id": "17681826076574987914002664724",
+                    "name": "VO MINH TAN",
+                    "summary": "• Kinh nghiệm: 3 năm, có kinh nghiệm làm Business Analyst và Project Manager tại NEURONS AI COMPANY LIMITED, tham gia vào chiến lược sản phẩm và tối ưu hóa quy trình cho hệ thống AI doanh nghiệp.",
                     "strengths": [],
                     "score": 0.85,
                     "experience_years": 3,
                     "skills_found": [],
                     "email": "vominhtan3105@gmail.com",
                     "phone": "0339016535",
-                    "link_cv": "https://drive.google.com/file/d/1C2q59pOqKBn4fnUGhVd5R34zunc_dY7l/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1C2q59pOqKBn4fnUGhVd5R34zunc_dY7l/view?usp=drivesdk"
+                    "link_cv": "https://drive.google.com/file/d/1Zy1acKhrrGr-4Eub0hHKUcbdgzIWidzN",
+                    "file_url": "https://drive.google.com/file/d/1Zy1acKhrrGr-4Eub0hHKUcbdgzIWidzN"
                   },
                   {
-                    "id": "17671571480076139284307741988",
-                    "name": "Phạm Đỗ Khoa",
-                    "summary": "• Kinh nghiệm: 4 năm",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 4,
-                    "skills_found": [],
-                    "email": "dokhoapham@gmail.com",
-                    "phone": "0346 73 23 80",
-                    "link_cv": "https://drive.google.com/file/d/1-BX_hgh9v8-Av1e7OQMQPistM0xqx3rN/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1-BX_hgh9v8-Av1e7OQMQPistM0xqx3rN/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176715714800742477341205927965",
-                    "name": "Nguyen Dang Khoa",
-                    "summary": "• Kinh nghiệm: 5 năm",
+                    "id": "1768182607657643595420753552",
+                    "name": "NGUYEN DANG KHOA",
+                    "summary": "• Kinh nghiệm: 5 năm, có kỹ năng Prompting AI, sử dụng Google AI Studio, NotebookLM, Claude, Perplexity, Lovable, Azure Data Lakehouse, Databricks, AI-Driven decision making, phân tích dữ liệu và quản lý dự án Agile/Scrum.",
                     "strengths": [],
                     "score": 0.85,
                     "experience_years": 5,
                     "skills_found": [],
                     "email": "ngdkhoa3979@gmail.com",
-                    "phone": "+84 979 398 692",
-                    "link_cv": "https://drive.google.com/file/d/125A7Ry1wM7Z1cguJX4gAGGcJ8Ke3FpJO/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/125A7Ry1wM7Z1cguJX4gAGGcJ8Ke3FpJO/view?usp=drivesdk"
+                    "phone": "+84979398692",
+                    "link_cv": "https://drive.google.com/file/d/1Dv8gksWvvY-1DO3uzWCNjtwOObRrpNxU",
+                    "file_url": "https://drive.google.com/file/d/1Dv8gksWvvY-1DO3uzWCNjtwOObRrpNxU"
                   },
                   {
-                    "id": "17671571480079219685930615943",
-                    "name": "Nguyen Trung Hieu",
-                    "summary": "• Kinh nghiệm: 6 năm",
+                    "id": "17681826076575654605979508134",
+                    "name": "VAN PHONG BUI",
+                    "summary": "• Kinh nghiệm: 9 năm, có kinh nghiệm AI Trainer & RLHF Specialist, tạo prompt và bảng chấm điểm, đánh giá kết quả, chỉnh sửa phản hồi, quản lý dự án gán nhãn dữ liệu, thiết kế quy trình kiểm soát chất lượng cho dữ liệu AI.",
                     "strengths": [],
                     "score": 0.85,
-                    "experience_years": 6,
-                    "skills_found": [],
-                    "email": "hieunt07101999@gmail.com",
-                    "phone": "0942002794",
-                    "link_cv": "https://drive.google.com/file/d/19Vi1yTz6K0Qf2vr_mbZmucuYOW0nW-fr/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/19Vi1yTz6K0Qf2vr_mbZmucuYOW0nW-fr/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176715714800749791252603723213",
-                    "name": "Tran Van Duc",
-                    "summary": "• Kinh nghiệm: 4 năm",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 4,
-                    "skills_found": [],
-                    "email": "ducforwork@gmail.com",
-                    "phone": "+84 905 955 256",
-                    "link_cv": "https://drive.google.com/file/d/1GWCThbZ87HhNKd-mE0s3RADF3mQJ39H7/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1GWCThbZ87HhNKd-mE0s3RADF3mQJ39H7/view?usp=drivesdk"
-                  }
-                ]
-              },
-              {
-                "id": "1767157154150",
-                "role": "user",
-                "content": "\"Có ứng viên nào rất tiềm năng về mặt kỹ năng (biết n8n, AI) nhưng trong CV lại không ghi rõ số năm kinh nghiệm không?",
-                "timestamp": 1767157154150
-              },
-              {
-                "id": "1767157159056",
-                "role": "assistant",
-                "content": "{\"status\":\"ok\",\"tenantCode\":\"\",\"chatid\":\"\",\"question_message\":\"\",\"answer_url\":[],\"source\":\"UN_ANSWER\",\"needs_clarification\":false,\"clarify_question\":null,\"handoff_note\":null,\"employeeId\":\"\",\"timestamp\":\"2025-12-31T04:59:19.780Z\"}",
-                "timestamp": 1767157159056,
-                "candidates": []
-              },
-              {
-                "id": "1767157169346",
-                "role": "user",
-                "content": "tim ba biet figma va jira kinh nghiem 2 nam product",
-                "timestamp": 1767157169346
-              },
-              {
-                "id": "1767157180267",
-                "role": "assistant",
-                "content": "Tìm thấy 2 ứng viên Business Analyst có kỹ năng Figma và Jira, kinh nghiệm từ 3 đến 4 năm trong lĩnh vực sản phẩm, kèm thông tin liên hệ.\n\nNguyen Chau Giang – [Link CV](https://drive.google.com/file/d/1qVQ5bh6u2vDS7T81KR_uzCChk8xb9dch/view?usp=drivesdk)\n- Email: nguyenchaugiang5211@gmail.com | Phone: (+84) 0373 075 225\n- Kinh nghiệm: 4 năm trong lĩnh vực sản phẩm\n- Kỹ năng: Figma, Jira, Agile, Scrum, Kanban, Product Strategy, Wireframing, Data Analysis, API Documentation, Presentation, Client Consulting, Miro, Draw.io, Notion, PostgreSQL, và nhiều kỹ năng liên quan khác.\nNguyen Duc Nhan – [Link CV](https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk)\n- Email: nhannguyen14.dev@gmail.com | Phone: 0877522662\n- Kinh nghiệm: 3 năm trong lĩnh vực sản phẩm\n- Kỹ năng: Figma, Jira, Business Analysis, BACCM Framework, Requirement Elicitation, System Analysis, Wireframing, Process Modeling, Product Backlog Management, Feature Prioritization, Agile/Scrum Methodology, SQL Server, Postman, và nhiều kỹ năng liên quan khác.",
-                "timestamp": 1767157180267,
-                "candidates": [
-                  {
-                    "id": "176715718026657342553219745",
-                    "name": "Nguyen Chau Giang",
-                    "summary": "• Kinh nghiệm: 4 năm trong lĩnh vực sản phẩm",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 4,
-                    "skills_found": [
-                      "Figma",
-                      "Jira",
-                      "Agile",
-                      "Scrum",
-                      "Kanban",
-                      "Product Strategy",
-                      "Wireframing",
-                      "Data Analysis",
-                      "API Documentation",
-                      "Presentation",
-                      "Client Consulting",
-                      "Miro",
-                      "Draw.io",
-                      "Notion",
-                      "PostgreSQL",
-                      "và nhiều kỹ năng liên quan khác."
-                    ],
-                    "email": "nguyenchaugiang5211@gmail.com",
-                    "phone": "(+84) 0373 075 225",
-                    "link_cv": "https://drive.google.com/file/d/1qVQ5bh6u2vDS7T81KR_uzCChk8xb9dch/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1qVQ5bh6u2vDS7T81KR_uzCChk8xb9dch/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671571802678309743669851702",
-                    "name": "Nguyen Duc Nhan",
-                    "summary": "• Kinh nghiệm: 3 năm trong lĩnh vực sản phẩm",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 3,
-                    "skills_found": [
-                      "Figma",
-                      "Jira",
-                      "Business Analysis",
-                      "BACCM Framework",
-                      "Requirement Elicitation",
-                      "System Analysis",
-                      "Wireframing",
-                      "Process Modeling",
-                      "Product Backlog Management",
-                      "Feature Prioritization",
-                      "Agile/Scrum Methodology",
-                      "SQL Server",
-                      "Postman",
-                      "và nhiều kỹ năng liên quan khác."
-                    ],
-                    "email": "nhannguyen14.dev@gmail.com",
-                    "phone": "0877522662",
-                    "link_cv": "https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk"
-                  }
-                ]
-              },
-              {
-                "id": "1767161586632",
-                "role": "user",
-                "content": "Lọc ra các ứng viên có nền tảng xuất thân là Developer (Lập trình viên) chuyển sang làm BA",
-                "timestamp": 1767161586632
-              },
-              {
-                "id": "1767161605433",
-                "role": "assistant",
-                "content": "Tìm thấy 2 ứng viên có nền tảng Developer chuyển sang làm Business Analyst, kèm thông tin liên hệ và kinh nghiệm chi tiết.\n\nNguyen Y – [Link CV](https://drive.google.com/file/d/1cdXplrZndgT-PXoE_h7sG5YGg8neH2G1/view?usp=drivesdk)\n- Email: ny64394@gmail.com | Phone: 0886315580\n- Kinh nghiệm: 2 năm, từng là Fresher Developer và Intern Business Analyst tại TECHCOOP COMPANY. Công việc bao gồm soạn thảo tài liệu, thiết kế UI/UX, phát triển hệ thống ứng dụng khách hàng, nghiên cứu và thu thập yêu cầu, lĩnh vực chuyển đổi số về Nông nghiệp.\nKhang Trương Hữu – [Link CV](https://drive.google.com/file/d/1NAm8ODj5XH59F_HG_Syen66qnMc64Y1W/view?usp=drivesdk)\n- Email: khang.truong128000@gmail.com | Phone: 0888 077 924\n- Kinh nghiệm: 4 năm, hiện là Business Analyst tại Apetechs Solutions, hỗ trợ Developer và Testers trong phát triển phần mềm.",
-                "timestamp": 1767161605433,
-                "candidates": [
-                  {
-                    "id": "17671616054333366843537776941",
-                    "name": "Nguyen Y",
-                    "summary": "• Kinh nghiệm: 2 năm, từng là Fresher Developer và Intern Business Analyst tại TECHCOOP COMPANY. Công việc bao gồm soạn thảo tài liệu, thiết kế UI/UX, phát triển hệ thống ứng dụng khách hàng, nghiên cứu và thu thập yêu cầu, lĩnh vực chuyển đổi số về Nông nghiệp.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 2,
-                    "skills_found": [],
-                    "email": "ny64394@gmail.com",
-                    "phone": "0886315580",
-                    "link_cv": "https://drive.google.com/file/d/1cdXplrZndgT-PXoE_h7sG5YGg8neH2G1/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1cdXplrZndgT-PXoE_h7sG5YGg8neH2G1/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176716160543345752763360093895",
-                    "name": "Khang Trương Hữu",
-                    "summary": "• Kinh nghiệm: 4 năm, hiện là Business Analyst tại Apetechs Solutions, hỗ trợ Developer và Testers trong phát triển phần mềm.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 4,
-                    "skills_found": [],
-                    "email": "khang.truong128000@gmail.com",
-                    "phone": "0888 077 924",
-                    "link_cv": "https://drive.google.com/file/d/1NAm8ODj5XH59F_HG_Syen66qnMc64Y1W/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1NAm8ODj5XH59F_HG_Syen66qnMc64Y1W/view?usp=drivesdk"
-                  }
-                ]
-              },
-              {
-                "id": "1767161672419",
-                "role": "user",
-                "content": "Tìm ứng viên biết sử dụng SQL để truy vấn dữ liệu.",
-                "timestamp": 1767161672419
-              },
-              {
-                "id": "1767161848750",
-                "role": "assistant",
-                "content": "Tìm thấy 26 ứng viên có kỹ năng sử dụng SQL để truy vấn dữ liệu, kèm thông tin liên hệ (Email và SĐT).\n\nNguyen Chau Giang – [Link CV](https://drive.google.com/file/d/1qVQ5bh6u2vDS7T81KR_uzCChk8xb9dch/view?usp=drivesdk)\n- Email: nguyenchaugiang5211@gmail.com | Phone: (+84) 0373 075 225\nNguyen Trung Hieu – [Link CV](https://drive.google.com/file/d/19Vi1yTz6K0Qf2vr_mbZmucuYOW0nW-fr/view?usp=drivesdk)\n- Email: hieunt07101999@gmail.com | Phone: 0942002794\nTran Quoc Kiet – [Link CV](https://drive.google.com/file/d/11d3X85PYTzGWuy9z1MgHU7ELUGOXnkDP/view?usp=drivesdk)\n- Email: kiettran27101999@gmail.com | Phone: 0903854218\nTrần Quốc Cường – [Link CV](https://drive.google.com/file/d/1gIZDW0OHiGk7bM6KvkgMSfd8xVXDsu00/view?usp=drivesdk)\n- Email: cuongtran090301@gmail.com | Phone: 0937511804\nKhang Trương Hữu – [Link CV](https://drive.google.com/file/d/1NAm8ODj5XH59F_HG_Syen66qnMc64Y1W/view?usp=drivesdk)\n- Email: khang.truong128000@gmail.com | Phone: 0888 077 924\nPhan Minh Nhat – [Link CV](https://drive.google.com/file/d/1uZgK8UNZsojsWvDQ4uZUOBn6vZMCwG7o/view?usp=drivesdk)\n- Email: phannht98@gmail.com | Phone: +84362 979 816\nNguyễn Hoàng Ân – [Link CV](https://drive.google.com/file/d/1Nypqe8Fc8A_gYP9voODpHHxO0qB6Z-By/view?usp=drivesdk)\n- Email: annguyenhoang20@gmail.com | Phone: 0983336120\nHoang Nguyen Phuong Thanh – [Link CV](https://drive.google.com/file/d/1_jgAWRIqxX9rGqv5xh4x-iv1Q1fb3E4T/view?usp=drivesdk)\n- Email: hoangthanh6102003@gmail.com | Phone: 0838 299 280\nTrương Anh Thư – [Link CV](https://drive.google.com/file/d/1EHVenxgknUVHP0BoChn8Xd60BNC9et0c/view?usp=drivesdk)\n- Email: youthutruong322000@gmail.com | Phone: 0377553765\nPham Anh Tuan – [Link CV](https://drive.google.com/file/d/1fKTEjrFRr6l10lvUnqm_pfWmZyWpI9Lt/view?usp=drivesdk)\n- Email: phamtuanhp1994@gmail.com | Phone: +84 816 501 816\nLê Quang Hải Đăng – [Link CV](https://drive.google.com/file/d/18_1f5T0xpeQUpdJSFZgvfzZFAMFsKnun/view?usp=drivesdk)\n- Email: lequanghaidang2502@gmail.com | Phone: +84708520743\nTruong Le Hoang Van – [Link CV](https://drive.google.com/file/d/1hjat1eTkW4ZO6fQQbyQW0F2G_3rvirNQ/view?usp=drivesdk)\n- Email: hoangvantruong.work@gmail.com | Phone: 0981 194 912\nPhạm Đỗ Khoa – [Link CV](https://drive.google.com/file/d/1-BX_hgh9v8-Av1e7OQMQPistM0xqx3rN/view?usp=drivesdk)\n- Email: dokhoapham@gmail.com | Phone: 0346 73 23 80\nTruong Quang Long – [Link CV](https://drive.google.com/file/d/1NyI1qCiJBTr_VyMcMI3jnw2x6wfxLN4z/view?usp=drivesdk)\n- Email: quanglongtruong20@gmail.com | Phone: +84 86 881 5402\nVo Quoc Thang – [Link CV](https://drive.google.com/file/d/15EygGTU94FEMwchKon-84dTqHvOepmLp/view?usp=drivesdk)\n- Email: thangvoquoc2810@gmail.com | Phone: 0927170723\nHuy Doan – [Link CV](https://drive.google.com/file/d/15O4z3NekUy2qMrcqjPME9MBDrkJX0eim/view?usp=drivesdk)\n- Email: nhathuyvn100497@gmail.com | Phone: +84 776 965 785\nVo Hoang Nhan – [Link CV](https://drive.google.com/file/d/1BUMNG6iDpc7YL2bP2eep46BmiDP5uHwm/view?usp=drivesdk)\n- Email: chrisvo.hoang@gmail.com | Phone: +84 97 292 9219\nLong Nguyen – [Link CV](https://drive.google.com/file/d/1FvAAB5Ucgdl_dRWtaTIwXVfSyn14IEWQ/view?usp=drivesdk)\n- Email: nguyenthanhlong7997@gmail.com | Phone: 0768780801\nNguyễn Thị Anh Đào – [Link CV](https://drive.google.com/file/d/16OvV0LnXZHm5R3HAHHOZliqV_olju7Yw/view?usp=drivesdk)\n- Email: daohtttql@gmail.com | Phone: 0528871169\nNguyen Dang Khoa – [Link CV](https://drive.google.com/file/d/125A7Ry1wM7Z1cguJX4gAGGcJ8Ke3FpJO/view?usp=drivesdk)\n- Email: ngdkhoa3979@gmail.com | Phone: +84 979 398 692\nNguyen Y – [Link CV](https://drive.google.com/file/d/1cdXplrZndgT-PXoE_h7sG5YGg8neH2G1/view?usp=drivesdk)\n- Email: ny64394@gmail.com | Phone: 0886315580\nTran Thi Thu Oanh – [Link CV](https://drive.google.com/file/d/1sI7sndxoGQ64YINiuyMilE0p-z4H4W8p/view?usp=drivesdk)\n- Email: thuoanh06032001@gmail.com | Phone: 0979283870\nDinh Hoang Tien – [Link CV](https://drive.google.com/file/d/1QiKESMTh6Ml00iFtLIMT_E0cUTEHFpPa/view?usp=drivesdk)\n- Email: tien.dh95@gmail.com | Phone: +84 703 844 100\nNguyen Khoa Thien Long – [Link CV](https://drive.google.com/file/d/18Z7WRta6ilBjj0U_dAjeJeG8PzzBpKkf/view?usp=drivesdk)\n- Email: nguyenkhoathienlong313@gmail.com | Phone: (+84) 967291546\nNguyen Duc Nhan – [Link CV](https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk)\n- Email: nhannguyen14.dev@gmail.com | Phone: 0877522662",
-                "timestamp": 1767161848750,
-                "candidates": [
-                  {
-                    "id": "17671618487509909441316247573",
-                    "name": "Nguyen Chau Giang",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "nguyenchaugiang5211@gmail.com",
-                    "phone": "(+84) 0373 075 225",
-                    "link_cv": "https://drive.google.com/file/d/1qVQ5bh6u2vDS7T81KR_uzCChk8xb9dch/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1qVQ5bh6u2vDS7T81KR_uzCChk8xb9dch/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176716184875043461166685476293",
-                    "name": "Nguyen Trung Hieu",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "hieunt07101999@gmail.com",
-                    "phone": "0942002794",
-                    "link_cv": "https://drive.google.com/file/d/19Vi1yTz6K0Qf2vr_mbZmucuYOW0nW-fr/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/19Vi1yTz6K0Qf2vr_mbZmucuYOW0nW-fr/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "1767161848750632369780473734",
-                    "name": "Tran Quoc Kiet",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "kiettran27101999@gmail.com",
-                    "phone": "0903854218",
-                    "link_cv": "https://drive.google.com/file/d/11d3X85PYTzGWuy9z1MgHU7ELUGOXnkDP/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/11d3X85PYTzGWuy9z1MgHU7ELUGOXnkDP/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176716184875007479022327855067",
-                    "name": "Trần Quốc Cường",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "cuongtran090301@gmail.com",
-                    "phone": "0937511804",
-                    "link_cv": "https://drive.google.com/file/d/1gIZDW0OHiGk7bM6KvkgMSfd8xVXDsu00/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1gIZDW0OHiGk7bM6KvkgMSfd8xVXDsu00/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671618487506059842304787175",
-                    "name": "Khang Trương Hữu",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "khang.truong128000@gmail.com",
-                    "phone": "0888 077 924",
-                    "link_cv": "https://drive.google.com/file/d/1NAm8ODj5XH59F_HG_Syen66qnMc64Y1W/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1NAm8ODj5XH59F_HG_Syen66qnMc64Y1W/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671618487506432947128378826",
-                    "name": "Phan Minh Nhat",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "phannht98@gmail.com",
-                    "phone": "+84362 979 816",
-                    "link_cv": "https://drive.google.com/file/d/1uZgK8UNZsojsWvDQ4uZUOBn6vZMCwG7o/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1uZgK8UNZsojsWvDQ4uZUOBn6vZMCwG7o/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671618487505704584929748132",
-                    "name": "Nguyễn Hoàng Ân",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "annguyenhoang20@gmail.com",
-                    "phone": "0983336120",
-                    "link_cv": "https://drive.google.com/file/d/1Nypqe8Fc8A_gYP9voODpHHxO0qB6Z-By/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1Nypqe8Fc8A_gYP9voODpHHxO0qB6Z-By/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176716184875012507880788023118",
-                    "name": "Hoang Nguyen Phuong Thanh",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "hoangthanh6102003@gmail.com",
-                    "phone": "0838 299 280",
-                    "link_cv": "https://drive.google.com/file/d/1_jgAWRIqxX9rGqv5xh4x-iv1Q1fb3E4T/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1_jgAWRIqxX9rGqv5xh4x-iv1Q1fb3E4T/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176716184875034553526829425374",
-                    "name": "Trương Anh Thư",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "youthutruong322000@gmail.com",
-                    "phone": "0377553765",
-                    "link_cv": "https://drive.google.com/file/d/1EHVenxgknUVHP0BoChn8Xd60BNC9et0c/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1EHVenxgknUVHP0BoChn8Xd60BNC9et0c/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671618487504972538981781003",
-                    "name": "Pham Anh Tuan",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "phamtuanhp1994@gmail.com",
-                    "phone": "+84 816 501 816",
-                    "link_cv": "https://drive.google.com/file/d/1fKTEjrFRr6l10lvUnqm_pfWmZyWpI9Lt/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1fKTEjrFRr6l10lvUnqm_pfWmZyWpI9Lt/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671618487505816545131959517",
-                    "name": "Lê Quang Hải Đăng",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "lequanghaidang2502@gmail.com",
-                    "phone": "+84708520743",
-                    "link_cv": "https://drive.google.com/file/d/18_1f5T0xpeQUpdJSFZgvfzZFAMFsKnun/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/18_1f5T0xpeQUpdJSFZgvfzZFAMFsKnun/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "1767161848750055575835316668876",
-                    "name": "Truong Le Hoang Van",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "hoangvantruong.work@gmail.com",
-                    "phone": "0981 194 912",
-                    "link_cv": "https://drive.google.com/file/d/1hjat1eTkW4ZO6fQQbyQW0F2G_3rvirNQ/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1hjat1eTkW4ZO6fQQbyQW0F2G_3rvirNQ/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176716184875039095911246527226",
-                    "name": "Phạm Đỗ Khoa",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "dokhoapham@gmail.com",
-                    "phone": "0346 73 23 80",
-                    "link_cv": "https://drive.google.com/file/d/1-BX_hgh9v8-Av1e7OQMQPistM0xqx3rN/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1-BX_hgh9v8-Av1e7OQMQPistM0xqx3rN/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "1767161848750027515517327361683",
-                    "name": "Truong Quang Long",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "quanglongtruong20@gmail.com",
-                    "phone": "+84 86 881 5402",
-                    "link_cv": "https://drive.google.com/file/d/1NyI1qCiJBTr_VyMcMI3jnw2x6wfxLN4z/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1NyI1qCiJBTr_VyMcMI3jnw2x6wfxLN4z/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671618487509658001158972531",
-                    "name": "Vo Quoc Thang",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "thangvoquoc2810@gmail.com",
-                    "phone": "0927170723",
-                    "link_cv": "https://drive.google.com/file/d/15EygGTU94FEMwchKon-84dTqHvOepmLp/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/15EygGTU94FEMwchKon-84dTqHvOepmLp/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671618487504413385991029328",
-                    "name": "Huy Doan",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "nhathuyvn100497@gmail.com",
-                    "phone": "+84 776 965 785",
-                    "link_cv": "https://drive.google.com/file/d/15O4z3NekUy2qMrcqjPME9MBDrkJX0eim/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/15O4z3NekUy2qMrcqjPME9MBDrkJX0eim/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671618487504955142704411212",
-                    "name": "Vo Hoang Nhan",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "chrisvo.hoang@gmail.com",
-                    "phone": "+84 97 292 9219",
-                    "link_cv": "https://drive.google.com/file/d/1BUMNG6iDpc7YL2bP2eep46BmiDP5uHwm/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1BUMNG6iDpc7YL2bP2eep46BmiDP5uHwm/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "1767161848750759877419402531",
-                    "name": "Long Nguyen",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "nguyenthanhlong7997@gmail.com",
-                    "phone": "0768780801",
-                    "link_cv": "https://drive.google.com/file/d/1FvAAB5Ucgdl_dRWtaTIwXVfSyn14IEWQ/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1FvAAB5Ucgdl_dRWtaTIwXVfSyn14IEWQ/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176716184875021008331029780003",
-                    "name": "Nguyễn Thị Anh Đào",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "daohtttql@gmail.com",
-                    "phone": "0528871169",
-                    "link_cv": "https://drive.google.com/file/d/16OvV0LnXZHm5R3HAHHOZliqV_olju7Yw/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/16OvV0LnXZHm5R3HAHHOZliqV_olju7Yw/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671618487506549554247831502",
-                    "name": "Nguyen Dang Khoa",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "ngdkhoa3979@gmail.com",
-                    "phone": "+84 979 398 692",
-                    "link_cv": "https://drive.google.com/file/d/125A7Ry1wM7Z1cguJX4gAGGcJ8Ke3FpJO/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/125A7Ry1wM7Z1cguJX4gAGGcJ8Ke3FpJO/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671618487504137060621501928",
-                    "name": "Nguyen Y",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "ny64394@gmail.com",
-                    "phone": "0886315580",
-                    "link_cv": "https://drive.google.com/file/d/1cdXplrZndgT-PXoE_h7sG5YGg8neH2G1/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1cdXplrZndgT-PXoE_h7sG5YGg8neH2G1/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "1767161848750014085865508249307",
-                    "name": "Tran Thi Thu Oanh",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "thuoanh06032001@gmail.com",
-                    "phone": "0979283870",
-                    "link_cv": "https://drive.google.com/file/d/1sI7sndxoGQ64YINiuyMilE0p-z4H4W8p/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1sI7sndxoGQ64YINiuyMilE0p-z4H4W8p/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176716184875024921111285217978",
-                    "name": "Dinh Hoang Tien",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "tien.dh95@gmail.com",
-                    "phone": "+84 703 844 100",
-                    "link_cv": "https://drive.google.com/file/d/1QiKESMTh6Ml00iFtLIMT_E0cUTEHFpPa/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1QiKESMTh6Ml00iFtLIMT_E0cUTEHFpPa/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671618487509072118794583356",
-                    "name": "Nguyen Khoa Thien Long",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "nguyenkhoathienlong313@gmail.com",
-                    "phone": "(+84) 967291546",
-                    "link_cv": "https://drive.google.com/file/d/18Z7WRta6ilBjj0U_dAjeJeG8PzzBpKkf/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/18Z7WRta6ilBjj0U_dAjeJeG8PzzBpKkf/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671618487505421408848970974",
-                    "name": "Nguyen Duc Nhan",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "nhannguyen14.dev@gmail.com",
-                    "phone": "0877522662",
-                    "link_cv": "https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk"
-                  }
-                ]
-              },
-              {
-                "id": "1767161895505",
-                "role": "user",
-                "content": "Ai là người có kinh nghiệm viết tài liệu kỹ thuật API Documentation hoặc sử dụng Postman/Swagger?",
-                "timestamp": 1767161895505
-              },
-              {
-                "id": "1767161904187",
-                "role": "assistant",
-                "content": "Tìm thấy 1 ứng viên có kinh nghiệm viết tài liệu kỹ thuật API Documentation và sử dụng Postman, Swagger với thông tin liên hệ đầy đủ.\n\nNguyen Chau Giang – [Link CV](https://drive.google.com/file/d/1qVQ5bh6u2vDS7T81KR_uzCChk8xb9dch/view?usp=drivesdk)\n- Kinh nghiệm: 4 năm\n- Email: nguyenchaugiang5211@gmail.com | SĐT: (+84) 0373 075 225\n- Kỹ năng liên quan: API Documentation, Swagger, Postman",
-                "timestamp": 1767161904187,
-                "candidates": [
-                  {
-                    "id": "17671619041876460424398929928",
-                    "name": "Nguyen Chau Giang",
-                    "summary": "• Kinh nghiệm: 4 năm",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 4,
-                    "skills_found": [
-                      "liên quan: API Documentation",
-                      "Swagger",
-                      "Postman"
-                    ],
-                    "email": "nguyenchaugiang5211@gmail.com",
-                    "phone": "(+84) 0373 075 225",
-                    "link_cv": "https://drive.google.com/file/d/1qVQ5bh6u2vDS7T81KR_uzCChk8xb9dch/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1qVQ5bh6u2vDS7T81KR_uzCChk8xb9dch/view?usp=drivesdk"
-                  }
-                ]
-              },
-              {
-                "id": "1767161922591",
-                "role": "user",
-                "content": "Tìm các ứng viên nhắc đến việc sử dụng Figma để làm Prototype tương tác được (Interactive Prototype), không chỉ là Wireframe tĩnh",
-                "timestamp": 1767161922591
-              },
-              {
-                "id": "1767161929216",
-                "role": "assistant",
-                "content": "{\"status\":\"ok\",\"tenantCode\":\"\",\"chatid\":\"\",\"question_message\":\"\",\"answer_url\":[],\"source\":\"UN_ANSWER\",\"needs_clarification\":false,\"clarify_question\":null,\"handoff_note\":null,\"employeeId\":\"\",\"timestamp\":\"2025-12-31T06:18:49.864Z\"}",
-                "timestamp": 1767161929216,
-                "candidates": []
-              },
-              {
-                "id": "1767162169462",
-                "role": "user",
-                "content": "Tìm ứng viên từng làm các dự án liên quan đến DMS (Distribution Management System) hoặc quản lý đội ngũ Sales thị trường.",
-                "timestamp": 1767162169462
-              },
-              {
-                "id": "1767162178371",
-                "role": "assistant",
-                "content": "Tìm thấy 1 ứng viên có kinh nghiệm liên quan đến hệ thống quản lý phân phối (DMS) và quản lý đội ngũ Sales thị trường kèm thông tin liên hệ.\n\nNguyen Duc Nhan – [Link CV](https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk)\n- Kinh nghiệm 3 năm với các kỹ năng liên quan đến Distribution Management System (DMS) và Digital Sales Management.\n- Email: nhannguyen14.dev@gmail.com | SĐT: 0877522662",
-                "timestamp": 1767162178371,
-                "candidates": [
-                  {
-                    "id": "176716217837114939761607875002",
-                    "name": "Nguyen Duc Nhan",
-                    "summary": "• Kinh nghiệm: 3 năm với các kỹ năng liên quan đến Distribution Management System (DMS) và Digital Sales Management.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 3,
-                    "skills_found": [],
-                    "email": "nhannguyen14.dev@gmail.com",
-                    "phone": "0877522662",
-                    "link_cv": "https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk"
-                  }
-                ]
-              },
-              {
-                "id": "1767162197089",
-                "role": "user",
-                "content": "Có ứng viên nào từng làm việc với các hệ thống POS (Point of Sale) hoặc quản lý kho (Inventory/WMS) không?",
-                "timestamp": 1767162197089
-              },
-              {
-                "id": "1767162200860",
-                "role": "assistant",
-                "content": "{\"message\":\"\"}",
-                "timestamp": 1767162200860,
-                "candidates": []
-              },
-              {
-                "id": "1767162293856",
-                "role": "user",
-                "content": "Có ứng viên nào từng làm việc với các hệ thống POS (Point of Sale) hoặc quản lý kho (Inventory/WMS) không?",
-                "timestamp": 1767162293856
-              },
-              {
-                "id": "1767162308046",
-                "role": "assistant",
-                "content": "Tìm thấy 4 ứng viên có kinh nghiệm làm việc với hệ thống POS hoặc quản lý kho (WMS) kèm thông tin liên hệ.\n\nPhạm Đỗ Khoa – [Link CV](https://drive.google.com/file/d/1-BX_hgh9v8-Av1e7OQMQPistM0xqx3rN/view?usp=drivesdk)\n- Email: dokhoapham@gmail.com | Phone: 0346 73 23 80\n- Kinh nghiệm 4 năm với hệ thống quản lý kho (WMS), vận hành kho, xử lý dữ liệu sản phẩm (UPC, SKU, GW, CBM), quản lý nhãn vận chuyển, kỹ năng kiểm kho, đối soát và báo cáo.\n- Kinh nghiệm theo dõi và quản lý phần mềm WMS, phối hợp tích hợp hệ thống Pick-to-Light với phần mềm WMS.\nTran Thi Thu Oanh – [Link CV](https://drive.google.com/file/d/1sI7sndxoGQ64YINiuyMilE0p-z4H4W8p/view?usp=drivesdk)\n- Email: thuoanh06032001@gmail.com | Phone: 0979283870\n- Kinh nghiệm 5 năm, tham gia tích hợp với các đội ERP, WMS, TMS để đồng bộ dữ liệu tồn kho, đơn hàng và khách hàng trên các hệ thống.\nVo Quoc Thang – [Link CV](https://drive.google.com/file/d/15EygGTU94FEMwchKon-84dTqHvOepmLp/view?usp=drivesdk)\n- Email: thangvoquoc2810@gmail.com | Phone: 0927170723\n- Kinh nghiệm 3 năm, quản lý và phát triển hệ thống iWMS, phối hợp phát triển các hệ thống iFMS, iACC.\nPhan Minh Nhat – [Link CV](https://drive.google.com/file/d/1uZgK8UNZsojsWvDQ4uZUOBn6vZMCwG7o/view?usp=drivesdk)\n- Email: phannht98@gmail.com | Phone: +84362 979 816\n- Kinh nghiệm 4 năm, tham gia các dự án liên quan đến POS (Hyojung SoftTech - POS) và giải pháp Inventree, hệ thống đảm bảo chất lượng KUWAHARA (Odoo).",
-                "timestamp": 1767162308046,
-                "candidates": [
-                  {
-                    "id": "17671623080467305443549290678",
-                    "name": "Phạm Đỗ Khoa",
-                    "summary": "• Kinh nghiệm: 4 năm với hệ thống quản lý kho (WMS), vận hành kho, xử lý dữ liệu sản phẩm (UPC, SKU, GW, CBM), quản lý nhãn vận chuyển, kỹ năng kiểm kho, đối soát và báo cáo.\n• Kinh nghiệm: theo dõi và quản lý phần mềm WMS, phối hợp tích hợp hệ thống Pick-to-Light với phần mềm WMS.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 4,
-                    "skills_found": [],
-                    "email": "dokhoapham@gmail.com",
-                    "phone": "0346 73 23 80",
-                    "link_cv": "https://drive.google.com/file/d/1-BX_hgh9v8-Av1e7OQMQPistM0xqx3rN/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1-BX_hgh9v8-Av1e7OQMQPistM0xqx3rN/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176716230804695626263784645",
-                    "name": "Tran Thi Thu Oanh",
-                    "summary": "• Kinh nghiệm: 5 năm, tham gia tích hợp với các đội ERP, WMS, TMS để đồng bộ dữ liệu tồn kho, đơn hàng và khách hàng trên các hệ thống.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 5,
-                    "skills_found": [],
-                    "email": "thuoanh06032001@gmail.com",
-                    "phone": "0979283870",
-                    "link_cv": "https://drive.google.com/file/d/1sI7sndxoGQ64YINiuyMilE0p-z4H4W8p/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1sI7sndxoGQ64YINiuyMilE0p-z4H4W8p/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671623080465052337416555935",
-                    "name": "Vo Quoc Thang",
-                    "summary": "• Kinh nghiệm: 3 năm, quản lý và phát triển hệ thống iWMS, phối hợp phát triển các hệ thống iFMS, iACC.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 3,
-                    "skills_found": [],
-                    "email": "thangvoquoc2810@gmail.com",
-                    "phone": "0927170723",
-                    "link_cv": "https://drive.google.com/file/d/15EygGTU94FEMwchKon-84dTqHvOepmLp/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/15EygGTU94FEMwchKon-84dTqHvOepmLp/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176716230804628557827905898026",
-                    "name": "Phan Minh Nhat",
-                    "summary": "• Kinh nghiệm: 4 năm, tham gia các dự án liên quan đến POS (Hyojung SoftTech - POS) và giải pháp Inventree, hệ thống đảm bảo chất lượng KUWAHARA (Odoo).",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 4,
-                    "skills_found": [],
-                    "email": "phannht98@gmail.com",
-                    "phone": "+84362 979 816",
-                    "link_cv": "https://drive.google.com/file/d/1uZgK8UNZsojsWvDQ4uZUOBn6vZMCwG7o/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1uZgK8UNZsojsWvDQ4uZUOBn6vZMCwG7o/view?usp=drivesdk"
-                  }
-                ]
-              },
-              {
-                "id": "1767162340386",
-                "role": "user",
-                "content": "Ai có kinh nghiệm trong mảng Logistics, Giao vận hoặc Last-mile delivery?",
-                "timestamp": 1767162340386
-              },
-              {
-                "id": "1767162346326",
-                "role": "assistant",
-                "content": "{\"status\":\"ok\",\"tenantCode\":\"\",\"chatid\":\"\",\"question_message\":\"\",\"answer_url\":[],\"source\":\"UN_ANSWER\",\"needs_clarification\":false,\"clarify_question\":null,\"handoff_note\":null,\"employeeId\":\"\",\"timestamp\":\"2025-12-31T06:25:46.966Z\"}",
-                "timestamp": 1767162346326,
-                "candidates": []
-              },
-              {
-                "id": "1767162467521",
-                "role": "user",
-                "content": "Ai có kinh nghiệm trong mảng Logistics, Giao vận hoặc Last-mile delivery?",
-                "timestamp": 1767162467521
-              },
-              {
-                "id": "1767162481034",
-                "role": "assistant",
-                "content": "Tìm thấy 2 ứng viên có kinh nghiệm liên quan đến Logistics, Giao vận hoặc Last-mile delivery kèm thông tin liên hệ.\n\nNguyen Duc Nhan – [Link CV](https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk)\n- Kinh nghiệm: 3 năm\n- Email: nhannguyen14.dev@gmail.com\n- SĐT: 0877522662\n- Chi tiết kinh nghiệm: Business Analyst tại Tien Phong CDS JSC, làm việc chặt chẽ với đội phát triển, QA và các đối tác tích hợp (cổng thanh toán, dịch vụ giao hàng và hệ thống call center).\nVo Quoc Thang – [Link CV](https://drive.google.com/file/d/15EygGTU94FEMwchKon-84dTqHvOepmLp/view?usp=drivesdk)\n- Kinh nghiệm: 3 năm\n- Email: thangvoquoc2810@gmail.com\n- SĐT: 0927170723\n- Chi tiết kinh nghiệm: Site Selection Administration tại Pharmacity JSC, chuẩn bị tài liệu pháp lý, đàm phán giá, triển khai sản phẩm và tối ưu quy trình thủ tục nội bộ.",
-                "timestamp": 1767162481034,
-                "candidates": [
-                  {
-                    "id": "176716248103414628147205712616",
-                    "name": "Tìm thấy 2 ứng viên có kinh nghiệm liên quan đến Logistics, Giao vận hoặc Last",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "",
-                    "phone": ""
-                  },
-                  {
-                    "id": "17671624810346264620778219695",
-                    "name": "Nguyen Duc Nhan",
-                    "summary": "• Kinh nghiệm: 3 năm\n• Chi tiết kinh nghiệm: Business Analyst tại Tien Phong CDS JSC, làm việc chặt chẽ với đội phát triển, QA và các đối tác tích hợp (cổng thanh toán, dịch vụ giao hàng và hệ thống call center).",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 3,
-                    "skills_found": [],
-                    "email": "nhannguyen14.dev@gmail.com",
-                    "phone": "0877522662",
-                    "link_cv": "https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176716248103446259843709771853",
-                    "name": "Vo Quoc Thang",
-                    "summary": "• Kinh nghiệm: 3 năm\n• Chi tiết kinh nghiệm: Site Selection Administration tại Pharmacity JSC, chuẩn bị tài liệu pháp lý, đàm phán giá, triển khai sản phẩm và tối ưu quy trình thủ tục nội bộ.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 3,
-                    "skills_found": [],
-                    "email": "thangvoquoc2810@gmail.com",
-                    "phone": "0927170723",
-                    "link_cv": "https://drive.google.com/file/d/15EygGTU94FEMwchKon-84dTqHvOepmLp/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/15EygGTU94FEMwchKon-84dTqHvOepmLp/view?usp=drivesdk"
-                  }
-                ]
-              },
-              {
-                "id": "1767162556626",
-                "role": "user",
-                "content": "Tìm ứng viên biết cách định nghĩa MVP (Minimum Viable Product) và lộ trình phát triển (Roadmap)",
-                "timestamp": 1767162556626
-              },
-              {
-                "id": "1767162564543",
-                "role": "assistant",
-                "content": "{\"status\":\"ok\",\"tenantCode\":\"\",\"chatid\":\"\",\"question_message\":\"\",\"answer_url\":[],\"source\":\"UN_ANSWER\",\"needs_clarification\":false,\"clarify_question\":null,\"handoff_note\":null,\"employeeId\":\"\",\"timestamp\":\"2025-12-31T06:29:24.781Z\"}",
-                "timestamp": 1767162564543,
-                "candidates": []
-              },
-              {
-                "id": "1767162603143",
-                "role": "user",
-                "content": "Ai là người biết sử dụng các chỉ số Metrics (như DAU/MAU, Retention Rate) để đo lường hiệu quả sản phẩm?",
-                "timestamp": 1767162603143
-              },
-              {
-                "id": "1767162616414",
-                "role": "assistant",
-                "content": "Tìm thấy 2 ứng viên có kỹ năng sử dụng các chỉ số Metrics để đo lường hiệu quả sản phẩm, kèm thông tin liên hệ và kinh nghiệm.\n\nTrương Anh Thư – [Link CV](https://drive.google.com/file/d/1EHVenxgknUVHP0BoChn8Xd60BNC9et0c/view?usp=drivesdk)\n- Kinh nghiệm: 4 năm\n- Email: youthutruong322000@gmail.com | SĐT: 0377553765\n- Kỹ năng liên quan: Define Metrics, build Dashboard/Report, Requirement Analysis, Data mapping, SQL Query, Microsoft Aburre Platform\nNguyen Dang Khoa – [Link CV](https://drive.google.com/file/d/125A7Ry1wM7Z1cguJX4gAGGcJ8Ke3FpJO/view?usp=drivesdk)\n- Kinh nghiệm: 5 năm\n- Email: ngdkhoa3979@gmail.com | SĐT: +84 979 398 692\n- Kỹ năng liên quan: Product metrics, Data Analysis, SQL querying, Power BI visualization, Google Analytics 4, Quản lý KPI và OKR, Quản lý vòng đời sản phẩm, Phân tích và mô hình hóa dữ liệu, Truy vấn và trực quan hóa dữ liệu",
-                "timestamp": 1767162616414,
-                "candidates": [
-                  {
-                    "id": "176716261641313987564574472744",
-                    "name": "Trương Anh Thư",
-                    "summary": "• Kinh nghiệm: 4 năm",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 4,
-                    "skills_found": [
-                      "liên quan: Define Metrics",
-                      "build Dashboard/Report",
-                      "Requirement Analysis",
-                      "Data mapping",
-                      "SQL Query",
-                      "Microsoft Aburre Platform"
-                    ],
-                    "email": "youthutruong322000@gmail.com",
-                    "phone": "0377553765",
-                    "link_cv": "https://drive.google.com/file/d/1EHVenxgknUVHP0BoChn8Xd60BNC9et0c/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1EHVenxgknUVHP0BoChn8Xd60BNC9et0c/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176716261641433075714160543745",
-                    "name": "Nguyen Dang Khoa",
-                    "summary": "• Kinh nghiệm: 5 năm",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 5,
-                    "skills_found": [
-                      "liên quan: Product metrics",
-                      "Data Analysis",
-                      "SQL querying",
-                      "Power BI visualization",
-                      "Google Analytics 4",
-                      "Quản lý KPI và OKR",
-                      "Quản lý vòng đời sản phẩm",
-                      "Phân tích và mô hình hóa dữ liệu",
-                      "Truy vấn và trực quan hóa dữ liệu"
-                    ],
-                    "email": "ngdkhoa3979@gmail.com",
-                    "phone": "+84 979 398 692",
-                    "link_cv": "https://drive.google.com/file/d/125A7Ry1wM7Z1cguJX4gAGGcJ8Ke3FpJO/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/125A7Ry1wM7Z1cguJX4gAGGcJ8Ke3FpJO/view?usp=drivesdk"
-                  }
-                ]
-              },
-              {
-                "id": "1767162641055",
-                "role": "user",
-                "content": "Tìm những CV thể hiện kỹ năng phân tích đối thủ (Competitor Analysis) hoặc nghiên cứu thị trường.",
-                "timestamp": 1767162641055
-              },
-              {
-                "id": "1767162655269",
-                "role": "assistant",
-                "content": "Tìm thấy 3 ứng viên có kỹ năng và kinh nghiệm liên quan đến nghiên cứu thị trường hoặc phân tích đối thủ cạnh tranh, kèm thông tin liên hệ đầy đủ.\n\nTran Hoang Quan – [Link CV](https://drive.google.com/file/d/1S5XyFvGERwCG31sTUh3_FzA8O1wpGZr4/view?usp=drivesdk)\n- Email: quan.tranhoang14@gmail.com | SĐT: +84 (0)968986364\n- Kinh nghiệm: 6 năm, có kinh nghiệm nghiên cứu thị trường trong vai trò Product Assistant Manager tại BIN Coperation.\nPhan Minh Nhat – [Link CV](https://drive.google.com/file/d/1uZgK8UNZsojsWvDQ4uZUOBn6vZMCwG7o/view?usp=drivesdk)\n- Email: phannht98@gmail.com | SĐT: +84362 979 816\n- Kinh nghiệm: 4 năm, Business Analyst tại VIHAT GROUP, tham gia nghiên cứu thị trường và phản hồi người dùng để cải tiến tính năng.\nNguyen Duc Nhan – [Link CV](https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk)\n- Email: nhannguyen14.dev@gmail.com | SĐT: 0877522662\n- Kinh nghiệm: 3 năm, kỹ năng chuyên sâu về Market & Competitor Research, phân tích hành vi người dùng, quản lý sản phẩm và Agile/Scrum.",
-                "timestamp": 1767162655269,
-                "candidates": [
-                  {
-                    "id": "17671626552698057715562851174",
-                    "name": "Tran Hoang Quan",
-                    "summary": "• Kinh nghiệm: 6 năm, có kinh nghiệm nghiên cứu thị trường trong vai trò Product Assistant Manager tại BIN Coperation.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 6,
-                    "skills_found": [],
-                    "email": "quan.tranhoang14@gmail.com",
-                    "phone": "+84 (0)968986364",
-                    "link_cv": "https://drive.google.com/file/d/1S5XyFvGERwCG31sTUh3_FzA8O1wpGZr4/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1S5XyFvGERwCG31sTUh3_FzA8O1wpGZr4/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "1767162655269027052475152565925",
-                    "name": "Phan Minh Nhat",
-                    "summary": "• Kinh nghiệm: 4 năm, Business Analyst tại VIHAT GROUP, tham gia nghiên cứu thị trường và phản hồi người dùng để cải tiến tính năng.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 4,
-                    "skills_found": [],
-                    "email": "phannht98@gmail.com",
-                    "phone": "+84362 979 816",
-                    "link_cv": "https://drive.google.com/file/d/1uZgK8UNZsojsWvDQ4uZUOBn6vZMCwG7o/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1uZgK8UNZsojsWvDQ4uZUOBn6vZMCwG7o/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671626552695446300822211938",
-                    "name": "Nguyen Duc Nhan",
-                    "summary": "• Kinh nghiệm: 3 năm, kỹ năng chuyên sâu về Market & Competitor Research, phân tích hành vi người dùng, quản lý sản phẩm và Agile/Scrum.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 3,
-                    "skills_found": [],
-                    "email": "nhannguyen14.dev@gmail.com",
-                    "phone": "0877522662",
-                    "link_cv": "https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk"
-                  }
-                ]
-              },
-              {
-                "id": "1767162736788",
-                "role": "user",
-                "content": "Ứng viên nào thể hiện tư duy User-Centric (lấy người dùng làm trung tâm) qua cách họ mô tả dự án?",
-                "timestamp": 1767162736788
-              },
-              {
-                "id": "1767162744264",
-                "role": "assistant",
-                "content": "{\"status\":\"ok\",\"tenantCode\":\"\",\"chatid\":\"\",\"question_message\":\"\",\"answer_url\":[],\"source\":\"UN_ANSWER\",\"needs_clarification\":false,\"clarify_question\":null,\"handoff_note\":null,\"employeeId\":\"\",\"timestamp\":\"2025-12-31T06:32:24.710Z\"}",
-                "timestamp": 1767162744264,
-                "candidates": []
-              },
-              {
-                "id": "1767162775096",
-                "role": "user",
-                "content": "Tìm ứng viên có kinh nghiệm từ 1.5 đến 4 năm",
-                "timestamp": 1767162775096
-              },
-              {
-                "id": "1767162800704",
-                "role": "assistant",
-                "content": "Tìm thấy 11 ứng viên có kinh nghiệm từ 1.5 đến 4 năm kèm thông tin liên hệ.\n\nNguyen Chau Giang – [Link CV](https://drive.google.com/file/d/1qVQ5bh6u2vDS7T81KR_uzCChk8xb9dch/view?usp=drivesdk)\n- Email: nguyenchaugiang5211@gmail.com | Phone: (+84) 0373 075 225\n- Kinh nghiệm: 4 năm\nTran Van Duc – [Link CV](https://drive.google.com/file/d/1GWCThbZ87HhNKd-mE0s3RADF3mQJ39H7/view?usp=drivesdk)\n- Email: ducforwork@gmail.com | Phone: +84 905 955 256\n- Kinh nghiệm: 4 năm\nLê Quang Hải Đăng – [Link CV](https://drive.google.com/file/d/18_1f5T0xpeQUpdJSFZgvfzZFAMFsKnun/view?usp=drivesdk)\n- Email: lequanghaidang2502@gmail.com | Phone: +84708520743\n- Kinh nghiệm: 3 năm\nTrương Anh Thư – [Link CV](https://drive.google.com/file/d/1EHVenxgknUVHP0BoChn8Xd60BNC9et0c/view?usp=drivesdk)\n- Email: youthutruong322000@gmail.com | Phone: 0377553765\n- Kinh nghiệm: 4 năm\nHa Nguyen Hai Dang – [Link CV](https://drive.google.com/file/d/10klNPyimL6gfbW7GOEg6o-4tQ9AGVzhp/view?usp=drivesdk)\n- Email: danghanguyenhai@gmail.com | Phone: 0833996989\n- Kinh nghiệm: 4 năm\nNguyen Trung Hieu – [Link CV](https://drive.google.com/file/d/19Vi1yTz6K0Qf2vr_mbZmucuYOW0nW-fr/view?usp=drivesdk)\n- Email: hieunt07101999@gmail.com | Phone: 0942002794\n- Kinh nghiệm: 6 năm (vượt quá 4 năm nhưng vẫn liệt kê do gần)\nTran Thi Thu Oanh – [Link CV](https://drive.google.com/file/d/1sI7sndxoGQ64YINiuyMilE0p-z4H4W8p/view?usp=drivesdk)\n- Email: thuoanh06032001@gmail.com | Phone: 0979283870\n- Kinh nghiệm: 5 năm (vượt quá 4 năm nhưng gần)\nNguyễn Thị Anh Đào – [Link CV](https://drive.google.com/file/d/16OvV0LnXZHm5R3HAHHOZliqV_olju7Yw/view?usp=drivesdk)\n- Email: daohtttql@gmail.com | Phone: 0528871169\n- Kinh nghiệm: 4 năm\nPham Anh Tuan – [Link CV](https://drive.google.com/file/d/1fKTEjrFRr6l10lvUnqm_pfWmZyWpI9Lt/view?usp=drivesdk)\n- Email: phamtuanhp1994@gmail.com | Phone: +84 816 501 816\n- Kinh nghiệm: 4 năm\nNguyen Thi Thuy Trang – [Link CV](https://drive.google.com/file/d/1a8jcs9Kr3JJgKO7pqn5xogH-ETsgRXbU/view?usp=drivesdk)\n- Email: ntthuytrang247@gmail.com | Phone: 0338121441\n- Kinh nghiệm: 3 năm\nNguyen Duc Nhan – [Link CV](https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk)\n- Email: nhannguyen14.dev@gmail.com | Phone: 0877522662\n- Kinh nghiệm: 3 năm",
-                "timestamp": 1767162800704,
-                "candidates": [
-                  {
-                    "id": "17671628007043087547731315883",
-                    "name": "Nguyen Chau Giang",
-                    "summary": "• Kinh nghiệm: 4 năm",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 4,
-                    "skills_found": [],
-                    "email": "nguyenchaugiang5211@gmail.com",
-                    "phone": "(+84) 0373 075 225",
-                    "link_cv": "https://drive.google.com/file/d/1qVQ5bh6u2vDS7T81KR_uzCChk8xb9dch/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1qVQ5bh6u2vDS7T81KR_uzCChk8xb9dch/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671628007048993369500912919",
-                    "name": "Tran Van Duc",
-                    "summary": "• Kinh nghiệm: 4 năm",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 4,
-                    "skills_found": [],
-                    "email": "ducforwork@gmail.com",
-                    "phone": "+84 905 955 256",
-                    "link_cv": "https://drive.google.com/file/d/1GWCThbZ87HhNKd-mE0s3RADF3mQJ39H7/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1GWCThbZ87HhNKd-mE0s3RADF3mQJ39H7/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671628007048936969404921482",
-                    "name": "Lê Quang Hải Đăng",
-                    "summary": "• Kinh nghiệm: 3 năm",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 3,
-                    "skills_found": [],
-                    "email": "lequanghaidang2502@gmail.com",
-                    "phone": "+84708520743",
-                    "link_cv": "https://drive.google.com/file/d/18_1f5T0xpeQUpdJSFZgvfzZFAMFsKnun/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/18_1f5T0xpeQUpdJSFZgvfzZFAMFsKnun/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176716280070437199644641175056",
-                    "name": "Trương Anh Thư",
-                    "summary": "• Kinh nghiệm: 4 năm",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 4,
-                    "skills_found": [],
-                    "email": "youthutruong322000@gmail.com",
-                    "phone": "0377553765",
-                    "link_cv": "https://drive.google.com/file/d/1EHVenxgknUVHP0BoChn8Xd60BNC9et0c/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1EHVenxgknUVHP0BoChn8Xd60BNC9et0c/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671628007044343758620114385",
-                    "name": "Ha Nguyen Hai Dang",
-                    "summary": "• Kinh nghiệm: 4 năm",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 4,
-                    "skills_found": [],
-                    "email": "danghanguyenhai@gmail.com",
-                    "phone": "0833996989",
-                    "link_cv": "https://drive.google.com/file/d/10klNPyimL6gfbW7GOEg6o-4tQ9AGVzhp/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/10klNPyimL6gfbW7GOEg6o-4tQ9AGVzhp/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671628007046916649942732253",
-                    "name": "Nguyen Trung Hieu",
-                    "summary": "• Kinh nghiệm: 6 năm (vượt quá 4 năm nhưng vẫn liệt kê do gần)",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 6,
-                    "skills_found": [],
-                    "email": "hieunt07101999@gmail.com",
-                    "phone": "0942002794",
-                    "link_cv": "https://drive.google.com/file/d/19Vi1yTz6K0Qf2vr_mbZmucuYOW0nW-fr/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/19Vi1yTz6K0Qf2vr_mbZmucuYOW0nW-fr/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671628007046962701585673109",
-                    "name": "Tran Thi Thu Oanh",
-                    "summary": "• Kinh nghiệm: 5 năm (vượt quá 4 năm nhưng gần)",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 5,
-                    "skills_found": [],
-                    "email": "thuoanh06032001@gmail.com",
-                    "phone": "0979283870",
-                    "link_cv": "https://drive.google.com/file/d/1sI7sndxoGQ64YINiuyMilE0p-z4H4W8p/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1sI7sndxoGQ64YINiuyMilE0p-z4H4W8p/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671628007045524661011302036",
-                    "name": "Nguyễn Thị Anh Đào",
-                    "summary": "• Kinh nghiệm: 4 năm",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 4,
-                    "skills_found": [],
-                    "email": "daohtttql@gmail.com",
-                    "phone": "0528871169",
-                    "link_cv": "https://drive.google.com/file/d/16OvV0LnXZHm5R3HAHHOZliqV_olju7Yw/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/16OvV0LnXZHm5R3HAHHOZliqV_olju7Yw/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176716280070427973442934326964",
-                    "name": "Pham Anh Tuan",
-                    "summary": "• Kinh nghiệm: 4 năm",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 4,
-                    "skills_found": [],
-                    "email": "phamtuanhp1994@gmail.com",
-                    "phone": "+84 816 501 816",
-                    "link_cv": "https://drive.google.com/file/d/1fKTEjrFRr6l10lvUnqm_pfWmZyWpI9Lt/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1fKTEjrFRr6l10lvUnqm_pfWmZyWpI9Lt/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176716280070407614241240062258",
-                    "name": "Nguyen Thi Thuy Trang",
-                    "summary": "• Kinh nghiệm: 3 năm",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 3,
-                    "skills_found": [],
-                    "email": "ntthuytrang247@gmail.com",
-                    "phone": "0338121441",
-                    "link_cv": "https://drive.google.com/file/d/1a8jcs9Kr3JJgKO7pqn5xogH-ETsgRXbU/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1a8jcs9Kr3JJgKO7pqn5xogH-ETsgRXbU/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671628007049481650173409439",
-                    "name": "Nguyen Duc Nhan",
-                    "summary": "• Kinh nghiệm: 3 năm",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 3,
-                    "skills_found": [],
-                    "email": "nhannguyen14.dev@gmail.com",
-                    "phone": "0877522662",
-                    "link_cv": "https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk"
-                  }
-                ]
-              },
-              {
-                "id": "1767162863208",
-                "role": "user",
-                "content": "Tìm ứng viên có kỹ năng Agile/Scrum nhưng loại bỏ những người chỉ làm dự án Waterfall/Truyền thống.",
-                "timestamp": 1767162863208
-              },
-              {
-                "id": "1767162871865",
-                "role": "assistant",
-                "content": "Tìm thấy 1 ứng viên có kỹ năng Agile và Scrum không chỉ làm việc trong môi trường Waterfall, có thông tin liên hệ đầy đủ.\n\nNguyen Thi Thuy Trang – [Link CV](https://drive.google.com/file/d/1a8jcs9Kr3JJgKO7pqn5xogH-ETsgRXbU/view?usp=drivesdk)\n- Kỹ năng: Business Analyst, UML, BPMN, ERD, Problem-solving, Requirements gathering and management, Process modeling, Teamwork, Communication and Presentation, Figma, Draw.io, Waterfall and Agile-scrum\n- Email: ntthuytrang247@gmail.com | SĐT: 0338121441",
-                "timestamp": 1767162871865,
-                "candidates": [
-                  {
-                    "id": "17671628718654170200280009567",
-                    "name": "Nguyen Thi Thuy Trang",
-                    "summary": "",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [
-                      "Business Analyst",
-                      "UML",
-                      "BPMN",
-                      "ERD",
-                      "Problem-solving",
-                      "Requirements gathering and management",
-                      "Process modeling",
-                      "Teamwork",
-                      "Communication and Presentation",
-                      "Figma",
-                      "Draw.io",
-                      "Waterfall and Agile-scrum"
-                    ],
-                    "email": "ntthuytrang247@gmail.com",
-                    "phone": "0338121441",
-                    "link_cv": "https://drive.google.com/file/d/1a8jcs9Kr3JJgKO7pqn5xogH-ETsgRXbU/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1a8jcs9Kr3JJgKO7pqn5xogH-ETsgRXbU/view?usp=drivesdk"
-                  }
-                ]
-              },
-              {
-                "id": "1767162905657",
-                "role": "user",
-                "content": "Dựa trên CV, hãy đánh giá mức độ thành thạo tiếng Anh của các ứng viên (thông qua chứng chỉ hoặc việc viết CV bằng tiếng Anh)",
-                "timestamp": 1767162905657
-              },
-              {
-                "id": "1767162923243",
-                "role": "assistant",
-                "content": "Tìm thấy 6 ứng viên có mức độ thành thạo tiếng Anh được thể hiện qua kỹ năng Tiếng Anh trong CV và có thông tin liên hệ đầy đủ.\n\nVo Quoc Thang – [Link CV](https://drive.google.com/file/d/15EygGTU94FEMwchKon-84dTqHvOepmLp/view?usp=drivesdk)\n- Email: thangvoquoc2810@gmail.com | Phone: 0927170723\n- Có kỹ năng Tiếng Anh, thể hiện qua việc sử dụng Tiếng Anh trong CV và kỹ năng tiếng Anh được liệt kê.\nTruong Quang Long – [Link CV](https://drive.google.com/file/d/1NyI1qCiJBTr_VyMcMI3jnw2x6wfxLN4z/view?usp=drivesdk)\n- Email: quanglongtruong20@gmail.com | Phone: +84 86 881 5402\n- Có kỹ năng Tiếng Anh, thể hiện qua việc sử dụng Tiếng Anh trong CV và kỹ năng tiếng Anh được liệt kê.\nTrần Quốc Cường – [Link CV](https://drive.google.com/file/d/1gIZDW0OHiGk7bM6KvkgMSfd8xVXDsu00/view?usp=drivesdk)\n- Email: cuongtran090301@gmail.com | Phone: 0937511804\n- Có kỹ năng English Communication và Tiếng Anh, thể hiện mức độ thành thạo tiếng Anh qua kỹ năng giao tiếp tiếng Anh được nêu rõ.\nNguyễn Thị Anh Đào – [Link CV](https://drive.google.com/file/d/16OvV0LnXZHm5R3HAHHOZliqV_olju7Yw/view?usp=drivesdk)\n- Email: daohtttql@gmail.com | Phone: 0528871169\n- Có kỹ năng Tiếng Anh, thể hiện qua việc sử dụng Tiếng Anh trong CV và kỹ năng tiếng Anh được liệt kê.\nVo Hoang Nhan – [Link CV](https://drive.google.com/file/d/1BUMNG6iDpc7YL2bP2eep46BmiDP5uHwm/view?usp=drivesdk)\n- Email: chrisvo.hoang@gmail.com | Phone: +84 97 292 9219\n- Có kỹ năng Tiếng Anh, thể hiện qua việc sử dụng Tiếng Anh trong CV và kỹ năng tiếng Anh được liệt kê.\nVan Phong Bui – [Link CV](https://drive.google.com/file/d/1JJpZ1-K5KpQawZKH7pD22sTH02D1g4f9/view?usp=drivesdk)\n- Email: phongbv.j4s@gmail.com | Phone: +84 389 813 641\n- Có kỹ năng tiếng Anh và Norwegian, thể hiện qua việc sử dụng Tiếng Anh trong CV và kỹ năng tiếng Anh được liệt kê.",
-                "timestamp": 1767162923243,
-                "candidates": [
-                  {
-                    "id": "1767162923243523764505251167",
-                    "name": "Vo Quoc Thang",
-                    "summary": "• Có kỹ năng Tiếng Anh, thể hiện qua việc sử dụng Tiếng Anh trong CV và kỹ năng tiếng Anh được liệt kê.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "thangvoquoc2810@gmail.com",
-                    "phone": "0927170723",
-                    "link_cv": "https://drive.google.com/file/d/15EygGTU94FEMwchKon-84dTqHvOepmLp/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/15EygGTU94FEMwchKon-84dTqHvOepmLp/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176716292324313424668392911332",
-                    "name": "Truong Quang Long",
-                    "summary": "• Có kỹ năng Tiếng Anh, thể hiện qua việc sử dụng Tiếng Anh trong CV và kỹ năng tiếng Anh được liệt kê.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "quanglongtruong20@gmail.com",
-                    "phone": "+84 86 881 5402",
-                    "link_cv": "https://drive.google.com/file/d/1NyI1qCiJBTr_VyMcMI3jnw2x6wfxLN4z/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1NyI1qCiJBTr_VyMcMI3jnw2x6wfxLN4z/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "176716292324326021074076909834",
-                    "name": "Trần Quốc Cường",
-                    "summary": "• Có kỹ năng English Communication và Tiếng Anh, thể hiện mức độ thành thạo tiếng Anh qua kỹ năng giao tiếp tiếng Anh được nêu rõ.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "cuongtran090301@gmail.com",
-                    "phone": "0937511804",
-                    "link_cv": "https://drive.google.com/file/d/1gIZDW0OHiGk7bM6KvkgMSfd8xVXDsu00/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1gIZDW0OHiGk7bM6KvkgMSfd8xVXDsu00/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671629232436242041583376609",
-                    "name": "Nguyễn Thị Anh Đào",
-                    "summary": "• Có kỹ năng Tiếng Anh, thể hiện qua việc sử dụng Tiếng Anh trong CV và kỹ năng tiếng Anh được liệt kê.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "daohtttql@gmail.com",
-                    "phone": "0528871169",
-                    "link_cv": "https://drive.google.com/file/d/16OvV0LnXZHm5R3HAHHOZliqV_olju7Yw/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/16OvV0LnXZHm5R3HAHHOZliqV_olju7Yw/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671629232438223207070642404",
-                    "name": "Vo Hoang Nhan",
-                    "summary": "• Có kỹ năng Tiếng Anh, thể hiện qua việc sử dụng Tiếng Anh trong CV và kỹ năng tiếng Anh được liệt kê.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
-                    "skills_found": [],
-                    "email": "chrisvo.hoang@gmail.com",
-                    "phone": "+84 97 292 9219",
-                    "link_cv": "https://drive.google.com/file/d/1BUMNG6iDpc7YL2bP2eep46BmiDP5uHwm/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1BUMNG6iDpc7YL2bP2eep46BmiDP5uHwm/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671629232436798132524132875",
-                    "name": "Van Phong Bui",
-                    "summary": "• Có kỹ năng tiếng Anh và Norwegian, thể hiện qua việc sử dụng Tiếng Anh trong CV và kỹ năng tiếng Anh được liệt kê.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 0,
+                    "experience_years": 9,
                     "skills_found": [],
                     "email": "phongbv.j4s@gmail.com",
                     "phone": "+84 389 813 641",
-                    "link_cv": "https://drive.google.com/file/d/1JJpZ1-K5KpQawZKH7pD22sTH02D1g4f9/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1JJpZ1-K5KpQawZKH7pD22sTH02D1g4f9/view?usp=drivesdk"
-                  }
-                ]
-              },
-              {
-                "id": "1767163077079",
-                "role": "user",
-                "content": "Tìm những ứng viên có xu hướng nhảy việc (thời gian trung bình mỗi công ty < 1 năm)",
-                "timestamp": 1767163077079
-              },
-              {
-                "id": "1767163094998",
-                "role": "assistant",
-                "content": "Không tìm thấy hồ sơ ứng viên có xu hướng nhảy việc với thời gian trung bình làm việc mỗi công ty dưới 1 năm trong dữ liệu hiện có.\n\nKhông tìm thấy ứng viên nào có thông tin rõ ràng về thời gian làm việc trung bình mỗi công ty dưới 1 năm trong dữ liệu hiện có. Các ứng viên đều có tổng kinh nghiệm từ 0 đến 6 năm nhưng không có chi tiết cụ thể về số lượng công ty và thời gian làm việc tại mỗi công ty để xác định xu hướng nhảy việc theo yêu cầu.",
-                "timestamp": 1767163094998,
-                "candidates": []
-              },
-              {
-                "id": "1767163118321",
-                "role": "user",
-                "content": "Team Dev đang phàn nàn là BA cũ viết User Story sơ sài quá, Dev không code được. Hãy tìm cho tôi một ứng viên nổi bật về kỹ năng viết tài liệu chi tiết (Detailed Documentation).",
-                "timestamp": 1767163118321
-              },
-              {
-                "id": "1767163126075",
-                "role": "assistant",
-                "content": "{\"status\":\"ok\",\"tenantCode\":\"\",\"chatid\":\"\",\"question_message\":\"\",\"answer_url\":[],\"source\":\"UN_ANSWER\",\"needs_clarification\":false,\"clarify_question\":null,\"handoff_note\":null,\"employeeId\":\"\",\"timestamp\":\"2025-12-31T06:38:46.722Z\"}",
-                "timestamp": 1767163126075,
-                "candidates": []
-              },
-              {
-                "id": "1767163165518",
-                "role": "user",
-                "content": "Team Dev đang phàn nàn là BA cũ viết User Story sơ sài quá, Dev không code được. Hãy tìm cho tôi một ứng viên nổi bật về kỹ năng viết tài liệu chi tiết ",
-                "timestamp": 1767163165518
-              },
-              {
-                "id": "1767163174124",
-                "role": "assistant",
-                "content": "{\"status\":\"ok\",\"tenantCode\":\"\",\"chatid\":\"\",\"question_message\":\"\",\"answer_url\":[],\"source\":\"UN_ANSWER\",\"needs_clarification\":false,\"clarify_question\":null,\"handoff_note\":null,\"employeeId\":\"\",\"timestamp\":\"2025-12-31T06:39:34.767Z\"}",
-                "timestamp": 1767163174124,
-                "candidates": []
-              },
-              {
-                "id": "1767163186653",
-                "role": "user",
-                "content": "Chúng ta cần tích hợp AI vào app bán hàng. Tìm ứng viên nào từng có kinh nghiệm Prompt Engineering hoặc làm việc với API của OpenAI/Gemini",
-                "timestamp": 1767163186653
-              },
-              {
-                "id": "1767163194596",
-                "role": "assistant",
-                "content": "{\"status\":\"ok\",\"tenantCode\":\"\",\"chatid\":\"\",\"question_message\":\"\",\"answer_url\":[],\"source\":\"UN_ANSWER\",\"needs_clarification\":false,\"clarify_question\":null,\"handoff_note\":null,\"employeeId\":\"\",\"timestamp\":\"2025-12-31T06:39:55.249Z\"}",
-                "timestamp": 1767163194596,
-                "candidates": []
-              },
-              {
-                "id": "1767163421730",
-                "role": "user",
-                "content": "Chúng ta cần tích hợp AI vào app bán hàng. Tìm ứng viên nào từng có kinh nghiệm Prompt Engineering hoặc làm việc với API của OpenAI/Gemini",
-                "timestamp": 1767163421730
-              },
-              {
-                "id": "1767163432078",
-                "role": "assistant",
-                "content": "Tìm thấy 1 ứng viên có kinh nghiệm làm việc với API của OpenAI và Google Gemini liên quan đến tích hợp AI vào ứng dụng bán hàng, kèm thông tin liên hệ.\n\nDinh Hoang Tien – [Link CV](https://drive.google.com/file/d/1hpmeKlxwXZ8u7ZkzEvkyvK8CNyxYR-Rt/view?usp=drivesdk)\n- Email: tien.dh95@gmail.com | SĐT: +84 703 844 100\n- Kinh nghiệm: 3 năm\n- Mô tả kinh nghiệm: Project Manager & Business Analyst tại Devtify Corporation, tham gia phát triển sản phẩm SaaS tự động hóa luồng công việc sử dụng kỹ thuật AI như cơ sở dữ liệu vector và các mô hình AI mới nhất từ OpenAI, Google Gemini, Anthropic, liên quan đến tích hợp AI vào ứng dụng.",
-                "timestamp": 1767163432078,
-                "candidates": [
+                    "link_cv": "https://drive.google.com/file/d/1J4kPD3PeO6LIOoMwLsNSrO8r2nz7zJCW",
+                    "file_url": "https://drive.google.com/file/d/1J4kPD3PeO6LIOoMwLsNSrO8r2nz7zJCW"
+                  },
                   {
-                    "id": "17671634320776103274676533236",
-                    "name": "Dinh Hoang Tien",
-                    "summary": "• Kinh nghiệm: 3 năm\n• Mô tả kinh nghiệm: Project Manager & Business Analyst tại Devtify Corporation, tham gia phát triển sản phẩm SaaS tự động hóa luồng công việc sử dụng kỹ thuật AI như cơ sở dữ liệu vector và các mô hình AI mới nhất từ OpenAI, Google Gemini, Anthropic, liên quan đến tích hợp AI vào ứng dụng.",
+                    "id": "17681826076576444013793803474",
+                    "name": "PHAM ANH TUAN",
+                    "summary": "• Kinh nghiệm: 5 năm, Data Scientist với kinh nghiệm xây dựng mô hình dự báo, dự đoán học máy, phát triển đại lý AI tăng năng suất qua ChatGPT.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 5,
+                    "skills_found": [],
+                    "email": "phamtuanhp1994@gmail.com",
+                    "phone": "+84 816 501 816",
+                    "link_cv": "https://drive.google.com/file/d/1tGsXlk_dtmJT8jS2pqnjoRdrlCdiL8oh",
+                    "file_url": "https://drive.google.com/file/d/1tGsXlk_dtmJT8jS2pqnjoRdrlCdiL8oh"
+                  },
+                  {
+                    "id": "176818260765728890508308688456",
+                    "name": "NGUYEN THI ANH DAO",
+                    "summary": "• Kinh nghiệm: 3 năm, sử dụng Python, pandas, numpy, matplotlib, PowerBI, có kỹ năng phân tích dữ liệu và đề xuất giải pháp dựa trên API Gateway và Cloudflare flows.",
                     "strengths": [],
                     "score": 0.85,
                     "experience_years": 3,
                     "skills_found": [],
-                    "email": "tien.dh95@gmail.com",
-                    "phone": "+84 703 844 100",
-                    "link_cv": "https://drive.google.com/file/d/1hpmeKlxwXZ8u7ZkzEvkyvK8CNyxYR-Rt/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1hpmeKlxwXZ8u7ZkzEvkyvK8CNyxYR-Rt/view?usp=drivesdk"
-                  }
-                ]
-              },
-              {
-                "id": "1767163474423",
-                "role": "user",
-                "content": "Ai có kinh nghiệm trong mảng Logistics, Giao vận hoặc Last-mile delivery?",
-                "timestamp": 1767163474423
-              },
-              {
-                "id": "1767163484788",
-                "role": "assistant",
-                "content": "Tìm thấy 2 ứng viên có kinh nghiệm liên quan đến lĩnh vực Logistics, Giao vận hoặc Last-mile delivery kèm thông tin liên hệ.\n\nNguyen Duc Nhan – [Link CV](https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk)\n- Email: nhannguyen14.dev@gmail.com | Phone: 0877522662\n- Kinh nghiệm: 3 năm, Business Analyst tại Tien Phong CDS JSC, làm việc chặt chẽ với đội phát triển và QA, cùng các đối tác tích hợp (cổng thanh toán, dịch vụ giao hàng và hệ thống call center).\nVo Quoc Thang – [Link CV](https://drive.google.com/file/d/15EygGTU94FEMwchKon-84dTqHvOepmLp/view?usp=drivesdk)\n- Email: thangvoquoc2810@gmail.com | Phone: 0927170723\n- Kinh nghiệm: 3 năm, Site Selection Administration tại Pharmacity JSC, chuẩn bị tài liệu pháp lý, đàm phán giá, triển khai sản phẩm và tối ưu quy trình thủ tục nội bộ.",
-                "timestamp": 1767163484788,
-                "candidates": [
+                    "email": "daohtttql@gmail.com",
+                    "phone": "0528871169",
+                    "link_cv": "https://drive.google.com/file/d/1fGfoGu9T8dVCTKw01MtKNcxIjlOLLJem",
+                    "file_url": "https://drive.google.com/file/d/1fGfoGu9T8dVCTKw01MtKNcxIjlOLLJem"
+                  },
                   {
-                    "id": "176716348478804485562131940868",
-                    "name": "Tìm thấy 2 ứng viên có kinh nghiệm liên quan đến lĩnh vực Logistics, Giao vận hoặc Last",
+                    "id": "176818260765728881497910585097",
+                    "name": "NGUYEN DUC NHAN",
+                    "summary": "• Kinh nghiệm: 4 năm, có kiến thức cơ bản về kiến trúc hệ thống, thiết kế API, phân tích dữ liệu và sử dụng SQL Server, Postman.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "nhannguyen14.dev@gmail.com",
+                    "phone": "0877522662",
+                    "link_cv": "https://drive.google.com/file/d/1fsOx-vfHeINAcP2Wlyfuk5UW78k0bm4w",
+                    "file_url": "https://drive.google.com/file/d/1fsOx-vfHeINAcP2Wlyfuk5UW78k0bm4w"
+                  },
+                  {
+                    "id": "17681826076577482657132572883",
+                    "name": "TRAN QUOC KIET",
+                    "summary": "• Kinh nghiệm: 5 năm, sử dụng trí tuệ nhân tạo để tối ưu hóa các nhiệm vụ nghiên cứu, sơ đồ luồng, mô phỏng và tạo các trường hợp kiểm thử.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 5,
+                    "skills_found": [],
+                    "email": "kiettran27101999@gmail.com",
+                    "phone": "0903854218",
+                    "link_cv": "https://drive.google.com/file/d/1wH6kXzs_qk8DbCyApRvhe6MNedpYjygX",
+                    "file_url": "https://drive.google.com/file/d/1wH6kXzs_qk8DbCyApRvhe6MNedpYjygX"
+                  },
+                  {
+                    "id": "17681826076582525286333481934",
+                    "name": "HUY DOAN",
+                    "summary": "• Kinh nghiệm: 6 năm, phát triển phần mềm với C# và Python, tối ưu hóa xử lý dữ liệu và API REST.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 6,
+                    "skills_found": [],
+                    "email": "nhathuyvn100497@gmail.com",
+                    "phone": "+84 776 965 785",
+                    "link_cv": "https://drive.google.com/file/d/1afFkTiJoAWSacuzgFay_Bo8fFGNGRozH",
+                    "file_url": "https://drive.google.com/file/d/1afFkTiJoAWSacuzgFay_Bo8fFGNGRozH"
+                  },
+                  {
+                    "id": "17681826076588816594028029503",
+                    "name": "TRAN VAN DUC",
+                    "summary": "• Kinh nghiệm: 4 năm, Associate Product Manager tại Chative.IO, SaaS Company, quản lý lộ trình sản phẩm, phỏng vấn người dùng toàn cầu, xây dựng tài liệu chi tiết cho sản phẩm.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "ducforwork@gmail.com",
+                    "phone": "+84 905 955 256",
+                    "link_cv": "https://drive.google.com/file/d/1TbUo9a-BLeX6aHPzjoJ7wCkkJZnO5JQF",
+                    "file_url": "https://drive.google.com/file/d/1TbUo9a-BLeX6aHPzjoJ7wCkkJZnO5JQF"
+                  },
+                  {
+                    "id": "176818260765827370940474855965",
+                    "name": "Summary",
                     "summary": "",
                     "strengths": [],
                     "score": 0.85,
@@ -2388,79 +562,49 @@
                     "skills_found": [],
                     "email": "",
                     "phone": ""
-                  },
-                  {
-                    "id": "17671634847889821154382923594",
-                    "name": "Nguyen Duc Nhan",
-                    "summary": "• Kinh nghiệm: 3 năm, Business Analyst tại Tien Phong CDS JSC, làm việc chặt chẽ với đội phát triển và QA, cùng các đối tác tích hợp (cổng thanh toán, dịch vụ giao hàng và hệ thống call center).",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 3,
-                    "skills_found": [],
-                    "email": "nhannguyen14.dev@gmail.com",
-                    "phone": "0877522662",
-                    "link_cv": "https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/1a6uEu5nxEKNJFF_hO_bf2egAuGvyElDQ/view?usp=drivesdk"
-                  },
-                  {
-                    "id": "17671634847883240531249414278",
-                    "name": "Vo Quoc Thang",
-                    "summary": "• Kinh nghiệm: 3 năm, Site Selection Administration tại Pharmacity JSC, chuẩn bị tài liệu pháp lý, đàm phán giá, triển khai sản phẩm và tối ưu quy trình thủ tục nội bộ.",
-                    "strengths": [],
-                    "score": 0.85,
-                    "experience_years": 3,
-                    "skills_found": [],
-                    "email": "thangvoquoc2810@gmail.com",
-                    "phone": "0927170723",
-                    "link_cv": "https://drive.google.com/file/d/15EygGTU94FEMwchKon-84dTqHvOepmLp/view?usp=drivesdk",
-                    "file_url": "https://drive.google.com/file/d/15EygGTU94FEMwchKon-84dTqHvOepmLp/view?usp=drivesdk"
                   }
+                ],
+                "technical_questions": [],
+                "soft_skill_questions": [
+                  "Ứng viên có kỹ năng về AI/LLM"
                 ]
               },
               {
-                "id": "1767163555650",
+                "id": "1768182891079",
                 "role": "user",
-                "content": "Sếp muốn tuyển một người có tiềm năng làm Product Owner trong tương lai. Ai trong danh sách này có tố chất lãnh đạo hoặc quản lý backlog tốt nhất?",
-                "timestamp": 1767163555650
+                "content": "ai biet tieng nhat",
+                "timestamp": 1768182891079
               },
               {
-                "id": "1767163563008",
+                "id": "1768182901585",
                 "role": "assistant",
-                "content": "{\"status\":\"ok\",\"tenantCode\":\"\",\"chatid\":\"\",\"question_message\":\"\",\"answer_url\":[],\"source\":\"UN_ANSWER\",\"needs_clarification\":false,\"clarify_question\":null,\"handoff_note\":null,\"employeeId\":\"\",\"timestamp\":\"2025-12-31T06:46:03.651Z\"}",
-                "timestamp": 1767163563008,
-                "candidates": []
+                "content": "Tìm thấy 1 ứng viên có kỹ năng tiếng Nhật với chứng chỉ JLPT N3 và kinh nghiệm 5 năm, kèm thông tin liên hệ.\n\nNGUYEN CHAU GIANG – [Link CV](https://drive.google.com/file/d/1ApE19qjCdzJAHtrkcK0v3OgT2MzfREm5)\n- Email: nguyenchaugiang5211@gmail.com | Phone: (+84) 0373 075 225\n- Kinh nghiệm: 5 năm\n- Chứng chỉ tiếng Nhật: JLPT N3 (2024)",
+                "timestamp": 1768182901585,
+                "candidates": [
+                  {
+                    "id": "176818290158441002581237012004",
+                    "name": "NGUYEN CHAU GIANG",
+                    "summary": "• Kinh nghiệm: 5 năm\n• Chứng chỉ tiếng Nhật: JLPT N3 (2024)",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 5,
+                    "skills_found": [],
+                    "email": "nguyenchaugiang5211@gmail.com",
+                    "phone": "(+84) 0373 075 225",
+                    "link_cv": "https://drive.google.com/file/d/1ApE19qjCdzJAHtrkcK0v3OgT2MzfREm5",
+                    "file_url": "https://drive.google.com/file/d/1ApE19qjCdzJAHtrkcK0v3OgT2MzfREm5"
+                  }
+                ],
+                "technical_questions": [],
+                "soft_skill_questions": [
+                  "ai biet tieng nhat"
+                ]
               },
               {
-                "id": "1767163647373",
+                "id": "1768182937355",
                 "role": "user",
-                "content": "Sếp muốn tuyển một người có tiềm năng làm Product Owner trong tương lai. Ai trong danh sách này có tố chất lãnh đạo hoặc quản lý backlog tốt nhất?",
-                "timestamp": 1767163647373
-              },
-              {
-                "id": "1767163653940",
-                "role": "assistant",
-                "content": "{\"status\":\"ok\",\"tenantCode\":\"\",\"chatid\":\"\",\"question_message\":\"\",\"answer_url\":[],\"source\":\"UN_ANSWER\",\"needs_clarification\":false,\"clarify_question\":null,\"handoff_note\":null,\"employeeId\":\"\",\"timestamp\":\"2025-12-31T06:47:34.587Z\"}",
-                "timestamp": 1767163653940,
-                "candidates": []
-              },
-              {
-                "id": "1767163865273",
-                "role": "user",
-                "content": "Sếp muốn tuyển một người có tiềm năng làm Product Owner trong tương lai. Ai trong danh sách này có tố chất lãnh đạo hoặc quản lý backlog tốt nhất?",
-                "timestamp": 1767163865273
-              },
-              {
-                "id": "1767163873145",
-                "role": "assistant",
-                "content": "{\"status\":\"ok\",\"tenantCode\":\"\",\"chatid\":\"\",\"question_message\":\"\",\"answer_url\":[],\"source\":\"UN_ANSWER\",\"needs_clarification\":false,\"clarify_question\":null,\"handoff_note\":null,\"employeeId\":\"\",\"timestamp\":\"2025-12-31T06:51:13.763Z\"}",
-                "timestamp": 1767163873145,
-                "candidates": []
-              },
-              {
-                "id": "1767164124291",
-                "role": "user",
-                "content": "Sếp muốn tuyển một người có tiềm năng làm Product Owner trong tương lai. Ai trong danh sách này có tố chất lãnh đạo hoặc quản lý backlog tốt nhất?",
-                "timestamp": 1767164124291
+                "content": "ai biet tieng anh",
+                "timestamp": 1768182937355
               }
             ]
           },
@@ -2681,7 +825,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "c45076ac-f0c4-4095-8681-89d1c034c53e",
+  "versionId": "be372b46-b591-46af-8e86-90eaa78a3f05",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "df174d571e95541c805919aa88d99c6ff9e79e2c1ffc42837bb92614d24bb4eb"
