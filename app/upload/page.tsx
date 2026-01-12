@@ -10,7 +10,23 @@ export default function UploadPage() {
     const router = useRouter()
 
     const handleAnalysisComplete = (newCandidates: Candidate[]) => {
-        setCandidates([...candidates, ...newCandidates])
+        const updatedCandidates = [...candidates];
+
+        newCandidates.forEach(newC => {
+            const index = updatedCandidates.findIndex(c =>
+                c.name.trim().toLowerCase() === newC.name.trim().toLowerCase()
+            );
+
+            if (index !== -1) {
+                // Update existing candidate: Keep old ID, update all other fields
+                updatedCandidates[index] = { ...newC, id: updatedCandidates[index].id };
+            } else {
+                // Add new candidate
+                updatedCandidates.push(newC);
+            }
+        });
+
+        setCandidates(updatedCandidates);
         setSortConfig({ column: 'score', direction: 'desc' })
         // Redirect to Leaderboard after successful upload
         router.push('/leaderboard')

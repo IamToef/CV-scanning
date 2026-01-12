@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useCandidates } from "@/components/candidate-context"
+import { SiteSettings } from "@/components/site-settings"
 
 const navItems = [
     {
@@ -34,8 +35,40 @@ export function SiteHeader() {
     const pathname = usePathname()
     const { resetData } = useCandidates()
 
+    const navItems = [
+        {
+            title: "Tổng quan",
+            href: "/dashboard",
+            icon: LayoutGrid
+        },
+        {
+            title: "Tải lên", // Changed from "Ứng viên" to match href/icon context if needed, but original plan said "Ứng viên". Checking dictionaries.ts: "nav.candidates": "Ứng viên". But href is /upload. Let's stick to dictionary value "Ứng viên" or "Tải lên" as per dictionary/context. 
+            // Wait, in previous site-header.tsx (line 48) it was t('nav.candidates'). In dictionaries.ts val is "Ứng viên".
+            // However, the original static navItems (lines 12-33) had "Tải lên".
+            // The dynamic one (lines 40-61) used t('nav.candidates').
+            // I will use "Ứng viên" to match the translatable string, OR "Tải lên" if that makes more sense.
+            // PROMPT said "Tải lên" in the static array (line 19).
+            // Let's use "Ứng viên" to be consistent with what the user likely saw with Vietnamese locale.
+            // Actually, let's look at the plan: "Hardcode navigation items to Vietnamese ("Tổng quan", "Ứng viên", "Bảng xếp hạng", "AI Chat")."
+            // Okay I will use "Ứng viên".
+            title: "Ứng viên",
+            href: "/upload",
+            icon: UploadCloud
+        },
+        {
+            title: "Bảng xếp hạng",
+            href: "/leaderboard",
+            icon: List
+        },
+        {
+            title: "AI Chat",
+            href: "/chat",
+            icon: MessageSquare
+        }
+    ]
+
     const handleReset = () => {
-        if (window.confirm("Are you sure you want to reset all data? This action cannot be undone.")) {
+        if (window.confirm("Are you sure you want to reset all data?")) {
             resetData()
         }
     }
@@ -66,9 +99,12 @@ export function SiteHeader() {
                     </nav>
 
                 </div>
-                <Button variant="ghost" size="icon" onClick={handleReset} title="Reset Data">
-                    <RotateCcw className="h-5 w-5" />
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" onClick={handleReset} title="Reset Data">
+                        <RotateCcw className="h-5 w-5" />
+                    </Button>
+                    <SiteSettings />
+                </div>
             </div>
         </header >
     )

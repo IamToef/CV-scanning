@@ -60,9 +60,7 @@ export function ChatInterface() {
             // Use calculated score
             score: finalScore,
 
-            // CRITICAL FIX: Prioritize the immediate AI summary from the chat response
-            // The DB summary might be old or empty. The chat response just generated a fresh summary.
-            summary: chatCandidate.summary || fullCandidate.summary,
+            summary: fullCandidate.summary || chatCandidate.summary,
 
             // Fix CV Link: If DB has file_url great, else use what we just parsed
             link_cv: fullCandidate.file_url || fullCandidate.link_cv || chatCandidate.link_cv,

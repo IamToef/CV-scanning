@@ -6,6 +6,8 @@ import { CandidateProvider } from "@/components/candidate-context";
 import { SiteHeader } from "@/components/site-header";
 import { ChatWidget } from "@/components/chat-widget";
 import { ChatProvider } from "@/components/chat-context";
+import { ThemeProvider } from "@/components/theme-provider";
+
 
 const inter = Inter({
   variable: "--font-inter",
@@ -36,16 +38,23 @@ export default function RootLayout({
         className={`${inter.variable} ${robotoMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <CandidateProvider>
-          <ChatProvider>
-            <SiteHeader />
-            <main className="min-h-[calc(100vh-3.5rem)]">
-              {children}
-            </main>
-            <ChatWidget />
-            <Toaster />
-          </ChatProvider>
-        </CandidateProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <CandidateProvider>
+            <ChatProvider>
+              <SiteHeader />
+              <main className="min-h-[calc(100vh-3.5rem)]">
+                {children}
+              </main>
+              <ChatWidget />
+              <Toaster />
+            </ChatProvider>
+          </CandidateProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

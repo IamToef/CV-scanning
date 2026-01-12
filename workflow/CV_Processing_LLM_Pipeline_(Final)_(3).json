@@ -2,15 +2,17 @@
   "name": "CV Processing LLM Pipeline (Final)",
   "nodes": [
     {
-      "parameters": {},
-      "type": "n8n-nodes-base.manualTrigger",
-      "typeVersion": 1,
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
       "position": [
-        1744,
-        1456
+        -720,
+        -96
       ],
-      "id": "33dbb8c8-4f88-4d4e-8171-71a40787d32f",
-      "name": "When clicking ‘Execute workflow’"
+      "id": "2bc6baeb-39c5-4e73-982d-fdfa3f94489e",
+      "name": "When Executed by Another Workflow"
     },
     {
       "parameters": {
@@ -19,11 +21,11 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        5488,
-        1424
+        -144,
+        -96
       ],
-      "id": "a42da9dd-2f68-435c-9bbe-b11e493d798f",
-      "name": "Fn_Format"
+      "id": "6f1238c4-c70d-4749-a88e-eceacdbf5f2b",
+      "name": "Fn_Format1"
     },
     {
       "parameters": {
@@ -55,16 +57,16 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        5728,
-        1424
+        80,
+        -96
       ],
-      "id": "53dea51f-06de-4f89-b67d-4e0227dc5819",
-      "name": "OpenAI Embedding",
+      "id": "40dd15ef-6de5-44e4-885c-fe7d11d9f637",
+      "name": "OpenAI Embedding1",
       "retryOnFail": true,
       "credentials": {
         "openAiApi": {
-          "id": "cnW6yERErYSFG3vg",
-          "name": "OpenAi account 4"
+          "id": "iCiSJp2rt9yhPy3g",
+          "name": "OpenAi account 3"
         }
       }
     },
@@ -74,177 +76,49 @@
         "url": "https://idiochromatic-cody-uninspiringly.ngrok-free.dev/collections/RAG_FOR_CV/points",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ $json }}",
+        "jsonBody": "={{ $('Fn_Info1').item.json }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        6144,
-        1424
+        976,
+        -80
       ],
-      "id": "2d29fb89-7e2d-4790-8f72-fd24d978deeb",
-      "name": "Qdrant Upsert",
+      "id": "b501d2a8-8e32-44e1-b47f-b29711ef4684",
+      "name": "Qdrant Upsert1",
       "retryOnFail": true,
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "// Lấy data từ 2 node trước\nconst fmtItems = $items('Fn_Format');          // Node chứa text + payload\nconst embItems = $items('OpenAI Embedding');   // Node chứa vector\n\nconst points = [];\n\n// Dùng Math.min để an toàn\nconst count = Math.min(fmtItems.length, embItems.length);\n\nfor (let i = 0; i < count; i++) {\n  const f = fmtItems[i].json; // Data gốc\n  const e = embItems[i].json; // Vector\n\n  // 1. TÌM VECTOR (Logic bắt lỗi vector như cũ)\n  const vector = e.embedding \n              || (e.data && e.data[0] ? e.data[0].embedding : null)\n              || e.vector; \n\n  if (vector) {\n     // Lấy dữ liệu từ payload hoặc metadata\n     const sourceData = f.payload || f.metadata || {}; \n\n     // 2. TẠO PAYLOAD\n     // Copy toàn bộ dữ liệu gốc (candidate_id, candidate_name, type...)\n     const payload = { ...sourceData };\n\n     // 3. XỬ LÝ LÀM SẠCH (Loại bỏ trường thừa)\n     // Xóa các trường ngắn nếu chúng vô tình tồn tại\n     delete payload.name;\n     delete payload.email;\n     delete payload.phone;\n     delete payload.text_content; \n\n     // 4. ĐẢM BẢO CÁC TRƯỜNG QUAN TRỌNG\n     // Đảm bảo link_cv luôn tồn tại (nếu null thì thành chuỗi rỗng)\n     payload.link_cv = sourceData.link_cv || \"\";\n\n     // Đảm bảo trường 'text' tồn tại (đây là nội dung chính để RAG đọc)\n     // Nếu node trước trả về 'text' thì giữ nguyên, nếu không thì lấy từ f.text\n     payload.text = sourceData.text || f.text || \"\";\n\n     points.push({\n       id: f.id,       // UUID\n       vector: vector, // Vector Array\n       payload: payload\n     });\n  }\n}\n\n// Kiểm tra debug\nif (points.length === 0) {\n  return [{\n    json: {\n      error: \"Không tìm thấy Vector nào.\",\n      debug_check: {\n        has_payload: !!fmtItems[0].json.payload\n      }\n    }\n  }];\n}\n\n// Trả về format chuẩn\nreturn [\n  {\n    json: { points }\n  }\n];"
+        "jsCode": "// Lấy data từ 2 node trước\nconst fmtItems = $items('Fn_Format1');          // Node chứa text + payload\nconst embItems = $items('OpenAI Embedding1');   // Node chứa vector\n\nconst points = [];\n\n// Dùng Math.min để an toàn\nconst count = Math.min(fmtItems.length, embItems.length);\n\nfor (let i = 0; i < count; i++) {\n  const f = fmtItems[i].json; // Data gốc\n  const e = embItems[i].json; // Vector\n\n  // 1. TÌM VECTOR (Logic bắt lỗi vector như cũ)\n  const vector = e.embedding \n              || (e.data && e.data[0] ? e.data[0].embedding : null)\n              || e.vector; \n\n  if (vector) {\n     // Lấy dữ liệu từ payload hoặc metadata\n     const sourceData = f.payload || f.metadata || {}; \n\n     // 2. TẠO PAYLOAD\n     // Copy toàn bộ dữ liệu gốc (candidate_id, candidate_name, type...)\n     const payload = { ...sourceData };\n\n     // 3. XỬ LÝ LÀM SẠCH (Loại bỏ trường thừa)\n     // Xóa các trường ngắn nếu chúng vô tình tồn tại\n     delete payload.name;\n     delete payload.email;\n     delete payload.phone;\n     delete payload.text_content; \n\n     // 4. ĐẢM BẢO CÁC TRƯỜNG QUAN TRỌNG\n     // Đảm bảo link_cv luôn tồn tại (nếu null thì thành chuỗi rỗng)\n     payload.link_cv = sourceData.link_cv || \"\";\n\n     // Đảm bảo trường 'text' tồn tại (đây là nội dung chính để RAG đọc)\n     // Nếu node trước trả về 'text' thì giữ nguyên, nếu không thì lấy từ f.text\n     payload.text = sourceData.text || f.text || \"\";\n\n     points.push({\n       id: f.id,       // UUID\n       vector: vector, // Vector Array\n       payload: payload\n     });\n  }\n}\n\n// Kiểm tra debug\nif (points.length === 0) {\n  return [{\n    json: {\n      error: \"Không tìm thấy Vector nào.\",\n      debug_check: {\n        has_payload: !!fmtItems[0].json.payload\n      }\n    }\n  }];\n}\n\n// Trả về format chuẩn\nreturn [\n  {\n    json: { points }\n  }\n];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        5952,
-        1424
+        304,
+        -96
       ],
-      "id": "da1ee3ab-f40d-4c3b-b403-aaf9b26a52cd",
-      "name": "Fn_Info"
-    },
-    {
-      "parameters": {
-        "operation": "pdf",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.extractFromFile",
-      "typeVersion": 1,
-      "position": [
-        3456,
-        1520
-      ],
-      "id": "2b3c5ae8-933f-40a7-8d69-187744b9789a",
-      "name": "Lấy thông tin CV"
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "64113236-bf3e-4626-bd7a-04fc9d68f321",
-              "name": "text",
-              "value": "={{ $json.text }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        3632,
-        1536
-      ],
-      "id": "0042fae4-dfdd-42f5-aa98-cc1cfed09d78",
-      "name": "Edit Fields"
-    },
-    {
-      "parameters": {
-        "rules": {
-          "values": [
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 2
-                },
-                "conditions": [
-                  {
-                    "leftValue": "={{ $json.name }}",
-                    "rightValue": "docx",
-                    "operator": {
-                      "type": "string",
-                      "operation": "contains"
-                    },
-                    "id": "6747c7b5-126b-4453-ad44-8aba636e6f72"
-                  }
-                ],
-                "combinator": "and"
-              },
-              "renameOutput": true,
-              "outputKey": "Word"
-            },
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 2
-                },
-                "conditions": [
-                  {
-                    "id": "c3a7b9d2-9e06-4b04-b753-9e291ed5c013",
-                    "leftValue": "={{ $json.name }}",
-                    "rightValue": "pdf",
-                    "operator": {
-                      "type": "string",
-                      "operation": "contains"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              },
-              "renameOutput": true,
-              "outputKey": "PDF"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.switch",
-      "typeVersion": 3.3,
-      "position": [
-        3232,
-        1456
-      ],
-      "id": "57650f39-cd01-47f2-aeac-3ed0b669fbf5",
-      "name": "Switch"
-    },
-    {
-      "parameters": {
-        "destinationOutputField": "data"
-      },
-      "type": "n8n-nodes-docx-converter.docxToText",
-      "typeVersion": 1,
-      "position": [
-        3552,
-        1392
-      ],
-      "id": "a82e2474-4ea9-4703-8d86-a7c527c02980",
-      "name": "DOCX to Text"
-    },
-    {
-      "parameters": {
-        "options": {}
-      },
-      "type": "n8n-nodes-base.splitInBatches",
-      "typeVersion": 3,
-      "position": [
-        2432,
-        1424
-      ],
-      "id": "b80e8dd3-f228-448e-b641-16ba0bc33caf",
-      "name": "Loop Over Items1"
+      "id": "8029f979-1c55-4782-a6c7-a5ac8090da5a",
+      "name": "Fn_Info1"
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "=Link CV:\n{{ $node['Upload file'].json.webViewLink }}\n",
+        "text": "=Link CV:\nhttps://drive.google.com/file/d/{{ $json.id }}\n",
         "options": {
-          "systemMessage": "=Bạn là một Chuyên gia Phân tích CV và Trích xuất Dữ liệu (CV Parsing & OCR Expert) với nguyên tắc \"Zero-Shot Accuracy\". Nhiệm vụ của bạn là chuyển đổi văn bản thô của hồ sơ ứng viên thành cấu trúc JSON chuẩn.\n\n---\nNGUYÊN TẮC CỐT LÕI (BẮT BUỘC TUÂN THỦ):\n\n1. CHỐNG BỊA ĐẶT (ANTI-HALLUCINATION):\n   - CHỈ trích xuất thông tin CÓ THẬT trong văn bản.\n   - Tuyệt đối KHÔNG tự suy luận cảm tính, NHƯNG việc tính toán tổng thời gian từ các mốc ngày tháng có sẵn là HỢP LỆ và BẮT BUỘC.\n   - Nếu thông tin bị thiếu hoàn toàn, hãy để giá trị là `null` hoặc chuỗi rỗng `\"\"`.\n   - Đối với Kỹ năng/Công nghệ: Chỉ liệt kê những gì ứng viên viết ra.\n\n2. XỬ LÝ NGÔN NGỮ & DỊCH THUẬT:\n   - Phần mô tả (Description/Summary/Project): Dịch sang TIẾNG VIỆT trôi chảy.\n   - KỸ NĂNG (Hard Skills): GIỮ NGUYÊN tên gốc.\n   - KỸ NĂNG MỀM (Soft Skills): DỊCH SANG TIẾNG VIỆT.\n   - Tên riêng: Giữ nguyên.\n\n3. ĐỊNH DẠNG OUTPUT:\n   - Trả về DUY NHẤT một chuỗi JSON hợp lệ.\n   - Không bao bọc bởi markdown.\n\n---\nCẤU TRÚC JSON MỤC TIÊU:\n\n{\n  \"link_cv\": \"URL/Link CV nếu có trong văn bản (nếu không: null)\",\n  \"contact_info\": {\n    \"name\": \"Họ và tên đầy đủ (In hoa tất cả chữ cái và không có dấu). Nếu không tìm thấy: 'Unknown'\",\n    \"email\": \"Email chính xác (nếu không: null)\",\n    \"phone\": \"Số điện thoại (nếu không: null)\"\n  },\n  \"skills\": [\n    // Mảng phẳng các kỹ năng (VD: [\"Java\", \"Spring Boot\", \"Tiếng Anh\"])\n  ],\n  \"experience\": [\n    {\n      \"company\": \"Tên công ty\",\n      \"role\": \"Chức danh/Vị trí\",\n      \"time\": \"Thời gian làm việc (Giữ nguyên định dạng gốc)\",\n      \"description\": \"Mô tả chi tiết nhiệm vụ và thành tựu bằng TIẾNG VIỆT.\"\n    }\n  ],\n  \"total\": [\n    {\n      \"total_exp\": \"LOGIC TÍNH NĂM KINH NGHIỆM (Thực hiện tuần tự):\\n1. ƯU TIÊN 1 (Tìm kiếm): Tìm câu văn khẳng định tổng số năm kinh nghiệm trong Summary (VD: 'Hơn 5 năm kinh nghiệm').Nếu có từ 2 loại kinh nghiệm thì tính tổng gộp nó lại. Còn có 1 loại kinh nghiệm thì nếu thấy -> Lấy ngay con số đó kèm chữ 'năm' và DỪNG LẠI.\\n2. ƯU TIÊN 2 (Tính toán - BẮT BUỘC): Nếu Ưu tiên 1 không có dữ liệu, bạn PHẢI tự tính toán bằng cách cộng dồn thời gian làm việc thực tế trên đề cập trong CV (End Date - Start Date) của các vị trí trong phần Experience. \\n   - Quy đổi 'Present'/'Current'/'Nay' là thời điểm hiện tại là tháng 12/2025 để tính cho chính xác.\\n   - Cộng tổng thời gian thực tế (chú ý trừ thời gian trùng lặp).\\n   - Làm tròn kết quả (VD: 2 năm 6 tháng -> '2.5 năm').\"\n    }\n  ],\n  \"projects\": [\n    {\n      \"name\": \"Tên dự án\",\n      \"role\": \"Vai trò\",\n      \"time\": \"Thời gian\",\n      \"link\": \"Link demo (nếu có)\",\n      \"technologies\": [\n         // Mảng công nghệ\n      ],\n      \"description\": \"Mô tả dự án (Tiếng Việt).\"\n    }\n  ],\n  \"education\": [\n    {\n      \"school\": \"Tên trường\",\n      \"major\": \"Chuyên ngành\",\n      \"time\": \"Niên khóa\"\n    }\n  ],\n  \"certification\": [\n    {\n      \"name\": \"Tên chứng chỉ\",\n      \"issuer\": \"Tổ chức cấp\",\n      \"time\": \"Thời gian\"\n    }\n  ]\n}\n\n---\nDỮ LIỆU ĐẦU VÀO CẦN XỬ LÝ:\n{{ $json.resume_content }}"
+          "systemMessage": "=Bạn là một Chuyên gia Phân tích CV và Trích xuất Dữ liệu (CV Parsing & OCR Expert) với nguyên tắc \"Zero-Shot Accuracy\". Nhiệm vụ của bạn là chuyển đổi văn bản thô của hồ sơ ứng viên thành cấu trúc JSON chuẩn.\n\n---\nNGUYÊN TẮC CỐT LÕI (BẮT BUỘC TUÂN THỦ):\n\n1. CHỐNG BỊA ĐẶT (ANTI-HALLUCINATION):\n   - CHỈ trích xuất thông tin CÓ THẬT trong văn bản.\n   - Tuyệt đối KHÔNG tự suy luận cảm tính, NHƯNG việc tính toán tổng thời gian từ các mốc ngày tháng có sẵn là HỢP LỆ và BẮT BUỘC.\n   - Nếu thông tin bị thiếu hoàn toàn, hãy để giá trị là `null` hoặc chuỗi rỗng `\"\"`.\n   - Đối với Kỹ năng/Công nghệ: Chỉ liệt kê những gì ứng viên viết ra.\n\n2. XỬ LÝ NGÔN NGỮ & DỊCH THUẬT:\n   - Phần mô tả (Description/Summary/Project): Dịch sang TIẾNG VIỆT trôi chảy.\n   - KỸ NĂNG (Hard Skills): GIỮ NGUYÊN tên gốc.\n   - KỸ NĂNG MỀM (Soft Skills): DỊCH SANG TIẾNG VIỆT.\n   - Tên riêng: Giữ nguyên.\n\n3. ĐỊNH DẠNG OUTPUT:\n   - Trả về DUY NHẤT một chuỗi JSON hợp lệ.\n   - Không bao bọc bởi markdown.\n\n---\nCẤU TRÚC JSON MỤC TIÊU:\n\n{\n  \"link_cv\": \"URL/Link CV nếu có trong văn bản (nếu không: null)\",\n  \"contact_info\": {\n    \"name\": \"Họ và tên đầy đủ không dấu (In hoa tất cả chữ cái và không có dấu). Nếu không tìm thấy: 'Unknown'\",\n    \"email\": \"Email chính xác (nếu không: null)\",\n    \"phone\": \"Số điện thoại (nếu không: null)\"\n  },\n  \"skills\": [\n    // Mảng phẳng các kỹ năng (VD: [\"Java\", \"Spring Boot\", \"Tiếng Anh\"])\n  ],\n  \"experience\": [\n    {\n      \"company\": \"Tên công ty\",\n      \"role\": \"Chức danh/Vị trí\",\n      \"time\": \"Thời gian làm việc (Giữ nguyên định dạng gốc)\",\n      \"description\": \"Mô tả chi tiết nhiệm vụ và thành tựu bằng TIẾNG VIỆT.\"\n    }\n  ],\n  \"total\": [\n    {\n      \"total_exp\": \"LOGIC TÍNH NĂM KINH NGHIỆM (Thực hiện tuần tự):\\n1. ƯU TIÊN 1 (Tìm kiếm): Tìm câu văn khẳng định tổng số năm kinh nghiệm trong Summary (VD: 'Hơn 5 năm kinh nghiệm').Nếu có từ 2 loại kinh nghiệm thì tính tổng gộp nó lại. Còn có 1 loại kinh nghiệm thì nếu thấy -> Lấy ngay con số đó kèm chữ 'năm' và DỪNG LẠI.\\n2. ƯU TIÊN 2 (Tính toán - BẮT BUỘC): Nếu Ưu tiên 1 không có dữ liệu, bạn PHẢI tự tính toán bằng cách cộng dồn thời gian làm việc thực tế trên đề cập trong CV (End Date - Start Date) của các vị trí trong phần Experience. \\n   - Quy đổi 'Present'/'Current'/'Nay' là thời điểm hiện tại là tháng 12/2025 để tính cho chính xác.\\n   - Cộng tổng thời gian thực tế (chú ý trừ thời gian trùng lặp).\\n   - Làm tròn kết quả (VD: 2 năm 6 tháng -> '2.5 năm').\"\n    }\n  ],\n  \"projects\": [\n    {\n      \"name\": \"Tên dự án\",\n      \"role\": \"Vai trò\",\n      \"time\": \"Thời gian\",\n      \"link\": \"Link demo (nếu có)\",\n      \"technologies\": [\n         // Mảng công nghệ\n      ],\n      \"description\": \"Mô tả dự án (Tiếng Việt).\"\n    }\n  ],\n  \"education\": [\n    {\n      \"school\": \"Tên trường\",\n      \"major\": \"Chuyên ngành\",\n      \"time\": \"Niên khóa\"\n    }\n  ],\n  \"certification\": [\n    {\n      \"name\": \"Tên chứng chỉ\",\n      \"issuer\": \"Tổ chức cấp\",\n      \"time\": \"Thời gian\"\n    }\n  ]\n}\n\n---\nDỮ LIỆU ĐẦU VÀO CẦN XỬ LÝ:\n{{ $json.text }}"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 2.2,
       "position": [
-        5152,
-        1424
+        -496,
+        -96
       ],
-      "id": "aa760e60-c439-42f7-a6ea-b86a8838ed69",
-      "name": "AI Agent"
+      "id": "c7d042ac-0b20-400e-bdde-ed5d661b99f5",
+      "name": "AI Agent1"
     },
     {
       "parameters": {
@@ -258,15 +132,15 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
-        5008,
-        1664
+        -432,
+        128
       ],
-      "id": "61d00d7b-3b0a-4f08-9a2c-66c062bc4d91",
-      "name": "OpenAI Chat Model",
+      "id": "d06d4c4a-6c8b-454b-86fc-f090bfcfbeaa",
+      "name": "OpenAI Chat Model1",
       "credentials": {
         "openAiApi": {
-          "id": "cnW6yERErYSFG3vg",
-          "name": "OpenAi account 4"
+          "id": "iCiSJp2rt9yhPy3g",
+          "name": "OpenAi account 3"
         }
       }
     },
@@ -281,13 +155,12 @@
           },
           "conditions": [
             {
-              "id": "f5a2dbf9-5ebb-4c64-bc35-0a120673a097",
-              "leftValue": "={{ $json.text.trim() === \"\" }}",
-              "rightValue": "\\n\\n",
+              "id": "c2aceabd-e1bc-4d2b-84b6-b5e747e9126c",
+              "leftValue": "={{ $json.result.points.length }}",
+              "rightValue": 0,
               "operator": {
-                "type": "boolean",
-                "operation": "false",
-                "singleValue": true
+                "type": "number",
+                "operation": "gt"
               }
             }
           ],
@@ -298,511 +171,135 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3872,
-        1344
+        752,
+        -96
       ],
-      "id": "9d1383a4-224e-4515-bd2d-572c0137114b",
-      "name": "Check null",
-      "onError": "continueRegularOutput"
+      "id": "f0d0a28f-f552-4324-84c5-0a33682f1062",
+      "name": "If"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.pdf.co/v1/pdf/convert/to/png",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "x-api-key",
-              "value": "huyvo8500@gmail.com_WLXjOykYtiR9U8YvQl2RiCdhrNSnj2tWB7yrl7gKzBUKe4H0IDC9JEj3mYVqIzbK"
-            }
-          ]
-        },
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "url",
-              "value": "=https://drive.google.com/file/u/{{ $('Loop Over Items1').item.json.id }}"
-            },
-            {
-              "name": "inline",
-              "value": "true"
-            },
-            {
-              "name": "pages",
-              "value": "0-"
-            },
-            {
-              "name": "async",
-              "value": "false"
-            }
-          ]
-        },
-        "options": {
-          "redirect": {
-            "redirect": {}
-          }
-        }
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        4016,
-        1488
-      ],
-      "id": "8022a212-52cf-476f-a0b9-44d72d6ae7a9",
-      "name": "Convert PDF2Image"
-    },
-    {
-      "parameters": {
-        "jsCode": "const pages = [];\nlet fullText = \"\";\n\nitems.forEach((it, idx) => {\n  const resp = it.json;\n  let text = \"\";\n\n  if (resp.output_text) {\n    text = resp.output_text;\n  } else if (resp.output) {\n    for (const o of resp.output) {\n      if (o.content) {\n        for (const c of o.content) {\n          if (c.type === 'output_text' && c.text) {\n            text += c.text + \"\\n\";\n          }\n        }\n      }\n    }\n  }\n\n  text = text.trim();\n\n  pages.push({\n    page: idx,   // page 0,1,2...\n    text\n  });\n\n  fullText += `--- Page ${idx} ---\\n${text}\\n\\n`;\n});\n\nreturn [\n  {\n    json: {\n      pages,\n      text: fullText.trim()\n    }\n  }\n];\n"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        4624,
-        1488
-      ],
-      "id": "ff68a214-9a49-44d8-a30b-ff39dae8e360",
-      "name": "FN_Info"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.openai.com/v1/responses",
-        "sendHeaders": true,
-        "specifyHeaders": "json",
-        "jsonHeaders": "{\n  \"Authorization\": \"Bearer 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\",\n  \"Content-Type\": \"application/json\"\n}",
+        "url": "=https://idiochromatic-cody-uninspiringly.ngrok-free.dev/collections/RAG_FOR_CV/points/scroll",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"gpt-4o-mini\",\n  \"input\": [\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\"type\":\"input_text\",\"text\":\"Extract all visible text from the image. Return only the plain text.\"},\n        {\"type\":\"input_image\",\"image_url\":\"{{$json.url}}\"}\n      ]\n    }\n  ]\n}\n",
+        "jsonBody": "={\n  \"filter\": {\n    \"must\": [\n      {\n        \"key\": \"candidate_email\",\n        \"match\": {\n          \"value\": \"{{ $json.points[25].payload.candidate_email }}\"\n        }\n      }\n    ]\n  },\n  \"limit\": 1,\n  \"with_payload\": true\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        4416,
-        1488
+        528,
+        -96
       ],
-      "id": "85fefc34-9b6f-49f4-9e36-ba377adec0c2",
-      "name": "OCR OpenAI"
-    },
-    {
-      "parameters": {
-        "jsCode": "// items[0].json.urls assumed\nconst arr = items[0].json.urls || [];\nreturn arr.map((u, i) => ({ json: { page: i+1, url: u } }));\n"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        4224,
-        1488
-      ],
-      "id": "1330a6fc-0139-46e5-8f24-051389bd3acf",
-      "name": "Get URL"
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "64113236-bf3e-4626-bd7a-04fc9d68f321",
-              "name": "resume_content",
-              "value": "={{ $json.text }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        4784,
-        1424
-      ],
-      "id": "de2555e2-b4a8-4c7e-90a3-6c5a0196a70d",
-      "name": "candidate CV"
-    },
-    {
-      "parameters": {
-        "operation": "download",
-        "fileId": {
-          "__rl": true,
-          "value": "={{ $json.id }}",
-          "mode": "id"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.googleDrive",
-      "typeVersion": 3,
-      "position": [
-        2704,
-        1456
-      ],
-      "id": "a2d98028-6146-4bff-be15-504a21a8788a",
-      "name": "Download file",
+      "id": "a74c48cb-cdf8-4453-91bb-c6ecf07cd383",
+      "name": "Qdrant find",
       "retryOnFail": true,
-      "credentials": {
-        "googleDriveOAuth2Api": {
-          "id": "IW2XKte9eYZjfYG1",
-          "name": "Google Drive account 2"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "driveId": {
-          "__rl": true,
-          "mode": "list",
-          "value": "My Drive"
-        },
-        "folderId": {
-          "__rl": true,
-          "value": "19QX77ioPOa67A5ZcZ5JlWketyYgMEVvX",
-          "mode": "list",
-          "cachedResultName": "CV_3",
-          "cachedResultUrl": "https://drive.google.com/drive/folders/19QX77ioPOa67A5ZcZ5JlWketyYgMEVvX"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.googleDrive",
-      "typeVersion": 3,
-      "position": [
-        2864,
-        1456
-      ],
-      "id": "856bc83f-c6ca-44b4-b8a8-aecd457fba8e",
-      "name": "Upload file",
-      "credentials": {
-        "googleDriveOAuth2Api": {
-          "id": "IW2XKte9eYZjfYG1",
-          "name": "Google Drive account 2"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "operation": "download",
-        "fileId": {
-          "__rl": true,
-          "value": "={{ $json.id }}",
-          "mode": "id"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.googleDrive",
-      "typeVersion": 3,
-      "position": [
-        3072,
-        1456
-      ],
-      "id": "60245228-5bda-4115-a34b-75a8c52b3b7a",
-      "name": "Download file1",
-      "credentials": {
-        "googleDriveOAuth2Api": {
-          "id": "IW2XKte9eYZjfYG1",
-          "name": "Google Drive account 2"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "resource": "fileFolder",
-        "returnAll": true,
-        "filter": {
-          "driveId": {
-            "__rl": true,
-            "value": "My Drive",
-            "mode": "list",
-            "cachedResultName": "My Drive",
-            "cachedResultUrl": "https://drive.google.com/drive/my-drive"
-          },
-          "folderId": {
-            "__rl": true,
-            "value": "1yVO7i2Pf3Pk6WKQSG5HlVYy61pyCAr8K",
-            "mode": "list",
-            "cachedResultName": "CV",
-            "cachedResultUrl": "https://drive.google.com/drive/folders/1yVO7i2Pf3Pk6WKQSG5HlVYy61pyCAr8K"
-          }
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.googleDrive",
-      "typeVersion": 3,
-      "position": [
-        2208,
-        1648
-      ],
-      "id": "0ea09d2a-12eb-471f-936b-f2947d9edcb8",
-      "name": "Search files and folders",
-      "credentials": {
-        "googleDriveOAuth2Api": {
-          "id": "IW2XKte9eYZjfYG1",
-          "name": "Google Drive account 2"
-        }
-      }
+      "onError": "continueRegularOutput"
     }
   ],
   "pinData": {
-    "When clicking ‘Execute workflow’": [
+    "When Executed by Another Workflow": [
       {
-        "json": {}
+        "json": {
+          "text": "TRAN QUOC KIET\nIT BUSINESS ANALYST\n kiettran27101999@gmail.com  0903854218  District 4, HCM city\nOBJECTIVE\nTeam-oriented critical thinker with communication, and analysis skills. Motivated to join a group of cross-functional\nteammates to improve the workflows, development process, and quality of products to reach the stakeholder goals.. •\nDomain: Information Technology, Banking, Finance, Insurance, Healthcare, etc\n• Languages: English (760 TOEIC)\n• Methodology: Agile, Waterfall.\n• Modeling: Unified modeling language, Flow chart technique, Data flow diagrams.\n• Documentation Tool: Word, Excel, PowerPoint, Google Sheet, Jira, Confluence, Trello\n• Design Tool: Figma, Axure.\n• Database: SQL Server, My SQL.\n• API Tool: Postman\n• Data Visualization: Microsoft Power BI.I have enjoyed working with my colleagues and they have taught me the\nfollowing about myself:\n- I have served as a team contributor, so I'm extremely comfortable working in a team environment\n- I try to take advantage of every opportunity that comes my way.\n- I always look at this matter from a different point of view.\nRESPONSIBILITIES\nI’m a Technical Business Analyst with 5+ years of experience bridging business needs with system logic.\nI specialize in stakeholder engagement, process optimization, and system integration.\nKnown for quickly understanding business viewpoints and aligning with technical teams.\nI'm passionate about delivering high-impact solutions that improve efficiency, accuracy, and transparency across\norganizations.\nGKIM Digital\nFebruary 2024 - Present\nIT Business Analyst - Healthcare\n- Leveraged A.I to streamline tasks like research, flowcharts, mockups, test\ncase generation.\n- Collaborated with Technical and Database Managers to deliver scalable,\nefficient solutions that met evolving client requirements and minimized\nmigration risks.\n- Documented and coordinated external API specifications, ensuring\nconsistency, security, and usability for third-party integration.\n- Established Jira ticket standards, ensuring all functional and non-functional\nrequirements are well-documented and traceable throughout the project\nlifecycle.\n- Directed integration testing efforts in collaboration with stakeholders and\ncoordinated teams, validating API performance and data consistency.\n- Supported QA and development teams by validating complex business logic\nand data flows via MS SQL Server, promoting a data-driven approach.\n- Mentored and trained interns and junior BAs, promoting knowledge sharing\nand documentation best practices.\nWORK EXPERIENCE\n\nVIB - VIETNAM INTERNATIONAL\nBANK\nOct 2023 - March 2024\nIT Business Analyst specialist - Wholesale Digital Business Solutions (B2B)\nSystem enhancement: IBCorp (Website), IBAdmin, MyVIBCorp (Mobile),\nERP1.0, ERP 2.0, ERP RealtimeResponsibilities:\n- Responsible for communicating directly with Develop partner in the process of\nbuilding the system.\n- Modeling business processes and identifying process improvement\nopportunities.\n- Outlining business impacts and identifying issues, risks, and benefits of\nexisting and proposed solutions.\n- Support UAT testing and verify bug.\n- Ability to query and test database, API to make sure system run propriety.\n- Responsible for communicating and training directly with End users in the\nprocess of building the system and solving problems before and after Go-live\nthe system.\nPrudential Vietnam Assurance\nPrivate Ltd.\nAugust 2021 - September 2023\nIT Business Analyst - Insurance\n- System enhancement: PRUOnline (Website and Application),PRUDaily,\nPRUQuote, Pulse for OPs Responsibilities:\n- Working with Scrum master, QC, Dev to plan and report partner services\ndelivery and operations.\n- Analyzing data to create data models, reports, and optimize data flow.-\nDocumenting solutions (Acceptance Criteria, User Stories).Analyzing data in\norder to create reports, data models, and optimize data flow, such as master\ndata, transaction data, and so on.\n- Use Jira, Confluence to manage task and project.\n- Advice and align services delivery and operations excellence along the way.-\nAssisting with business transition and change implementation.\n- Design UX, wireframe, interview and training new partner, manage project\noverall.\nNICHIETSU SYSTEM\nDEVELOPMENT\nJanuary 2019 - July 2021\nIT Business Analyst - Outsourcing\nProjects handle: Property auction, Football and students management, Electricity\nmanagement, Human resource management system, Area management, Parking\nmanagement, Real estate retail, Smart lockers\nResponsibilities\n- Staying up-to-date on the latest process and advancements to automate and\nmodernize systems.\n- Documenting and communicating the results of your efforts.\n- Effectively communicating your insights and plans to cross-functional team\nmembers and management.\n- Gathering critical information from meetings with various stakeholders and\nproducing useful reports.\n- Providing leadership, training, coaching, and guidance to junior staff.\n- Ensuing solutions meet business needs and requirements.\n- Performing user acceptance testing\n- Managing projects, developing project plans, and monitoring performance.\nUpdating, implementing and maintaining procedures.\nACHIEVEMENTS\nVIB - VIETNAM INTERNATIONAL BANK\n- Go-live successfully ESB system, ERP 2.0, ERP Realtime, EVN Tool, Foreign currency trading, Guarantee online\nNICHIETSU SYSTEM DEVELOPMENT:\n- Gain Outstanding Employee 2022 of SoftVN Team prize\n- Successfully got acceptance of 4 project: Geniofut, YEV_MEAL TICKET, Chiyoda and PECC2\n- Deployed successfully system and device of YEV_MEAL TICKET project for over 2.000 employees\n- Received a lot of good feedback from customers using the system\n\n- All ongoing projects are on schedule and according to customers' requirements\n- Get many potential projects when working directly with customers\n- Successfully deployed and put into operation 50 smart lockers of RP project and 100 medical lockers of NUH project.\n- Successfully deployed Kiosk app and more than 150 smart locker using RFID bracelet at Nova world Ho Tram\nHo Chi Minh City University of\nForeign Languages and\nInformation Technology\n2017 - 2021\n- Degree Classification : Good\n- Information Systems\nBusiness Analysis Training\nCenter - BAC\nOctober 2021 - November 2021\nFUNDAMENTAL BUSINESS ANALYSIS\nImprove the knowledge of BA.\nBe a professional BA.\nBe oriented towards your BA occupation.\nBroaden your solid understanding of business analysis.\nIdentify your leverage points and BA experiences.\nBuild up your BA core skills.\nStart doing projects step by step as a Business Analyst.\nGet 36 hours of Professional Development (PD).\nTOEIC CERTIFICATE\n2020\nWITH SCORE 760 ISSUED\nBY IIG VIETNAM\nEDUCATION\n© topcv.vn",
+          "file_name": "BA_TranQuocKiet.pdf",
+          "id": "1wH6kXzs_qk8DbCyApRvhe6MNedpYjygX",
+          "name": "BA_TranQuocKiet.pdf"
+        },
+        "binary": {}
       }
     ]
   },
   "connections": {
-    "When clicking ‘Execute workflow’": {
+    "When Executed by Another Workflow": {
       "main": [
         [
           {
-            "node": "Search files and folders",
+            "node": "AI Agent1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Fn_Format": {
+    "Fn_Format1": {
       "main": [
         [
           {
-            "node": "OpenAI Embedding",
+            "node": "OpenAI Embedding1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "OpenAI Embedding": {
+    "OpenAI Embedding1": {
       "main": [
         [
           {
-            "node": "Fn_Info",
+            "node": "Fn_Info1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Fn_Info": {
+    "Qdrant Upsert1": {
+      "main": [
+        []
+      ]
+    },
+    "Fn_Info1": {
       "main": [
         [
           {
-            "node": "Qdrant Upsert",
+            "node": "Qdrant find",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Qdrant Upsert": {
+    "AI Agent1": {
       "main": [
         [
           {
-            "node": "Loop Over Items1",
+            "node": "Fn_Format1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Lấy thông tin CV": {
-      "main": [
-        [
-          {
-            "node": "Edit Fields",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Switch": {
-      "main": [
-        [
-          {
-            "node": "DOCX to Text",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Lấy thông tin CV",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Loop Over Items1": {
-      "main": [
-        [],
-        [
-          {
-            "node": "Download file",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Edit Fields": {
-      "main": [
-        [
-          {
-            "node": "Check null",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DOCX to Text": {
-      "main": [
-        [
-          {
-            "node": "Check null",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "AI Agent": {
-      "main": [
-        [
-          {
-            "node": "Fn_Format",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "OpenAI Chat Model": {
+    "OpenAI Chat Model1": {
       "ai_languageModel": [
         [
           {
-            "node": "AI Agent",
+            "node": "AI Agent1",
             "type": "ai_languageModel",
             "index": 0
           }
         ]
       ]
     },
-    "Check null": {
+    "If": {
       "main": [
+        [],
         [
           {
-            "node": "candidate CV",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Convert PDF2Image",
+            "node": "Qdrant Upsert1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Convert PDF2Image": {
+    "Qdrant find": {
       "main": [
         [
           {
-            "node": "Get URL",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "OCR OpenAI": {
-      "main": [
-        [
-          {
-            "node": "FN_Info",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get URL": {
-      "main": [
-        [
-          {
-            "node": "OCR OpenAI",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "FN_Info": {
-      "main": [
-        [
-          {
-            "node": "candidate CV",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "candidate CV": {
-      "main": [
-        [
-          {
-            "node": "AI Agent",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Download file": {
-      "main": [
-        [
-          {
-            "node": "Upload file",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Upload file": {
-      "main": [
-        [
-          {
-            "node": "Download file1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Download file1": {
-      "main": [
-        [
-          {
-            "node": "Switch",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Search files and folders": {
-      "main": [
-        [
-          {
-            "node": "Loop Over Items1",
+            "node": "If",
             "type": "main",
             "index": 0
           }
@@ -814,11 +311,11 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "68e79aa5-e6c3-489b-82c6-e7fab0db9774",
+  "versionId": "207cb517-8fa7-4418-8691-d61e0d817818",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "df174d571e95541c805919aa88d99c6ff9e79e2c1ffc42837bb92614d24bb4eb"
   },
-  "id": "Rk12yWsFooZsVBM2",
+  "id": "M6MCspSjRG6YMg9X",
   "tags": []
 }

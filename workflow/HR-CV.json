@@ -23,12 +23,11 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
       "position": [
-        -4352,
-        400
+        -1952,
+        432
       ],
-      "id": "7f828c72-d3c4-40cb-a70c-2180f5f5af46",
-      "name": "Call 'CV Processing LLM Pipeline (Final)'",
-      "disabled": true
+      "id": "ec6dadc6-c269-4322-aa15-8437082b3d69",
+      "name": "Call 'CV Processing LLM Pipeline (Final)'"
     },
     {
       "parameters": {
@@ -49,10 +48,10 @@
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
       "position": [
-        -5248,
-        464
+        -3104,
+        496
       ],
-      "id": "7c88622d-d43b-44a3-948b-8eb9a8ce33ad",
+      "id": "123de105-7d7f-4d6a-99e8-88fb574ebbd6",
       "name": "Search files and folders",
       "credentials": {
         "googleDriveOAuth2Api": {
@@ -68,10 +67,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -5024,
-        464
+        -2880,
+        496
       ],
-      "id": "b43af897-b91c-44ca-b221-6c51e7118bb5",
+      "id": "90f84c27-7fde-499c-857b-6efc8df2b18f",
       "name": "Loop Over Items"
     },
     {
@@ -83,10 +82,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        -4576,
-        400
+        -2240,
+        432
       ],
-      "id": "98bba35c-5c31-4814-be71-bb34af79b602",
+      "id": "e20be782-5c7f-478b-9092-c16926bb8134",
       "name": "Merge"
     },
     {
@@ -116,116 +115,11 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -4800,
-        464
+        -2592,
+        496
       ],
-      "id": "fe0046fd-76dd-40cd-8627-26744f98670e",
+      "id": "00c48852-0182-42d2-89da-5be568ec1652",
       "name": "If"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.pdf.co/v1/file/upload",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "x-api-key",
-              "value": "huyvo8500@gmail.com_WLXjOykYtiR9U8YvQl2RiCdhrNSnj2tWB7yrl7gKzBUKe4H0IDC9JEj3mYVqIzbK"
-            }
-          ]
-        },
-        "options": {
-          "redirect": {
-            "redirect": {}
-          }
-        }
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        -4576,
-        -48
-      ],
-      "id": "bebf77ba-8fdd-4dbb-b463-874590d8e611",
-      "name": "PDF link"
-    },
-    {
-      "parameters": {
-        "jsCode": "for (const item of items) {\n  if (item.binary && item.binary.files) {\n    item.binary.dataset = item.binary.files;\n    item.binary.dataset.fileName = 'cv.pdf';\n    item.binary.dataset.fileExtension = 'pdf';\n    item.binary.dataset.mimeType = 'application/pdf';\n  }\n}\nreturn items;"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -4800,
-        -48
-      ],
-      "id": "ef0ee4a4-77db-4cca-8645-c7f9bf9bc6b6",
-      "name": "Rename Binary File"
-    },
-    {
-      "parameters": {
-        "mode": "combine",
-        "combineBy": "combineByPosition",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3.2,
-      "position": [
-        -5024,
-        -48
-      ],
-      "id": "ae82c178-b12d-4cda-a6e9-9746fbf452cc",
-      "name": "Merge2"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "string": [
-            {
-              "value1": "={{ $json.body.resume_content }}",
-              "operation": "isNotEmpty"
-            }
-          ]
-        }
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
-      "position": [
-        -5712,
-        112
-      ],
-      "id": "abb03d3a-6570-4c7d-a73a-9b840af91abe",
-      "name": "Check Input Type"
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "resume-content-assign",
-              "name": "text",
-              "value": "={{ $json.body.resume_content }}",
-              "type": "string"
-            },
-            {
-              "id": "file-name-assign",
-              "name": "file_name",
-              "value": "Direct Input",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        -5520,
-        -16
-      ],
-      "id": "82409d9d-1e25-4ad3-9310-c28d8c5db428",
-      "name": "Set Resume Content"
     },
     {
       "parameters": {
@@ -237,10 +131,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -5920,
-        112
+        -3776,
+        336
       ],
-      "id": "72641954-a060-4204-86d4-88a8d2b85560",
+      "id": "95843c93-a963-45ca-ba34-d765403e816a",
       "name": "Webhook",
       "webhookId": "0949afcd-d432-47a0-b0e8-aab90ac6bd4f"
     },
@@ -253,10 +147,10 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
       "position": [
-        -5696,
-        304
+        -3552,
+        336
       ],
-      "id": "2bb8b9c1-b184-4e42-94bf-1cd2dbc5ab5e",
+      "id": "f8b137b7-b400-4506-bff7-56247d8af5f8",
       "name": "Lấy thông tin CV"
     },
     {
@@ -282,10 +176,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -5472,
-        304
+        -3328,
+        336
       ],
-      "id": "f39dc11a-cadc-43cb-b916-288911dc54c4",
+      "id": "aeebf79a-374c-4979-93e9-755c3ca3a5be",
       "name": "Edit Fields"
     },
     {
@@ -305,10 +199,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -3456,
-        32
+        -2880,
+        -64
       ],
-      "id": "c32c4075-b6e5-4cb9-b80d-d8a953f81366",
+      "id": "55945e1a-c3d5-4d8b-b643-4032c20c12b2",
       "name": "candidate CV"
     },
     {
@@ -317,16 +211,16 @@
         "text": "=CV Ứng viên:\n{{ $('candidate CV').item.json.resume_content }}\nBảng giới thiệu công việc (Job Description)\n{{ $('Webhook').item.json.body.jd }}",
         "hasOutputParser": true,
         "options": {
-          "systemMessage": "=Bạn là một hệ thống ATS chuyên nghiệp nhất thế giới dùng để đánh giá mức độ phù hợp của ứng viên với một yêu cầu công việc Business Analyst (Junior/Middle).\n\nNhiệm vụ của bạn:\n1. Phân tích thông tin CV ứng viên.\n2. Phân tích yêu cầu công việc (tập trung vào phần Yêu cầu được cung cấp).\n3. So khớp và chấm điểm theo thang điểm 100.\n4. Trích xuất các kỹ năng chuyên môn và kỹ năng mềm từ CV.\n5. Chỉ trả về đúng một JSON DUY NHẤT theo format quy định.\n\nFORMAT OUTPUT PHẢI TRẢ VỀ (BẮT BUỘC):\n\nLƯU Ý QUAN TRỌNG: \n- TRẢ VỀ JSON GỐC (FLAT OBJECT).\n- TUYỆT ĐỐI KHÔNG BỌC TRONG KEY 'output' HAY 'json'.\n- KHÔNG DÙNG MARKDOWN BLOCK (```).\n\n{\n  \"Họ tên ứng viên\": \"HỌ TÊN VIẾT IN HOA KHÔNG DẤU\",\n  \"Email\": \"email của ứng viên\",\n  \"SĐT\": \"số điện thoại (định dạng 090 - ...)\",\n  \"Số năm kinh nghiệm\": \"Số năm kinh nghiệm làm việc liên quan\",\n  \"Điểm tổng\": 0-100 (Trung bình cộng của 4 đầu điểm thành phần),\n  \"Mức độ phù hợp\": \"Thấp | Trung bình | Cao | Cực kỳ phù hợp\",\n  \"Tóm tắt\": \"Viết đoạn tóm tắt chuyên nghiệp về ứng viên (độ dài khoảng 3 câu, 60-80 từ). Bắt buộc bao gồm đầy đủ: 1. Số năm kinh nghiệm và vai trò chính. 2. Các kỹ năng kỹ thuật (Hard Skills) và công nghệ nổi bật nhất. 3. Kỹ năng mềm hoặc thành tựu định lượng cụ thể. Văn phong trôi chảy, ấn tượng.\",\n  \"Lý do chấm điểm\": \"Nêu 1 điểm mạnh nhất và 1 điểm yếu/thiếu hụt chính ảnh hưởng đến điểm số. Viết súc tích, đi thẳng vào vấn đề. Tối đa 35 từ.\",\n  \"Danh sách kỹ năng\": [\n        \"Chỉ chứa các kỹ năng ĐÃ ĐƯỢC CHUẨN HÓA.\",\n        \"Tuyệt đối KHÔNG đưa vào các kỹ năng CV có mà JD không cần (Ví dụ: CV có 'Bơi lội', JD IT không cần -> Loại bỏ).\",\n        \"Định dạng mảng String JSON.\"\n      ],\n      \"Kỹ năng còn thiếu\": [\n        \"Chỉ liệt kê các kỹ năng BẮT BUỘC (Required) trong JD mà CV không đáp ứng.\",\n        \"Không liệt kê các kỹ năng phụ (Nice-to-have) vào đây.\",\n        \"Dùng tên chuẩn hóa (Ví dụ: ghi thiếu 'AI/Machine Learning' thay vì thiếu 'LLM').\"\n      ]\n  \"Ưu điểm\": [\"Ưu điểm 1\", \"Ưu điểm 2\", ...],\n  \"Nhược điểm\": [\"Nhược điểm 1\", \"Nhược điểm 2\", ...], Diễn đạt nhẹ nhàng, mang tính xây dựng.\n  \"Chi tiết điểm\": {\n    \"điểm kinh nghiệm\": 0-100,\n    \"điểm kỹ năng\": 0-100,\n    \"điểm học vấn\": 0-100,\n    \"điểm thành tích & tiềm năng\": 0-100\n  }\n}\n\nLƯU Ý QUAN TRỌNG VỀ FORMAT:\n1. Số điện thoại: Nếu có (+84) đổi thành 0. Định dạng bắt buộc: XXX - XXX - XXXX (Ví dụ: 090 - 123 - 4567).\n2. JSON phải hợp lệ, không chứa markdown thừa (như ```json).\n3. Logic xử lý kỹ năng:\n  Bước 1: Phân tích JD: Đọc JD để xác định danh sách các từ khóa kỹ năng (Keywords). Phân loại đâu là Kỹ năng Bắt buộc (Must-have/Required) và đâu là Lợi thế (Nice-to-have)\n  Bước 2: Chuẩn hóa từ khóa (Normalization rules): \nKhi trích xuất kỹ năng từ cả JD và CV, bắt buộc quy đổi các biến thể về TÊN GỌI CHUẨN (Canonical Name) theo quy tắc sau:\n   - QUY TRÌNH XỬ LÝ TRÙNG LẶP & CHUẨN HÓA (BẮT BUỘC):\n       + Bước 1: Thu thập tất cả từ khóa từ CV và JD.\n       + Bước 2: Rà soát & Gộp biến thể (Consolidate Variants):\n         * Nếu thấy các cặp từ giống nhau >80% (chỉ khác dấu câu, viết tắt): HỢP NHẤT về 1 tên chuẩn duy nhất.\n         * Ưu tiên dùng dấu gạch chéo `/` cho các công nghệ đi kèm nhau. (Vd: Chọn 'Agile/Scrum' thay vì 'Agile Scrum'; Chọn 'CI/CD' thay vì 'CI CD').\n         * Ưu tiên dùng dấu chấm `.` cho tên công cụ. (Vd: Chọn 'Draw.io' thay vì 'Draw io').\n         * Ưu tiên từ ngữ đầy đủ cho Soft Skills. (Vd: Chọn 'Problem Solving' thay vì 'Problem-solving').\n       + Bước 3: KIỂM TRA CHÉO (SELF-CORRECTION):\n         * Trước khi output, hãy tự hỏi: \"Trong danh sách này có 2 kỹ năng nào nói về cùng 1 thứ không?\". Nếu có -> XÓA 1 cái.\n         * VÍ DỤ SAI (BAD): [\"Agile Scrum\", \"Agile/Scrum\", \"AI\", \"AI/ML\"] -> Trùng lặp!\n         * VÍ DỤ ĐÚNG (GOOD): [\"Agile/Scrum\", \"AI/Machine Learning\"] -> Gọn gàng, chuẩn xác.\n       + Nguyên tắc chung: Thà liệt kê thiếu 1 biến thể phụ còn hơn liệt kê trùng lặp làm loãng báo cáo.\n\n  Bước 3: MATCHING: So sánh danh sách kỹ năng đã chuẩn hóa của CV với JD:\n    - MATCH: Nếu CV có kỹ năng khớp với JD (dù tên gọi khác nhau nhưng đã được chuẩn hóa về cùng 1 nhóm) -> Đưa vào 'Danh sách kỹ năng'.\n    - MISSING: Nếu JD yêu cầu BẮT BUỘC mà CV hoàn toàn không nhắc đến (hoặc không có kỹ năng tương đương trong nhóm) -> Đưa vào 'Kỹ năng còn thiếu'.\n\nTIÊU CHÍ CHẤM ĐIỂM (THANG 100 ĐIỂM)\n\nA. Điểm Kinh nghiệm (Tối đa 100 điểm)\n- Mục tiêu: Đánh giá độ sâu kinh nghiệm BA, đặc biệt là Product & AI.\n- 90-100 (Xuất sắc): >3 năm kinh nghiệm BA Product VÀ có dự án thực tế về AI/Data/Bán lẻ. Am hiểu sâu Agile/Scrum.\n- 75-89 (Giỏi): 2-3 năm kinh nghiệm BA Product, nắm vững quy trình Agile, tư duy sản phẩm tốt.\n- 60-74 (Khá): 1-2 năm kinh nghiệm BA, có kỹ năng phân tích cơ bản, hiểu Agile nhưng chưa sâu.\n- < 60 (Yếu): Dưới 1 năm hoặc kinh nghiệm không liên quan (Tester, Admin...).\n\nB. Điểm Kỹ năng (Technical & Tool) (Tối đa 100 điểm)\n- Mục tiêu: Đánh giá công cụ & khả năng thích ứng công nghệ mới.\n- 90-100: Thành thạo AI/LLM để tối ưu công việc + Có kinh nghiệm Automation (n8n, Zapier) + SQL tốt.\n- 75-89: Thành thạo Jira, Confluence, Figma, Draw.io, SQL cơ bản. Có tư duy UX/UI.\n- 60-74: Chỉ biết công cụ văn phòng và vẽ flowchart cơ bản. Chưa biết SQL hay các tool quản lý hiện đại.\n- < 60: Kỹ năng công cụ yếu.\n\nC. Điểm Học vấn (Tối đa 100 điểm)\n- 90-100: Đại học chuyên ngành CNTT, HTTT, Khoa học dữ liệu.\n- 70-89: Đại học ngành gần (Kinh tế, Kỹ thuật) + Có chứng chỉ BA uy tín / Hoặc Cao đẳng CNTT nhưng kinh nghiệm tốt.\n- < 70: Trái ngành, không có chứng chỉ liên quan.\n\nD. Điểm Thành tích & Tiềm năng (Growth Mindset) (Tối đa 100 điểm)\n- 90-100: Có chứng chỉ quốc tế (CBAP, CCBA, PSPO) HOẶC Blog chuyên môn/Dự án cá nhân Impressive.\n- 70-89: Có chứng chỉ cơ bản (ECBA...) hoặc thành tích học tập/công việc tốt (GPA Giỏi, Best Employee).\n- < 70: Không có thành tích nổi bật.\n\n*Lưu ý: CV trình bày cẩu thả, sai chính tả hoặc dài > 3 trang -> Trừ 10 điểm vào Tổng điểm.*\n\nYÊU CẦU BẮT BUỘC KHI TRẢ LỜI:\n- Ngôn ngữ: Tiếng Việt.\n- Trung thực: Không bịa thông tin.\n- Vai trò: Chuyên gia tuyển dụng khắt khe nhưng công bằng.\n\nDỮ LIỆU ĐẦU VÀO:\n- Mô tả công việc (JD): {{ $('Webhook').item.json.body.jd }}\n- CV Ứng viên: (Dữ liệu CV sẽ được cung cấp ngay sau đây)\n"
+          "systemMessage": "=Bạn là một hệ thống ATS chuyên nghiệp nhất thế giới dùng để đánh giá mức độ phù hợp của ứng viên với một yêu cầu công việc Business Analyst (Junior/Middle).\n\nNhiệm vụ của bạn:\n1. Phân tích thông tin CV ứng viên.\n2. Phân tích yêu cầu công việc (tập trung vào phần Yêu cầu được cung cấp).\n3. So khớp và chấm điểm theo thang điểm 100.\n4. Trích xuất các kỹ năng chuyên môn và kỹ năng mềm từ CV.\n5. Chỉ trả về đúng một JSON DUY NHẤT theo format quy định.\n\nFORMAT OUTPUT PHẢI TRẢ VỀ (BẮT BUỘC):\n\nLƯU Ý QUAN TRỌNG: \n- TRẢ VỀ JSON GỐC (FLAT OBJECT).\n- TUYỆT ĐỐI KHÔNG BỌC TRONG KEY 'output' HAY 'json'.\n- KHÔNG DÙNG MARKDOWN BLOCK (```).\n\n{\n  \"Họ tên ứng viên\": \"HỌ TÊN VIẾT IN HOA KHÔNG DẤU\",\n  \"Email\": \"email của ứng viên\",\n  \"SĐT\": \"số điện thoại (định dạng 090 - ...)\",\n  \"Số năm kinh nghiệm\": \"Số năm kinh nghiệm làm việc liên quan\",\n  \"Mức độ phù hợp\": \"Thấp | Trung bình | Cao | Cực kỳ phù hợp\",\n  \"Tóm tắt\": \"Viết đoạn tóm tắt chuyên nghiệp về ứng viên (độ dài khoảng 3 câu, 60-80 từ). Bắt buộc bao gồm đầy đủ: 1. Số năm kinh nghiệm và vai trò chính. 2. Các kỹ năng kỹ thuật (Hard Skills) và công nghệ nổi bật nhất. 3. Kỹ năng mềm hoặc thành tựu định lượng cụ thể. Văn phong trôi chảy, ấn tượng.\",\n  \"Lý do chấm điểm\": \"Nêu 1 điểm mạnh nhất và 1 điểm yếu/thiếu hụt chính ảnh hưởng đến điểm số. Viết súc tích, đi thẳng vào vấn đề. Tối đa 35 từ.\",\n  \"Danh sách kỹ năng\": [\n        \"Chỉ chứa các kỹ năng ĐÃ ĐƯỢC CHUẨN HÓA.\",\n        \"Tuyệt đối KHÔNG đưa vào các kỹ năng CV có mà JD không cần (Ví dụ: CV có 'Bơi lội', JD IT không cần -> Loại bỏ).\",\n        \"Định dạng mảng String JSON.\"\n      ],\n      \"Kỹ năng còn thiếu\": [\n        \"Chỉ liệt kê các kỹ năng BẮT BUỘC (Required) trong JD mà CV không đáp ứng.\",\n        \"Không liệt kê các kỹ năng phụ (Nice-to-have) vào đây.\",\n        \"Dùng tên chuẩn hóa (Ví dụ: ghi thiếu 'AI/Machine Learning' thay vì thiếu 'LLM').\"\n      ]\n  \"Ưu điểm\": [\"Ưu điểm 1\", \"Ưu điểm 2\", ...],\n  \"Nhược điểm\": [\"Nhược điểm 1\", \"Nhược điểm 2\", ...], Diễn đạt nhẹ nhàng, mang tính xây dựng.\n  \"Chi tiết điểm\": {\n    \"điểm kinh nghiệm\": 0-100,\n    \"điểm kỹ năng\": 0-100,\n    \"điểm học vấn\": 0-100,\n    \"điểm thành tích & tiềm năng\": 0-100\n  }\n}\n\nLƯU Ý QUAN TRỌNG VỀ FORMAT:\n1. Số điện thoại: Nếu có (+84) đổi thành 0. Định dạng bắt buộc: XXX - XXX - XXXX (Ví dụ: 090 - 123 - 4567).\n2. JSON phải hợp lệ, không chứa markdown thừa (như ```json).\n3. Logic xử lý kỹ năng:\n  Bước 1: Phân tích JD: Đọc JD để xác định danh sách các từ khóa kỹ năng (Keywords). Phân loại đâu là Kỹ năng Bắt buộc (Must-have/Required) và đâu là Lợi thế (Nice-to-have)\n  Bước 2: Chuẩn hóa từ khóa (Normalization rules): \nKhi trích xuất kỹ năng từ cả JD và CV, bắt buộc quy đổi các biến thể về TÊN GỌI CHUẨN (Canonical Name) theo quy tắc sau:\n   - QUY TRÌNH XỬ LÝ TRÙNG LẶP & CHUẨN HÓA (BẮT BUỘC):\n       + Bước 1: Thu thập tất cả từ khóa từ CV và JD.\n       + Bước 2: Rà soát & Gộp biến thể (Consolidate Variants):\n         * Nếu thấy các cặp từ giống nhau >80% (chỉ khác dấu câu, viết tắt): HỢP NHẤT về 1 tên chuẩn duy nhất.\n         * Ưu tiên dùng dấu gạch chéo `/` cho các công nghệ đi kèm nhau. (Vd: Chọn 'Agile/Scrum' thay vì 'Agile Scrum'; Chọn 'CI/CD' thay vì 'CI CD').\n         * Ưu tiên dùng dấu chấm `.` cho tên công cụ. (Vd: Chọn 'Draw.io' thay vì 'Draw io').\n         * Ưu tiên từ ngữ đầy đủ cho Soft Skills. (Vd: Chọn 'Problem Solving' thay vì 'Problem-solving').\n       + Bước 3: KIỂM TRA CHÉO (SELF-CORRECTION):\n         * Trước khi output, hãy tự hỏi: \"Trong danh sách này có 2 kỹ năng nào nói về cùng 1 thứ không?\". Nếu có -> XÓA 1 cái.\n         * VÍ DỤ SAI (BAD): [\"Agile Scrum\", \"Agile/Scrum\", \"AI\", \"AI/ML\"] -> Trùng lặp!\n         * VÍ DỤ ĐÚNG (GOOD): [\"Agile/Scrum\", \"AI/Machine Learning\"] -> Gọn gàng, chuẩn xác.\n       + Nguyên tắc chung: Thà liệt kê thiếu 1 biến thể phụ còn hơn liệt kê trùng lặp làm loãng báo cáo.\n\n  Bước 3: MATCHING: So sánh danh sách kỹ năng đã chuẩn hóa của CV với JD:\n    - MATCH: Nếu CV có kỹ năng khớp với JD (dù tên gọi khác nhau nhưng đã được chuẩn hóa về cùng 1 nhóm) -> Đưa vào 'Danh sách kỹ năng'.\n    - MISSING: Nếu JD yêu cầu BẮT BUỘC mà CV hoàn toàn không nhắc đến (hoặc không có kỹ năng tương đương trong nhóm) -> Đưa vào 'Kỹ năng còn thiếu'.\n\nTIÊU CHÍ CHẤM ĐIỂM (THANG 100 ĐIỂM)\n\nA. Điểm Kinh nghiệm (Tối đa 100 điểm)\n- Mục tiêu: Đánh giá độ sâu kinh nghiệm BA, đặc biệt là Product & AI.\n- 90-100 (Xuất sắc): >3 năm kinh nghiệm BA Product VÀ có dự án thực tế về AI/Data/Bán lẻ. Am hiểu sâu Agile/Scrum.\n- 75-89 (Giỏi): 2-3 năm kinh nghiệm BA Product, nắm vững quy trình Agile, tư duy sản phẩm tốt.\n- 60-74 (Khá): 1-2 năm kinh nghiệm BA, có kỹ năng phân tích cơ bản, hiểu Agile nhưng chưa sâu.\n- < 60 (Yếu): Dưới 1 năm hoặc kinh nghiệm không liên quan (Tester, Admin...).\n\nB. Điểm Kỹ năng (Technical & Tool) (Tối đa 100 điểm)\n- Mục tiêu: Đánh giá công cụ & khả năng thích ứng công nghệ mới.\n- 90-100: Thành thạo AI/LLM để tối ưu công việc + Có kinh nghiệm Automation (n8n, Zapier) + SQL tốt.\n- 75-89: Thành thạo Jira, Confluence, Figma, Draw.io, SQL cơ bản. Có tư duy UX/UI.\n- 60-74: Chỉ biết công cụ văn phòng và vẽ flowchart cơ bản. Chưa biết SQL hay các tool quản lý hiện đại.\n- < 60: Kỹ năng công cụ yếu.\n\nC. Điểm Học vấn (Tối đa 100 điểm)\n- 90-100: Đại học chuyên ngành CNTT, HTTT, Khoa học dữ liệu.\n- 70-89: Đại học ngành gần (Kinh tế, Kỹ thuật) + Có chứng chỉ BA uy tín / Hoặc Cao đẳng CNTT nhưng kinh nghiệm tốt.\n- < 70: Trái ngành, không có chứng chỉ liên quan.\n\nD. Điểm Thành tích & Tiềm năng (Growth Mindset) (Tối đa 100 điểm)\n- 90-100: Có chứng chỉ quốc tế (CBAP, CCBA, PSPO) HOẶC Blog chuyên môn/Dự án cá nhân Impressive.\n- 70-89: Có chứng chỉ cơ bản (ECBA...) hoặc thành tích học tập/công việc tốt (GPA Giỏi, Best Employee).\n- < 70: Không có thành tích nổi bật.\n\n*Lưu ý: CV trình bày cẩu thả, sai chính tả hoặc dài > 3 trang -> Trừ 10 điểm vào Tổng điểm.*\n\nYÊU CẦU BẮT BUỘC KHI TRẢ LỜI:\n- Ngôn ngữ: Tiếng Việt.\n- Trung thực: Không bịa thông tin.\n- Vai trò: Chuyên gia tuyển dụng khắt khe nhưng công bằng.\n\nDỮ LIỆU ĐẦU VÀO:\n- Mô tả công việc (JD): {{ $('Webhook').item.json.body.jd }}\n- CV Ứng viên: (Dữ liệu CV sẽ được cung cấp ngay sau đây)\n"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 2.2,
       "position": [
-        -2880,
-        -224
+        -2304,
+        -320
       ],
-      "id": "ab0df8f1-c792-433d-8401-4e5d22cd42fd",
+      "id": "96129387-5aaf-4a75-bcbd-768f0edee668",
       "name": "AI Agent",
       "retryOnFail": true
     },
@@ -338,94 +232,11 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [
-        -2304,
-        32
+        -1728,
+        -64
       ],
-      "id": "ba8f9239-ab10-40f6-a1fe-70f264e47f3e",
+      "id": "60cd53aa-c727-43a8-ae2c-48fc0f82c945",
       "name": "Respond to Webhook"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.pdf.co/v1/pdf/convert/to/png",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "x-api-key",
-              "value": "huyvo8500@gmail.com_WLXjOykYtiR9U8YvQl2RiCdhrNSnj2tWB7yrl7gKzBUKe4H0IDC9JEj3mYVqIzbK"
-            }
-          ]
-        },
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "url",
-              "value": "={{ $json.url }}"
-            },
-            {
-              "name": "inline",
-              "value": "true"
-            },
-            {
-              "name": "pages",
-              "value": "0-"
-            },
-            {
-              "name": "async",
-              "value": "false"
-            }
-          ]
-        },
-        "options": {
-          "redirect": {
-            "redirect": {}
-          }
-        }
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        -4352,
-        -48
-      ],
-      "id": "b94a267d-2b58-47c6-8fdb-caeec5e3e85d",
-      "name": "Convert PDF2Image"
-    },
-    {
-      "parameters": {
-        "jsCode": "// items[0].json.urls assumed\nconst arr = items[0].json.urls || [];\nreturn arr.map((u, i) => ({ json: { page: i+1, url: u } }));\n"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -4128,
-        -48
-      ],
-      "id": "19925dc9-4595-47fb-83b5-44c95aedfe74",
-      "name": "Get URL"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.openai.com/v1/responses",
-        "sendHeaders": true,
-        "specifyHeaders": "json",
-        "jsonHeaders": "{\n  \"Authorization\": \"Bearer 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\",\n  \"Content-Type\": \"application/json\"\n}",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"gpt-4o-mini\",\n  \"input\": [\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\"type\":\"input_text\",\"text\":\"Extract all visible text from the image. Return only the plain text.\"},\n        {\"type\":\"input_image\",\"image_url\":\"{{$json.url}}\"}\n      ]\n    }\n  ]\n}\n",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        -3904,
-        -48
-      ],
-      "id": "952f75a3-9bb2-4881-b36a-5e7758ff0f82",
-      "name": "OCR OpenAI"
     },
     {
       "parameters": {
@@ -443,7 +254,7 @@
               "rightValue": "\\n\\n",
               "operator": {
                 "type": "boolean",
-                "operation": "false",
+                "operation": "true",
                 "singleValue": true
               }
             }
@@ -455,37 +266,24 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -5248,
-        112
+        -3104,
+        -64
       ],
-      "id": "88d79313-246e-42dc-b6fe-74e622914435",
+      "id": "ca903114-7780-43bf-9168-17ea9b1e6b41",
       "name": "Check null",
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "const pages = [];\nlet fullText = \"\";\n\nitems.forEach((it, idx) => {\n  const resp = it.json;\n  let text = \"\";\n\n  if (resp.output_text) {\n    text = resp.output_text;\n  } else if (resp.output) {\n    for (const o of resp.output) {\n      if (o.content) {\n        for (const c of o.content) {\n          if (c.type === 'output_text' && c.text) {\n            text += c.text + \"\\n\";\n          }\n        }\n      }\n    }\n  }\n\n  text = text.trim();\n\n  pages.push({\n    page: idx,    // page 0,1,2...\n    text\n  });\n\n  // Giữ lại phần này nếu bạn vẫn muốn đánh dấu trang trong fullText\n  fullText += `--- Page ${idx} ---\\n${text}\\n\\n`;\n});\n\n// THAY ĐỔI Ở ĐÂY: Chỉ trả về một object với key là 'text'\nreturn {\n  text: fullText.trim()\n};"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -3680,
-        -48
-      ],
-      "id": "fb44a575-9b45-4b0f-917b-91d9d72aab4d",
-      "name": "FN_Info"
-    },
-    {
-      "parameters": {
-        "jsonSchemaExample": "{\n  \"Họ tên ứng viên\": \"string\",\n  \"Email\": \"string\",\n  \"SĐT\": \"string\",\n  \"Số năm kinh nghiệm\": 0,\n  \"Điểm tổng\": 0,\n  \"Mức độ phù hợp\": \"string\",\n  \"Tóm tắt\": \"string\",\n  \"Lý do chấm điểm\": \"string\",\n  \"Danh sách kỹ năng\": [\n    \"string\"\n  ],\n  \"Kỹ năng còn thiếu\": [\n    \"string\"\n  ],\n  \"Ưu điểm\": [\n    \"string\"\n  ],\n  \"Nhược điểm\": [\n    \"string\"\n  ],\n  \"Chi tiết điểm\": {\n    \"điểm kinh nghiệm\": 0,\n    \"điểm kỹ năng\": 0,\n    \"điểm học vấn\": 0,\n    \"điểm thành tích & tiềm năng\": 0\n  }\n}"
+        "jsonSchemaExample": "{\n  \"Họ tên ứng viên\": \"string\",\n  \"Email\": \"string\",\n  \"SĐT\": \"string\",\n  \"Số năm kinh nghiệm\": 0,\n  \"Mức độ phù hợp\": \"string\",\n  \"Tóm tắt\": \"string\",\n  \"Lý do chấm điểm\": \"string\",\n  \"Danh sách kỹ năng\": [\n    \"string\"\n  ],\n  \"Kỹ năng còn thiếu\": [\n    \"string\"\n  ],\n  \"Ưu điểm\": [\n    \"string\"\n  ],\n  \"Nhược điểm\": [\n    \"string\"\n  ],\n  \"Chi tiết điểm\": {\n    \"điểm kinh nghiệm\": 0,\n    \"điểm kỹ năng\": 0,\n    \"điểm học vấn\": 0,\n    \"điểm thành tích & tiềm năng\": 0\n  }\n}"
       },
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        -2736,
-        0
+        -2176,
+        -96
       ],
-      "id": "fafc4d60-0d94-46f8-9217-de8f6f7235d1",
+      "id": "d05d942d-b921-4d65-8340-683e51edbc9b",
       "name": "Structured Output Parser"
     },
     {
@@ -504,10 +302,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
-        -2864,
-        0
+        -2304,
+        -96
       ],
-      "id": "f9ed3c27-2eeb-4420-80ca-03f6b6e2a8cf",
+      "id": "1f6cdbfc-74ca-4061-b3ff-6ef4ba53767b",
       "name": "OpenAI Chat Model",
       "credentials": {
         "openAiApi": {
@@ -532,10 +330,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
-        -3152,
-        400
+        -2592,
+        304
       ],
-      "id": "ced47e30-d662-41ec-89b3-6af40aef67b4",
+      "id": "d3bc3a02-b117-44bb-833f-51490e86fa45",
       "name": "OpenAI Chat Model1",
       "credentials": {
         "openAiApi": {
@@ -555,10 +353,10 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 2.2,
       "position": [
-        -3232,
-        176
+        -2656,
+        80
       ],
-      "id": "7050818b-84de-478c-b86b-1fcf26492a28",
+      "id": "666a1390-12af-4aef-a09d-1b6743556805",
       "name": "AI Question",
       "retryOnFail": true
     },
@@ -571,10 +369,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        -2528,
-        32
+        -1952,
+        -64
       ],
-      "id": "459ff492-988c-4cc4-a071-c46f59470e8d",
+      "id": "83f7867a-c746-4b23-b5cc-6771dca777eb",
       "name": "Merge1"
     },
     {
@@ -584,10 +382,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2816,
-        176
+        -2240,
+        80
       ],
-      "id": "12370693-af48-4c30-9367-99e12d60fb38",
+      "id": "2904f264-454a-4097-b37a-32faf036871e",
       "name": "Code in JavaScript"
     }
   ],
@@ -684,78 +482,11 @@
         ]
       ]
     },
-    "PDF link": {
-      "main": [
-        [
-          {
-            "node": "Convert PDF2Image",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge2": {
-      "main": [
-        [
-          {
-            "node": "Rename Binary File",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Rename Binary File": {
-      "main": [
-        [
-          {
-            "node": "PDF link",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Webhook": {
       "main": [
         [
           {
-            "node": "Check Input Type",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Check Input Type": {
-      "main": [
-        [
-          {
-            "node": "Set Resume Content",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
             "node": "Lấy thông tin CV",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Merge2",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Set Resume Content": {
-      "main": [
-        [
-          {
-            "node": "candidate CV",
             "type": "main",
             "index": 0
           }
@@ -821,59 +552,9 @@
         ]
       ]
     },
-    "Convert PDF2Image": {
-      "main": [
-        [
-          {
-            "node": "Get URL",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get URL": {
-      "main": [
-        [
-          {
-            "node": "OCR OpenAI",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "OCR OpenAI": {
-      "main": [
-        [
-          {
-            "node": "FN_Info",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Check null": {
       "main": [
-        [
-          {
-            "node": "candidate CV",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Merge2",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "FN_Info": {
-      "main": [
+        [],
         [
           {
             "node": "candidate CV",
@@ -948,13 +629,18 @@
           }
         ]
       ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        []
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "94c1f37b-4eea-4741-9a2f-ed01335b06f5",
+  "versionId": "5c1f0be0-c8b1-4f61-8290-50de91d696a2",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "df174d571e95541c805919aa88d99c6ff9e79e2c1ffc42837bb92614d24bb4eb"
