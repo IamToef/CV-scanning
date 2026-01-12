@@ -110,9 +110,9 @@ export function CandidateProfile({ candidate, children }: CandidateProfileProps)
                                     return (
                                         <div className={cn(
                                             "flex items-center justify-center px-3 py-1 rounded-md text-sm font-bold border-0 text-white bg-gradient-to-r ml-2 shadow-sm",
-                                            score >= 80 ? "from-purple-600 via-pink-500 to-orange-500" :
-                                                score >= 50 ? "from-orange-400 to-amber-400" :
-                                                    "from-red-500 to-pink-600"
+                                            score >= 80 ? "from-indigo-500 to-purple-600" :
+                                                score >= 50 ? "from-amber-400 to-orange-500" :
+                                                    "from-red-500 to-rose-600"
                                         )}>
                                             {score} điểm
                                         </div>
@@ -144,11 +144,11 @@ export function CandidateProfile({ candidate, children }: CandidateProfileProps)
                 </DialogHeader>
 
                 <Tabs defaultValue="profile" className="flex-1 flex flex-col overflow-hidden">
-                    <div className="px-6 border-b shrink-0 bg-white z-10">
+                    <div className="px-6 border-b shrink-0 bg-white dark:bg-slate-900 z-10">
                         <TabsList className="w-full justify-start h-12 bg-transparent p-0 gap-6">
                             <TabsTrigger
                                 value="profile"
-                                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-purple-600 data-[state=active]:text-purple-700 rounded-none h-full px-4 text-base font-medium text-slate-500"
+                                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-purple-600 data-[state=active]:text-purple-700 dark:data-[state=active]:text-purple-400 rounded-none h-full px-4 text-base font-medium text-slate-500 dark:text-slate-400"
                             >
                                 <User className="w-4 h-4 mr-2" />
                                 Hồ sơ ứng viên
@@ -168,7 +168,7 @@ export function CandidateProfile({ candidate, children }: CandidateProfileProps)
                                                 <Briefcase className="h-4 w-4" />
                                                 <h3 className="font-semibold text-lg">Tóm tắt hồ sơ</h3>
                                             </div>
-                                            <p className="text-sm text-slate-600 leading-relaxed font-normal">
+                                            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
                                                 {candidate.summary}
                                             </p>
                                         </div>
@@ -180,8 +180,8 @@ export function CandidateProfile({ candidate, children }: CandidateProfileProps)
                                 {/* 3-Column Layout */}
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch pb-6">
                                     {/* Column 1: Pros */}
-                                    <div className="flex flex-col h-full bg-green-50/30 rounded-xl border border-green-100 p-5">
-                                        <div className="flex items-center gap-2 text-green-700 font-bold text-lg mb-4">
+                                    <div className="flex flex-col h-full bg-green-50/30 dark:bg-green-900/10 rounded-xl border border-green-100 dark:border-green-900/30 p-5">
+                                        <div className="flex items-center gap-2 text-green-700 dark:text-green-400 font-bold text-lg mb-4">
                                             <Star className="h-5 w-5" /> Ưu điểm
                                         </div>
                                         <ul className="space-y-3 flex-1">
@@ -199,8 +199,8 @@ export function CandidateProfile({ candidate, children }: CandidateProfileProps)
                                     </div>
 
                                     {/* Column 2: Cons */}
-                                    <div className="flex flex-col h-full bg-red-50/30 rounded-xl border border-red-100 p-5">
-                                        <div className="flex items-center gap-2 text-red-700 font-bold text-lg mb-4">
+                                    <div className="flex flex-col h-full bg-red-50/30 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30 p-5">
+                                        <div className="flex items-center gap-2 text-red-700 dark:text-red-400 font-bold text-lg mb-4">
                                             <AlertTriangle className="h-5 w-5" /> Nhược điểm
                                         </div>
                                         <ul className="space-y-3 flex-1">
@@ -220,14 +220,14 @@ export function CandidateProfile({ candidate, children }: CandidateProfileProps)
                                     {/* Column 3: Skills (Matching & Missing) */}
                                     <div className="flex flex-col h-full gap-4">
                                         {/* Matching Skills */}
-                                        <div className="bg-green-50/30 rounded-xl border border-green-100 p-4 flex-1">
-                                            <div className="flex items-center gap-2 text-green-700 font-bold text-base mb-3">
+                                        <div className="bg-green-50/30 dark:bg-green-900/10 rounded-xl border border-green-100 dark:border-green-900/30 p-4 flex-1">
+                                            <div className="flex items-center gap-2 text-green-700 dark:text-green-400 font-bold text-base mb-3">
                                                 <CheckCircle2 className="h-4 w-4" /> Kỹ năng phù hợp
                                             </div>
                                             <div className="flex flex-wrap gap-2">
                                                 {candidate.skills_found && candidate.skills_found.length > 0 ? (
                                                     candidate.skills_found.slice(0, 5).map((skill, index) => (
-                                                        <Badge key={index} variant="secondary" className="bg-white text-green-700 border-green-200 shadow-sm hover:bg-green-50">
+                                                        <Badge key={index} variant="secondary" className="bg-white dark:bg-slate-800 text-green-700 dark:text-green-300 border-green-200 dark:border-green-900 shadow-sm hover:bg-green-50 dark:hover:bg-green-900/50">
                                                             {skill}
                                                         </Badge>
                                                     ))
@@ -238,14 +238,14 @@ export function CandidateProfile({ candidate, children }: CandidateProfileProps)
                                         </div>
 
                                         {/* Missing Skills */}
-                                        <div className="bg-orange-50/30 rounded-xl border border-orange-100 p-4 flex-1">
-                                            <div className="flex items-center gap-2 text-orange-700 font-bold text-base mb-3">
+                                        <div className="bg-orange-50/30 dark:bg-orange-900/10 rounded-xl border border-orange-100 dark:border-orange-900/30 p-4 flex-1">
+                                            <div className="flex items-center gap-2 text-orange-700 dark:text-orange-400 font-bold text-base mb-3">
                                                 <AlertCircle className="h-4 w-4" /> Kỹ năng còn thiếu
                                             </div>
                                             <div className="flex flex-wrap gap-2">
                                                 {candidate.skills_missing && candidate.skills_missing.length > 0 ? (
                                                     candidate.skills_missing.map((skill, index) => (
-                                                        <Badge key={index} variant="outline" className="bg-white text-orange-700 border-orange-200 shadow-sm">
+                                                        <Badge key={index} variant="outline" className="bg-white dark:bg-slate-800 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-900 shadow-sm">
                                                             {skill}
                                                         </Badge>
                                                     ))
@@ -265,8 +265,8 @@ export function CandidateProfile({ candidate, children }: CandidateProfileProps)
                                             size="sm"
                                             onClick={handleSuggestQuestionsClick}
                                             className={cn(
-                                                "gap-2 text-purple-700 bg-purple-50 border-purple-200 hover:bg-purple-100 hover:border-purple-300 transition-all",
-                                                showInlineQuestions && "bg-purple-100 border-purple-300"
+                                                "gap-2 text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-slate-800 border-purple-200 dark:border-slate-700 hover:bg-purple-100 dark:hover:bg-slate-700 hover:border-purple-300 transition-all",
+                                                showInlineQuestions && "bg-purple-100 dark:bg-slate-800 border-purple-300 dark:border-purple-900"
                                             )}
                                         >
                                             <Sparkles className="h-4 w-4" />
@@ -276,12 +276,12 @@ export function CandidateProfile({ candidate, children }: CandidateProfileProps)
 
                                     {/* Inline Questions Display */}
                                     {showInlineQuestions && (
-                                        <div className="p-5 rounded-xl border border-purple-100 bg-gradient-to-br from-white to-purple-50/30 shadow-md animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="p-5 rounded-xl border border-purple-100 dark:border-slate-700 bg-gradient-to-br from-white to-purple-50/30 dark:from-slate-900 dark:to-slate-800/50 shadow-md animate-in fade-in zoom-in-95 duration-200">
                                             {questions ? (
                                                 <div className="space-y-8">
                                                     {/* Technical */}
                                                     <div className="space-y-4">
-                                                        <div className="flex items-center gap-3 text-purple-700 border-b border-purple-100 pb-2">
+                                                        <div className="flex items-center gap-3 text-purple-700 dark:text-purple-400 border-b border-purple-100 dark:border-slate-700 pb-2">
                                                             <Brain className="h-5 w-5" />
                                                             <h4 className="font-bold text-base">Câu hỏi chuyên môn</h4>
                                                         </div>
@@ -290,9 +290,9 @@ export function CandidateProfile({ candidate, children }: CandidateProfileProps)
                                                                 if (typeof q !== 'string' || q.includes('_questions') || q.includes('":') || q.length > 500) return null;
                                                                 const cleanQ = q.trim();
                                                                 return (
-                                                                    <div key={`tech-${i}`} className="flex gap-3 text-sm text-slate-700 items-start group">
-                                                                        <span className="text-purple-400 font-bold shrink-0 leading-relaxed mt-0.5 group-hover:text-purple-600 transition-colors">•</span>
-                                                                        <span className="leading-relaxed bg-white/50 p-2 rounded-lg block w-full">
+                                                                    <div key={`tech-${i}`} className="flex gap-3 text-sm text-slate-700 dark:text-slate-300 items-start group">
+                                                                        <span className="text-purple-400 font-bold shrink-0 leading-relaxed mt-0.5 group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors">•</span>
+                                                                        <span className="leading-relaxed bg-white/50 dark:bg-slate-800/50 p-2 rounded-lg block w-full">
                                                                             {cleanQ}
                                                                         </span>
                                                                     </div>
@@ -312,9 +312,9 @@ export function CandidateProfile({ candidate, children }: CandidateProfileProps)
                                                                 if (typeof q !== 'string' || q.includes('_questions') || q.includes('":') || q.length > 500) return null;
                                                                 const cleanQ = q.trim();
                                                                 return (
-                                                                    <div key={`soft-${i}`} className="flex gap-3 text-sm text-slate-700 items-start group">
-                                                                        <span className="text-pink-400 font-bold shrink-0 leading-relaxed mt-0.5 group-hover:text-pink-600 transition-colors">•</span>
-                                                                        <span className="leading-relaxed bg-white/50 p-2 rounded-lg block w-full">
+                                                                    <div key={`soft-${i}`} className="flex gap-3 text-sm text-slate-700 dark:text-slate-300 items-start group">
+                                                                        <span className="text-pink-400 font-bold shrink-0 leading-relaxed mt-0.5 group-hover:text-pink-600 dark:group-hover:text-pink-300 transition-colors">•</span>
+                                                                        <span className="leading-relaxed bg-white/50 dark:bg-slate-800/50 p-2 rounded-lg block w-full">
                                                                             {cleanQ}
                                                                         </span>
                                                                     </div>
@@ -340,11 +340,11 @@ export function CandidateProfile({ candidate, children }: CandidateProfileProps)
 
                 </Tabs>
 
-                <DialogFooter className="p-4 border-t bg-muted/10 shrink-0 gap-2 sm:gap-2 z-20">
+                <DialogFooter className="p-4 border-t bg-muted/10 dark:bg-slate-900 shrink-0 gap-2 sm:gap-2 z-20">
                     <div className="flex w-full sm:justify-end gap-2">
                         <Button
                             variant="destructive"
-                            className="flex-1 sm:flex-none border-red-200 bg-white text-red-600 hover:bg-red-50 hover:border-red-300 border shadow-sm"
+                            className="flex-1 sm:flex-none border-red-200 dark:border-red-900/50 bg-white dark:bg-slate-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 border shadow-sm"
                             onClick={() => setShowRejectAlert(true)}
                         >
                             <X className="mr-2 h-4 w-4" /> Từ chối

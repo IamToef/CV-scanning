@@ -48,8 +48,9 @@ export function ChatCandidateCard({ candidate }: ChatCandidateCardProps) {
     const percentage = Math.min(Math.round(calculatedPercentage), 100);
 
     // Determine colors based on score
-    const scoreColor = percentage >= 80 ? "bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500" : percentage >= 50 ? "bg-yellow-500" : "bg-red-500";
-    const scoreTextColor = percentage >= 80 ? "text-purple-600" : percentage >= 50 ? "text-yellow-600" : "text-red-600";
+    // Determine colors based on score
+    const scoreColor = percentage >= 80 ? "bg-gradient-to-r from-indigo-500 to-purple-600" : percentage >= 50 ? "bg-gradient-to-r from-amber-400 to-orange-500" : "bg-gradient-to-r from-red-500 to-rose-600";
+    const scoreTextColor = percentage >= 80 ? "text-indigo-600 dark:text-indigo-400" : percentage >= 50 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400";
 
     const summary = candidate.summary || candidate.highlight || "";
 
@@ -99,15 +100,15 @@ export function ChatCandidateCard({ candidate }: ChatCandidateCardProps) {
 
     return (
         <>
-            <Card className={cn("h-full flex flex-col w-full bg-white hover:shadow-lg transition-all duration-300 border border-slate-200 overflow-hidden rounded-xl", isRejected && "opacity-60 grayscale-[0.5]")}>
+            <Card className={cn("h-full flex flex-col w-full bg-white dark:bg-slate-900 hover:shadow-lg transition-all duration-300 border border-slate-200 dark:border-slate-800 overflow-hidden rounded-xl", isRejected && "opacity-60 grayscale-[0.5]")}>
                 <CardContent className="p-5 space-y-4 flex-1">
                     {/* Header: Name & Role */}
                     <div className="flex justify-between items-start">
                         <div className="flex flex-col gap-1">
-                            <h3 className="font-bold text-lg text-slate-900 leading-tight line-clamp-1" title={candidate.name}>
+                            <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100 leading-tight line-clamp-1" title={candidate.name}>
                                 {candidate.name}
                             </h3>
-                            <p className="text-sm text-slate-500 font-medium">
+                            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
                                 {(candidate.applied_role || "Business Analyst").replace(/\b(Junior|Senior|Fresher|Intern|Jr|Sr)\b/gi, "").trim()}
                             </p>
                         </div>
@@ -119,26 +120,26 @@ export function ChatCandidateCard({ candidate }: ChatCandidateCardProps) {
                     {/* Match Score */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-end">
-                            <span className="text-sm font-medium text-slate-700">Độ phù hợp</span>
-                            <span className="text-sm font-bold text-slate-900">{percentage}%</span>
+                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Độ phù hợp</span>
+                            <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{percentage}%</span>
                         </div>
-                        <Progress value={percentage} className="h-2.5 bg-slate-100" indicatorClassName={scoreColor} />
+                        <Progress value={percentage} className="h-2.5 bg-slate-100 dark:bg-slate-800" indicatorClassName={scoreColor} />
                     </div>
 
                     {/* Collapsible AI Summary Section */}
-                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-100/50">
+                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-slate-100/50 dark:border-slate-700/50">
                         {/* Contact Info (if available) - Show always if present */}
                         {(candidate.email || candidate.phone) && (
-                            <div className="mb-3 space-y-1.5 pb-3 border-b border-slate-200/60">
+                            <div className="mb-3 space-y-1.5 pb-3 border-b border-slate-200/60 dark:border-slate-700/60">
                                 {candidate.email && (
-                                    <div className="flex items-center gap-2 text-xs text-slate-600">
-                                        <Mail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                                    <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                                        <Mail className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
                                         <span className="truncate" title={candidate.email}>{candidate.email}</span>
                                     </div>
                                 )}
                                 {candidate.phone && (
-                                    <div className="flex items-center gap-2 text-xs text-slate-600">
-                                        <User className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                                    <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                                        <User className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
                                         <span>{candidate.phone}</span>
                                     </div>
                                 )}
@@ -150,13 +151,13 @@ export function ChatCandidateCard({ candidate }: ChatCandidateCardProps) {
                             onClick={() => setIsExpanded(!isExpanded)}
                         >
                             <div className="flex items-center gap-2">
-                                <Sparkles className="h-3.5 w-3.5 text-purple-600" />
-                                <span className="text-xs font-bold text-slate-900 uppercase tracking-wide bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">Tóm tắt AI</span>
+                                <Sparkles className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                                <span className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wide bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">Tóm tắt AI</span>
                             </div>
                             {isExpanded ? <ChevronUp className="h-3 w-3 text-slate-400" /> : <ChevronDown className="h-3 w-3 text-slate-400" />}
                         </div>
 
-                        <div className={cn("text-sm text-slate-600 leading-relaxed whitespace-pre-line", !isExpanded && "line-clamp-3")}>
+                        <div className={cn("text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line", !isExpanded && "line-clamp-3")}>
                             {summary ? summary : "Chưa có thông tin chi tiết."}
                         </div>
 
@@ -211,11 +212,11 @@ export function ChatCandidateCard({ candidate }: ChatCandidateCardProps) {
                 </CardContent>
 
                 {/* Footer Actions */}
-                <div className="p-4 border-t border-slate-100 bg-slate-50/50 grid grid-cols-3 gap-2">
+                <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 grid grid-cols-3 gap-2">
                     <Button
                         variant="default"
                         size="sm"
-                        className="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 hover:from-purple-700 hover:via-pink-700 hover:to-orange-600 text-white text-xs h-8 px-0 border-0 transition-all duration-300"
+                        className="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 hover:from-purple-700 hover:via-pink-700 hover:to-orange-600 text-white text-xs h-8 px-0 border-0 transition-all duration-300 shadow-sm"
                         onClick={() => initiateAction('contact')}
                         disabled={isRejected}
                     >
@@ -224,7 +225,7 @@ export function ChatCandidateCard({ candidate }: ChatCandidateCardProps) {
                     <Button
                         variant="destructive"
                         size="sm"
-                        className="bg-red-600 hover:bg-red-700 text-white text-xs h-8 px-0"
+                        className="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white text-xs h-8 px-0 shadow-sm font-medium"
                         onClick={() => initiateAction('reject')}
                         disabled={isRejected}
                     >
@@ -234,7 +235,7 @@ export function ChatCandidateCard({ candidate }: ChatCandidateCardProps) {
                         <Button
                             variant="outline"
                             size="sm"
-                            className="border-slate-300 text-slate-700 hover:bg-white text-xs h-8 px-0"
+                            className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs h-8 px-0 shadow-sm hover:border-slate-400 dark:hover:border-slate-500"
                             asChild
                         >
                             <a href={candidate.link_cv} target="_blank" rel="noopener noreferrer">
@@ -242,7 +243,7 @@ export function ChatCandidateCard({ candidate }: ChatCandidateCardProps) {
                             </a>
                         </Button>
                     ) : (
-                        <Button variant="outline" size="sm" disabled className="text-xs h-8 px-0 opacity-50">
+                        <Button variant="outline" size="sm" disabled className="text-xs h-8 px-0 opacity-50 bg-slate-50 dark:bg-slate-800 dark:text-slate-400">
                             No CV
                         </Button>
                     )}

@@ -116,13 +116,13 @@ export function ChatInterface() {
                                 <Button
                                     key={i}
                                     variant="outline"
-                                    className="h-auto py-3 px-4 rounded-xl text-sm font-medium justify-start w-full bg-white hover:bg-slate-50 border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 group relative overflow-hidden"
+                                    className="h-auto py-3 px-4 rounded-xl text-sm font-medium justify-start w-full bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-all duration-300 group relative overflow-hidden"
                                     onClick={() => sendMessage(item.label)}
                                     disabled={isLoading}
                                 >
                                     <div className="absolute inset-0 bg-gradient-to-r from-purple-600/5 via-pink-500/5 to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                                     <span className="mr-3 text-xl group-hover:scale-110 transition-transform duration-300">{item.icon}</span>
-                                    <span className="text-slate-700 group-hover:text-slate-900 z-10 text-left line-clamp-1">{item.label}</span>
+                                    <span className="text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-100 z-10 text-left line-clamp-1">{item.label}</span>
                                 </Button>
                             ))}
                         </div>
@@ -150,7 +150,7 @@ export function ChatInterface() {
                                                     a: ({ node, ...props }) => (
                                                         <a
                                                             {...props}
-                                                            className={`underline font-medium break-all ${msg.role === 'user' ? 'text-white hover:text-white/90' : 'text-purple-600 hover:text-purple-700'}`}
+                                                            className={`underline font-medium break-all ${msg.role === 'user' ? 'text-white hover:text-white/90' : 'text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300'}`}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                         />
@@ -171,9 +171,9 @@ export function ChatInterface() {
                                     {(msg.technical_questions?.length) ? (
                                         <div className="pl-12 mt-3 w-full space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
                                             {msg.technical_questions && msg.technical_questions.length > 0 && (
-                                                <Card className="bg-white/50 border-purple-100 shadow-sm">
-                                                    <CardHeader className="py-3 px-4 bg-purple-50/50 border-b border-purple-100 mb-2">
-                                                        <CardTitle className="text-sm font-semibold text-purple-700 flex items-center gap-2">
+                                                <Card className="bg-white/50 dark:bg-slate-800/50 border-purple-100 dark:border-slate-700 shadow-sm">
+                                                    <CardHeader className="py-3 px-4 bg-purple-50/50 dark:bg-purple-900/10 border-b border-purple-100 dark:border-slate-700 mb-2">
+                                                        <CardTitle className="text-sm font-semibold text-purple-700 dark:text-purple-400 flex items-center gap-2">
                                                             <Sparkles className="h-4 w-4" />
                                                             Câu hỏi chuyên môn (Hard Skills)
                                                         </CardTitle>
@@ -181,8 +181,8 @@ export function ChatInterface() {
                                                     <CardContent className="px-4 pb-3 pt-0">
                                                         <ul className="space-y-2">
                                                             {msg.technical_questions.map((q, idx) => (
-                                                                <li key={idx} className="text-sm text-slate-700 flex gap-2">
-                                                                    <span className="text-purple-500 font-bold">•</span>
+                                                                <li key={idx} className="text-sm text-slate-700 dark:text-slate-300 flex gap-2">
+                                                                    <span className="text-purple-500 dark:text-purple-400 font-bold">•</span>
                                                                     {q}
                                                                 </li>
                                                             ))}
@@ -197,9 +197,9 @@ export function ChatInterface() {
 
                                     {msg.candidates && msg.candidates.length > 0 && (
                                         <div className="pl-12 mt-3 w-full animate-in fade-in slide-in-from-bottom-2 duration-500">
-                                            <div className="flex flex-row flex-wrap gap-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                                 {msg.candidates.map((candidate, idx) => (
-                                                    <div key={idx} className="flex-1 min-w-[300px]">
+                                                    <div key={idx} className="w-full">
                                                         <ChatCandidateCard candidate={getEnrichedCandidate(candidate)} />
                                                     </div>
                                                 ))}
@@ -229,7 +229,7 @@ export function ChatInterface() {
                         onChange={e => setInput(e.target.value)}
                         placeholder="Nhập câu hỏi về ứng viên..."
                         disabled={isLoading}
-                        className="pr-14 pl-6 py-6 text-base rounded-full bg-white border-slate-300 shadow-2xl ring-1 ring-slate-100/50 hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.25)] transition-all focus-visible:ring-2 focus-visible:ring-purple-500/50 focus-visible:border-purple-500 placeholder:text-slate-400"
+                        className="pr-14 pl-6 py-6 text-base rounded-full bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 shadow-2xl dark:shadow-none ring-1 ring-slate-100/50 dark:ring-slate-800 hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.25)] transition-all focus-visible:ring-2 focus-visible:ring-purple-500/50 focus-visible:border-purple-500 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                     />
                     <Button type="submit" size="icon" disabled={isLoading} className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-gradient-to-r from-purple-600 via-pink-500 to-orange-500 text-white shadow-md hover:shadow-lg transition-all hover:scale-105 border-0">
                         <Send className="h-4 w-4" />

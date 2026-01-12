@@ -617,7 +617,7 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
                                     {files.map((file, i) => (
                                         <div key={i} className="flex items-center justify-between p-3 bg-muted/20 border rounded-lg hover:border-primary/30 transition-colors group">
                                             <div className="flex items-center gap-3 overflow-hidden">
-                                                <div className="p-2 rounded bg-white border shadow-sm">
+                                                <div className="p-2 rounded bg-white dark:bg-slate-800 border shadow-sm">
                                                     <FileType className="h-4 w-4 text-red-500" />
                                                 </div>
                                                 <span className="truncate font-medium text-sm">{file.name}</span>

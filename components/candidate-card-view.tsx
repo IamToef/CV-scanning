@@ -17,17 +17,17 @@ interface CandidateCardViewProps {
 
 function ExpandableSummary({ text }: { text: string }) {
     return (
-        <div className="bg-slate-50 rounded-xl p-4 space-y-2 mt-4 border border-slate-200">
+        <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 space-y-2 mt-4 border border-slate-200 dark:border-slate-700">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 font-bold text-xs tracking-wide">
-                    <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
-                    <span className="text-slate-700">
+                    <Sparkles className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                    <span className="text-slate-700 dark:text-slate-300">
                         Lí do chấm điểm
                     </span>
                 </div>
             </div>
             <div className="relative">
-                <p className="text-sm text-slate-600 leading-relaxed">
+                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                     {text}
                 </p>
             </div>
@@ -106,17 +106,17 @@ export function CandidateCardView({ candidates }: CandidateCardViewProps) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sortedCandidates.map((candidate) => (
-                <Card key={candidate.id} className="group relative overflow-hidden rounded-[2rem] border-0 bg-white shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgb(99,102,241,0.15)] transition-all duration-300 hover:-translate-y-1">
-                    <div className="absolute inset-0 rounded-[2rem] border-2 border-slate-50 group-hover:border-indigo-100 pointer-events-none transition-colors" />
+                <Card key={candidate.id} className="group relative overflow-hidden rounded-[2rem] border-0 bg-white dark:bg-slate-900 shadow-[0_4px_20px_rgb(0,0,0,0.03)] dark:shadow-none hover:shadow-[0_8px_30px_rgb(99,102,241,0.15)] dark:hover:shadow-[0_8px_30px_rgb(99,102,241,0.1)] transition-all duration-300 hover:-translate-y-1">
+                    <div className="absolute inset-0 rounded-[2rem] border-2 border-slate-50 dark:border-slate-800 group-hover:border-indigo-100 dark:group-hover:border-indigo-900 pointer-events-none transition-colors" />
 
                     <CardContent className="p-7 space-y-6 relative z-10">
                         {/* Header: Name & Score */}
                         <div className="flex justify-between items-start">
                             <div className="space-y-2">
-                                <h3 className="font-black text-xl text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors">
+                                <h3 className="font-black text-xl text-slate-800 dark:text-slate-100 leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                                     {candidate.name}
                                 </h3>
-                                <Badge variant="secondary" className="bg-slate-100 text-slate-600 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors font-semibold border-transparent">
+                                <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/30 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors font-semibold border-transparent">
                                     {candidate.experience_years > 5 ? "Senior BA" : "Business Analyst"} • {candidate.experience_years} năm
                                 </Badge>
                             </div>
@@ -137,7 +137,7 @@ export function CandidateCardView({ candidates }: CandidateCardViewProps) {
                             <div className="flex items-center gap-3">
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50" asChild>
+                                        <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30" asChild>
                                             <a href={candidate.link_cv || candidate.file_url || "#"} target="_blank" rel="noopener noreferrer">
                                                 <Download className="h-4 w-4" />
                                             </a>
@@ -150,7 +150,7 @@ export function CandidateCardView({ candidates }: CandidateCardViewProps) {
 
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50" onClick={() => window.open(`mailto:${candidate.email}`)}>
+                                        <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30" onClick={() => window.open(`mailto:${candidate.email}`)}>
                                             <Mail className="h-4 w-4" />
                                         </Button>
                                     </TooltipTrigger>
@@ -161,7 +161,7 @@ export function CandidateCardView({ candidates }: CandidateCardViewProps) {
 
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50">
+                                        <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30">
                                             <Phone className="h-4 w-4" />
                                         </Button>
                                     </TooltipTrigger>
@@ -171,7 +171,7 @@ export function CandidateCardView({ candidates }: CandidateCardViewProps) {
                                 </Tooltip>
 
                                 <CandidateProfile candidate={candidate}>
-                                    <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300">
+                                    <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-blue-200 dark:border-blue-900 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-700">
                                         <Eye className="h-4 w-4" />
                                     </Button>
                                 </CandidateProfile>
@@ -189,16 +189,16 @@ export function CandidateCardView({ candidates }: CandidateCardViewProps) {
 
                                 return (
                                     <div className="space-y-1.5">
-                                        <div className="flex justify-between text-xs font-semibold text-slate-600 tracking-wide">
+                                        <div className="flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-400 tracking-wide">
                                             <span>Năng lực chuyên môn</span>
-                                            <span className={`font-bold ${avg >= 80 ? 'text-indigo-600' :
-                                                avg >= 50 ? 'text-amber-600' :
-                                                    'text-red-600'
+                                            <span className={`font-bold ${avg >= 80 ? 'text-indigo-600 dark:text-indigo-400' :
+                                                avg >= 50 ? 'text-amber-600 dark:text-amber-400' :
+                                                    'text-red-600 dark:text-red-400'
                                                 }`}>{avg}/100</span>
                                         </div>
                                         <Progress
                                             value={avg}
-                                            className="h-1.5 bg-slate-100"
+                                            className="h-1.5 bg-slate-100 dark:bg-slate-800"
                                             indicatorClassName={`bg-gradient-to-r ${avg >= 80 ? 'from-indigo-600 to-blue-600' :
                                                 avg >= 50 ? 'from-amber-500 to-orange-500' :
                                                     'from-red-600 to-rose-600'
@@ -217,16 +217,16 @@ export function CandidateCardView({ candidates }: CandidateCardViewProps) {
 
                                 return (
                                     <div className="space-y-1.5">
-                                        <div className="flex justify-between text-xs font-semibold text-slate-600 tracking-wide">
+                                        <div className="flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-400 tracking-wide">
                                             <span>Tiềm năng & Học vấn</span>
-                                            <span className={`font-bold ${avg >= 80 ? 'text-indigo-600' :
-                                                avg >= 50 ? 'text-amber-600' :
-                                                    'text-red-600'
+                                            <span className={`font-bold ${avg >= 80 ? 'text-indigo-600 dark:text-indigo-400' :
+                                                avg >= 50 ? 'text-amber-600 dark:text-amber-400' :
+                                                    'text-red-600 dark:text-red-400'
                                                 }`}>{avg}/100</span>
                                         </div>
                                         <Progress
                                             value={avg}
-                                            className="h-1.5 bg-slate-100"
+                                            className="h-1.5 bg-slate-100 dark:bg-slate-800"
                                             indicatorClassName={`bg-gradient-to-r ${avg >= 80 ? 'from-indigo-600 to-blue-600' :
                                                 avg >= 50 ? 'from-amber-500 to-orange-500' :
                                                     'from-red-600 to-rose-600'

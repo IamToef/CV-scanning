@@ -36,23 +36,43 @@ export function PipelineInsights({ candidates }: PipelineInsightsProps) {
             .slice(0, 5)
             .map(([name, count]) => ({ name, percentage: Math.round((count / total) * 100) }));
 
-        // Simple "Time to Hire" Simulation
-        let timeToHire = 45;
+        // Missing Skills Aggregation
+        const missingSkillCounts: Record<string, number> = {};
         candidates.forEach(c => {
-            const s = c.score || 0;
-            if (s >= 90) timeToHire -= 5;
-            else if (s >= 80) timeToHire -= 2;
+            c.skills_missing?.forEach(skill => {
+                missingSkillCounts[skill] = (missingSkillCounts[skill] || 0) + 1;
+            });
         });
-        timeToHire = Math.max(5, timeToHire);
 
-        // Confidence Level
-        const confidence = avgScore >= 80 ? "Cao" : avgScore >= 60 ? "Trung bình" : "Thấp";
+        const mostMissingSkill = Object.entries(missingSkillCounts)
+            .sort(([, a], [, b]) => b - a)[0];
+
+        const topMissingSkillName = mostMissingSkill ? mostMissingSkill[0] : null;
+
+        // High Potential Candidates (Score >= 80)
+        const highPotentialCount = candidates.filter(c => (c.score || 0) >= 80).length;
+
+        // Find Best Candidate Score
+        const maxScore = Math.max(...candidates.map(c => c.score || 0), 0);
+
+        // "Time to Hire" Prediction based on Best Candidate
+        // Logic: If we have a great candidate, we just need to interview (short time).
+        // If we have average candidates, we need to test more (medium time).
+        // If we have no good candidates, we need to source more (long time).
+        let timeToHire = 60; // Default: Sourcing phase
+        if (maxScore >= 80) timeToHire = 14; // Interview phase
+        else if (maxScore >= 60) timeToHire = 30; // Assessment phase
+
+        // Confidence Level based on Best Candidate (we only need 1 good hire)
+        const confidence = maxScore >= 80 ? "Cao" : maxScore >= 60 ? "Trung bình" : "Thấp";
 
         return {
             total,
             avgScore,
             avgExp,
             topSkills,
+            topMissingSkillName,
+            highPotentialCount,
             timeToHire,
             confidence
         };
@@ -76,11 +96,8 @@ export function PipelineInsights({ candidates }: PipelineInsightsProps) {
                     <div>
                         <CardTitle className="flex items-center gap-2 text-xl bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent font-black uppercase tracking-tight">
                             <Sparkles className="h-5 w-5 text-indigo-500 dark:text-indigo-400" />
-                            Sức khỏe Nguồn Tuyển dụng (AI Pipeline Health)
-                        </CardTitle>
-                        <CardDescription className="text-slate-500 dark:text-slate-400 font-medium">
                             Phân tích tổng quan chất lượng ứng viên và dự báo tuyển dụng
-                        </CardDescription>
+                        </CardTitle>
                     </div>
                     <Badge variant="outline" className="bg-white/60 dark:bg-slate-800/60 backdrop-blur text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 shadow-sm px-3 py-1">
                         Live Analysis
@@ -133,7 +150,7 @@ export function PipelineInsights({ candidates }: PipelineInsightsProps) {
                         <div className={`font-black bg-clip-text text-transparent bg-gradient-to-br ${stats.confidence === 'Cao' ? 'from-green-500 to-emerald-700 dark:from-green-400 dark:to-emerald-500' : 'from-amber-500 to-orange-600 dark:from-amber-400 dark:to-orange-500'} ${confidenceFontSize} transition-all duration-300`}>
                             {stats.confidence}
                         </div>
-                        <p className="text-[10px] text-slate-400 dark:text-slate-500 text-center px-2 mt-1">Dựa trên chất lượng</p>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 text-center px-2 mt-1">Dựa trên ứng viên tốt nhất</p>
                     </div>
                 </div>
 
@@ -152,7 +169,15 @@ export function PipelineInsights({ candidates }: PipelineInsightsProps) {
                                 </div>
                                 <div>
                                     <p className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
-                                        Pool ứng viên hiện tại mạnh về <span className="text-indigo-600 dark:text-indigo-400 font-bold">{stats.topSkills[0]?.name || 'N/A'}</span> nhưng thiếu các chứng chỉ cao cấp.
+                                        {stats.topMissingSkillName ? (
+                                            <>
+                                                Pool ứng viên mạnh về <span className="text-indigo-600 dark:text-indigo-400 font-bold">{stats.topSkills[0]?.name || 'kỹ năng chuyên môn'}</span> tuy nhiên thường thiếu kỹ năng <span className="text-red-500 dark:text-red-400 font-bold">{stats.topMissingSkillName}</span>.
+                                            </>
+                                        ) : (
+                                            <>
+                                                Pool ứng viên hiện tại có nền tảng kỹ năng khá đồng đều và phù hợp với yêu cầu cơ bản.
+                                            </>
+                                        )}
                                     </p>
                                 </div>
                             </div>
@@ -162,7 +187,15 @@ export function PipelineInsights({ candidates }: PipelineInsightsProps) {
                                 </div>
                                 <div>
                                     <p className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
-                                        Thời gian tuyển dụng dự kiến là <span className="text-green-600 dark:text-green-400 font-bold">{stats.timeToHire} ngày</span>. Cần thêm 2 ứng viên Senior để giảm xuống dưới 10 ngày.
+                                        {stats.highPotentialCount > 0 ? (
+                                            <>
+                                                Có <span className="text-green-600 dark:text-green-400 font-bold">{stats.highPotentialCount} ứng viên</span> tiềm năng (Score &ge; 80) sẵn sàng phỏng vấn. Tập trung vào nhóm này để tối ưu hóa quy trình.
+                                            </>
+                                        ) : (
+                                            <>
+                                                Chưa có ứng viên nào đạt điểm đánh giá cao (&ge; 80). Cần mở rộng nguồn tìm kiếm ứng viên Senior.
+                                            </>
+                                        )}
                                     </p>
                                 </div>
                             </div>
