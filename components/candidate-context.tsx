@@ -31,6 +31,7 @@ interface CandidateContextType {
     isInitialized: boolean
     resetData: () => void
     updateCandidateStatus: (id: string, status: 'shortlisted' | 'rejected' | 'new') => void
+    deleteCandidate: (id: string) => void
 }
 
 const CandidateContext = createContext<CandidateContextType | undefined>(undefined)
@@ -68,7 +69,12 @@ export function CandidateProvider({ children }: { children: ReactNode }) {
         const storedExtractedReqs = localStorage.getItem('extractedRequirements')
 
         if (storedCandidates) {
-            setCandidates(JSON.parse(storedCandidates))
+            const parsedCandidates = JSON.parse(storedCandidates);
+            // Deduplicate loaded candidates by ID immediately
+            const uniqueCandidates = parsedCandidates.filter((c: Candidate, index: number, self: Candidate[]) =>
+                index === self.findIndex((t) => t.id === c.id)
+            );
+            setCandidates(uniqueCandidates);
         } else if (APP_CONFIG.useMockData) {
             setCandidates([
                 {
@@ -213,7 +219,10 @@ export function CandidateProvider({ children }: { children: ReactNode }) {
 
             isInitialized,
             resetData,
-            updateCandidateStatus
+            updateCandidateStatus,
+            deleteCandidate: (id: string) => {
+                setCandidates(prev => prev.filter(c => c.id !== id))
+            }
         }}>
             {children}
         </CandidateContext.Provider>

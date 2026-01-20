@@ -6,10 +6,22 @@ import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Candidate } from "@/types"
 import { CandidateProfile } from "./candidate-profile"
-import { Eye, Mail, Phone, Download, Share2, ChevronDown, Sparkles } from "lucide-react"
+import { Eye, Mail, Phone, Download, Share2, ChevronDown, Sparkles, X } from "lucide-react"
 import { useCandidates } from "@/components/candidate-context"
+import { cn, getDriveFileUrl } from "@/lib/utils"
 import { toast } from "sonner"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface CandidateCardViewProps {
     candidates: Candidate[]
@@ -36,7 +48,10 @@ function ExpandableSummary({ text }: { text: string }) {
 }
 
 export function CandidateCardView({ candidates }: CandidateCardViewProps) {
-    const { sortConfig } = useCandidates()
+    const { sortConfig, deleteCandidate } = useCandidates()
+
+
+
 
     // 1. Calculate scores and extend candidate objects
     const processedCandidates = candidates.map(candidate => {
@@ -109,6 +124,39 @@ export function CandidateCardView({ candidates }: CandidateCardViewProps) {
                 <Card key={candidate.id} className="group relative overflow-hidden rounded-[2rem] border-0 bg-white dark:bg-slate-900 shadow-[0_4px_20px_rgb(0,0,0,0.03)] dark:shadow-none hover:shadow-[0_8px_30px_rgb(99,102,241,0.15)] dark:hover:shadow-[0_8px_30px_rgb(99,102,241,0.1)] transition-all duration-300 hover:-translate-y-1">
                     <div className="absolute inset-0 rounded-[2rem] border-2 border-slate-50 dark:border-slate-800 group-hover:border-indigo-100 dark:group-hover:border-indigo-900 pointer-events-none transition-colors" />
 
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-2 right-2 z-20 h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all opacity-0 group-hover:opacity-100"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Bạn có chắc chắn muốn xóa?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Hành động này không thể hoàn tác. Ứng viên này sẽ bị xóa vĩnh viễn khỏi danh sách.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Hủy</AlertDialogCancel>
+                                <AlertDialogAction
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        deleteCandidate(candidate.id);
+                                    }}
+                                    className="bg-red-600 hover:bg-red-700"
+                                >
+                                    Xóa
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+
                     <CardContent className="p-7 space-y-6 relative z-10">
                         {/* Header: Name & Score */}
                         <div className="flex justify-between items-start">
@@ -138,7 +186,18 @@ export function CandidateCardView({ candidates }: CandidateCardViewProps) {
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30" asChild>
-                                            <a href={candidate.link_cv || candidate.file_url || "#"} target="_blank" rel="noopener noreferrer">
+                                            <a
+                                                href={getDriveFileUrl(candidate.link_cv || candidate.file_url)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={(e) => {
+                                                    const link = candidate.link_cv || candidate.file_url;
+                                                    if (!link || link === '#' || link.trim() === '') {
+                                                        e.preventDefault();
+                                                        toast.error("Không tìm thấy link CV của ứng viên này");
+                                                    }
+                                                }}
+                                            >
                                                 <Download className="h-4 w-4" />
                                             </a>
                                         </Button>

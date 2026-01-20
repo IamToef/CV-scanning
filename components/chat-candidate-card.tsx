@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ChevronDown, ChevronUp, Sparkles, CheckCircle2, FileText, User, X, Eye, Mail, AlertTriangle } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
-import { cn } from "@/lib/utils"
+import { cn, getDriveFileUrl } from "@/lib/utils"
 import { useCandidates } from "@/components/candidate-context"
 import { toast } from "sonner"
 import {
@@ -238,7 +238,7 @@ export function ChatCandidateCard({ candidate }: ChatCandidateCardProps) {
                             className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs h-8 px-0 shadow-sm hover:border-slate-400 dark:hover:border-slate-500"
                             asChild
                         >
-                            <a href={candidate.link_cv} target="_blank" rel="noopener noreferrer">
+                            <a href={getDriveFileUrl(candidate.link_cv)} target="_blank" rel="noopener noreferrer">
                                 Xem CV
                             </a>
                         </Button>

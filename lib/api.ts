@@ -1,4 +1,5 @@
 import { APP_CONFIG } from './config';
+import { getDriveFileUrl } from './utils';
 import { AnalysisResult, ChatMessage, Candidate, JDAnalysisResult } from '@/types';
 
 
@@ -181,8 +182,17 @@ function parseCandidates(data: any): AnalysisResult {
             // Unwrap 'json', 'data', or 'output' if nested
             const raw = item.output || item.json || item.data || item;
 
-            // Safe helper to get string
-            const getStr = (key: string) => raw[key] ? String(raw[key]) : undefined;
+            // Log full keys to debug missing properties
+            console.log('[API] Candidate Item Keys:', Object.keys(item));
+            if (item.json) console.log('[API] JSON Keys:', Object.keys(item.json));
+            console.log('[API] Raw Extracted Keys:', Object.keys(raw));
+
+            // Safe helper to get string from multiple locations
+            const getStr = (key: string) => {
+                const val = raw[key] || (item.json && item.json[key]) || item[key];
+                return val ? String(val) : undefined;
+            };
+
 
             // Parse Risk/Reward objects
             const parseAnalysis = (key: string) => {
@@ -278,6 +288,9 @@ function parseCandidates(data: any): AnalysisResult {
 
                 resume_content: getStr('resume_content') || getStr('text'),
 
+                link_cv: getDriveFileUrl(getStr('webContentLink') || getStr('link_cv') || getStr('file_url') || getStr('webViewLink') || getStr('id')),
+                file_url: getDriveFileUrl(getStr('webContentLink') || getStr('link_cv') || getStr('file_url') || getStr('webViewLink') || getStr('id')),
+
                 technical_questions: sanitizeQuestions(finalTechQ),
                 soft_skill_questions: sanitizeQuestions(finalSoftQ),
 
@@ -303,6 +316,13 @@ function parseCandidates(data: any): AnalysisResult {
                         }
                         if (!mainCandidate.resume_content && c.resume_content) {
                             mainCandidate.resume_content = c.resume_content;
+                        }
+                        // Merge Link/File URL if main is missing
+                        if (!mainCandidate.link_cv && c.link_cv) {
+                            mainCandidate.link_cv = c.link_cv;
+                        }
+                        if (!mainCandidate.file_url && c.file_url) {
+                            mainCandidate.file_url = c.file_url;
                         }
                     }
                 });

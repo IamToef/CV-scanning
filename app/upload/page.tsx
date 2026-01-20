@@ -10,20 +10,38 @@ export default function UploadPage() {
     const router = useRouter()
 
     const handleAnalysisComplete = (newCandidates: Candidate[]) => {
-        const updatedCandidates = [...candidates];
+        let updatedCandidates = [...candidates];
 
         newCandidates.forEach(newC => {
-            const index = updatedCandidates.findIndex(c =>
-                c.name.trim().toLowerCase() === newC.name.trim().toLowerCase()
-            );
+            // 1. Check by ID first (Most reliable for same file)
+            const idIndex = updatedCandidates.findIndex(c => c.id === newC.id);
 
-            if (index !== -1) {
-                // Update existing candidate: Keep old ID, update all other fields
-                updatedCandidates[index] = { ...newC, id: updatedCandidates[index].id };
+            if (idIndex !== -1) {
+                // Update existing candidate by ID
+                updatedCandidates[idIndex] = { ...newC, id: newC.id };
             } else {
-                // Add new candidate
-                updatedCandidates.push(newC);
+                // 2. Check by Name (Legacy check for different files but same person)
+                const nameIndex = updatedCandidates.findIndex(c =>
+                    c.name.trim().toLowerCase() === newC.name.trim().toLowerCase()
+                );
+
+                if (nameIndex !== -1) {
+                    // Update existing candidate: Keep old ID to preserve history
+                    updatedCandidates[nameIndex] = { ...newC, id: updatedCandidates[nameIndex].id };
+                } else {
+                    // 3. Add new candidate
+                    updatedCandidates.push(newC);
+                }
             }
+        });
+
+        // 4. Final Safety: Ensure uniqueness by ID
+        // This handles edge cases where logic might have missed something
+        const uniqueIds = new Set();
+        updatedCandidates = updatedCandidates.filter(c => {
+            if (uniqueIds.has(c.id)) return false;
+            uniqueIds.add(c.id);
+            return true;
         });
 
         setCandidates(updatedCandidates);

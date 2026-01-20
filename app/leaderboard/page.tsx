@@ -3,7 +3,9 @@
 import { useCandidates } from "@/components/candidate-context"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { UploadCloud, Trophy, Medal, Crown, ChevronRight } from "lucide-react"
+import { UploadCloud, Trophy, Medal, Crown, ChevronRight, Download } from "lucide-react"
+import ExcelJS from "exceljs"
+import { saveAs } from "file-saver"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { CandidateProfile } from "@/components/candidate-profile"
@@ -43,6 +45,53 @@ export default function LeaderboardPage() {
     const top3 = sortedCandidates.slice(0, 3)
     const rest = sortedCandidates.slice(3)
 
+    const handleExport = async () => {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet("Candidates");
+
+        // Define columns
+        worksheet.columns = [
+            { header: "Tên", key: "name", width: 25 },
+            { header: "Vị trí", key: "position", width: 25 },
+            { header: "Email", key: "email", width: 30 },
+            { header: "SĐT", key: "phone", width: 15 },
+            { header: "Link CV", key: "cv_link", width: 40 },
+            { header: "Điểm", key: "score", width: 10 },
+            { header: "Kinh nghiệm (năm)", key: "experience", width: 15 },
+            { header: "Trạng thái", key: "status", width: 15 },
+            { header: "Kỹ năng", key: "skills", width: 50 },
+            { header: "Tóm tắt", key: "summary", width: 80 },
+        ];
+
+        // Add rows
+        sortedCandidates.forEach(c => {
+            worksheet.addRow({
+                name: c.name,
+                position: (c.experience_years || 0) > 5 ? "Senior Business Analyst" : "Business Analyst",
+                email: c.email || "",
+                phone: c.phone || "",
+                cv_link: c.link_cv || "",
+                score: c.score,
+                experience: c.experience_years,
+                status: c.status === 'shortlisted' ? 'Phù hợp' : c.status === 'rejected' ? 'Đã loại' : 'Mới',
+                skills: c.skills_found.join(", "),
+                summary: c.scoring_reason || c.summary
+            });
+        });
+
+        // Apply styles (Wrap text)
+        worksheet.getColumn('skills').alignment = { wrapText: true, vertical: 'top' };
+        worksheet.getColumn('summary').alignment = { wrapText: true, vertical: 'top' };
+
+        // Header style
+        worksheet.getRow(1).font = { bold: true };
+
+        // Generate and download file
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        saveAs(blob, "Danh_sach_ung_vien.xlsx");
+    };
+
     return (
         // Main Container
         <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-8 space-y-10 transition-colors duration-500">
@@ -58,12 +107,18 @@ export default function LeaderboardPage() {
                         Xếp hạng thời gian thực dựa trên phân tích AI
                     </p>
                 </div>
-                <Link href="/upload">
-                    <Button className="bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 hover:bg-white/90 dark:hover:bg-slate-700 border border-indigo-100 dark:border-slate-700 shadow-sm gap-2">
-                        <UploadCloud className="h-4 w-4" />
-                        Upload Mới
+                <div className="flex flex-col gap-2">
+                    <Link href="/upload">
+                        <Button className="bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 hover:bg-white/90 dark:hover:bg-slate-700 border border-indigo-100 dark:border-slate-700 shadow-sm gap-2 w-full">
+                            <UploadCloud className="h-4 w-4" />
+                            Upload Mới
+                        </Button>
+                    </Link>
+                    <Button onClick={handleExport} variant="outline" className="bg-white/50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 border border-indigo-100 dark:border-slate-700 shadow-sm gap-2 w-full">
+                        <Download className="h-4 w-4" />
+                        Export Excel
                     </Button>
-                </Link>
+                </div>
             </div>
 
             {/* AI Pipeline Insights Widget */}

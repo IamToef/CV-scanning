@@ -28,13 +28,27 @@ import {
     CommandList,
     CommandSeparator,
 } from "@/components/ui/command"
-import { Check, Filter, Eye } from "lucide-react"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Check, Filter, Eye, X } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useCandidates } from "@/components/candidate-context"
 
 
 interface CandidateTableProps {
     candidates: Candidate[]
 }
+// ... (existing code) ...
+
 
 export function CandidateTable({ candidates }: CandidateTableProps) {
     const [selectedSkills, setSelectedSkills] = React.useState<string[]>([])
@@ -85,8 +99,11 @@ export function CandidateTable({ candidates }: CandidateTableProps) {
         )
     }
 
+
+
     return (
         <div className="space-y-4">
+            {/* Header Section matches Image 1 */}
             {/* Header Section matches Image 1 */}
             <div>
                 <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-500 to-orange-500 bg-clip-text text-transparent inline-block">Danh sách ứng viên</h2>
@@ -182,6 +199,7 @@ export function CandidateTable({ candidates }: CandidateTableProps) {
 }
 
 function CandidateRow({ candidate }: { candidate: Candidate }) {
+    const { deleteCandidate } = useCandidates()
     const [isExpanded, setIsExpanded] = React.useState(false)
 
     return (
@@ -263,6 +281,31 @@ function CandidateRow({ candidate }: { candidate: Candidate }) {
                         <Eye className="h-4 w-4" />
                     </Button>
                 </CandidateProfile>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all ml-1 opacity-0 group-hover:opacity-100"
+                        >
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Bạn có chắc chắn muốn xóa?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Hành động này không thể hoàn tác. Ứng viên này sẽ bị xóa vĩnh viễn khỏi danh sách.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Hủy</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteCandidate(candidate.id)} className="bg-red-600 hover:bg-red-700">
+                                Xóa
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </TableCell>
         </TableRow>
     )
