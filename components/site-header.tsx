@@ -8,28 +8,7 @@ import { Button } from "@/components/ui/button"
 import { useCandidates } from "@/components/candidate-context"
 import { SiteSettings } from "@/components/site-settings"
 
-const navItems = [
-    {
-        title: "Tổng quan",
-        href: "/dashboard",
-        icon: LayoutGrid
-    },
-    {
-        title: "Tải lên",
-        href: "/upload",
-        icon: UploadCloud
-    },
-    {
-        title: "Bảng xếp hạng",
-        href: "/leaderboard",
-        icon: List
-    },
-    {
-        title: "Trợ lý AI",
-        href: "/chat",
-        icon: MessageSquare
-    }
-]
+
 
 export function SiteHeader() {
     const pathname = usePathname()

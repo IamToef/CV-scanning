@@ -798,117 +798,51 @@ ${jdText}
 
         if (!res.ok) {
             const errorText = await res.text();
-            throw new Error(`Failed to extract requirements: ${res.status} ${res.statusText} - ${errorText}`);
+            console.error('[JD Extraction] Failed:', errorText);
+            throw new Error(`Failed to extract JD requirements: ${errorText}`);
         }
 
         const data = await res.json();
-        console.log("N8N JD Extraction Response:", JSON.stringify(data, null, 2));
+        const content = data.output || data.message || data.text || (data[0] && data[0].output);
 
-        let result: JDAnalysisResult = { raw_text: "" };
-        const item = Array.isArray(data) ? data[0] : data;
-
-        if (item) {
-            // Priority 1: Structured JSON output from "Structured Output Parser" or Agent "json.output"
-            // The workflow returns: { job_requirements: { ... } } directly or wrapped
-
-            const rawOutput = item.output || (item.json && item.json.output) || (item.body && item.body.output) || item;
-
-            // Try to find job_requirements in rawOutput
-            if (rawOutput && typeof rawOutput === 'object') {
-                if (rawOutput.job_requirements) {
-                    result.job_requirements = rawOutput.job_requirements;
-                }
-                // Sometimes it might be directly in the root if flattened
-                else if (rawOutput.technical_skills || rawOutput.years_of_experience) {
-                    result.job_requirements = rawOutput as any;
-                }
-            }
-
-            // Fallback: If it's a string (old prompt behavior), use it as summary
-            if (typeof rawOutput === 'string') {
-                try {
-                    // Try parsing if it looks like JSON
-                    if (rawOutput.trim().startsWith('{')) {
-                        const parsed = JSON.parse(rawOutput);
-                        if (parsed.job_requirements) result.job_requirements = parsed.job_requirements;
-                        else result.job_requirements = parsed;
-                    } else {
-                        result.summary = rawOutput;
-                    }
-                } catch {
-                    result.summary = rawOutput;
-                }
-            }
+        if (!content) {
+            throw new Error("No content received from AI agent");
         }
 
-        // Specific mapping for the new JSON format (User Request)
-        // Format: [{ "Kỹ năng kỹ thuật": [], "Số năm kinh nghiệm": [], "education": [], "soft_skills": [] }]
-        const itemObj = Array.isArray(data) ? data[0] : data;
+        return { summary: content };
 
-        if (itemObj) {
-            const rawObj = itemObj.output || itemObj.json || itemObj; // simplified access
-
-            // flexible check for any of the known keys
-            if (rawObj && (rawObj['Kỹ năng kỹ thuật'] || rawObj['technical_skills'] || rawObj['Kinh nghiệm'] || rawObj['education'])) {
-                const rawExp = rawObj['Số năm kinh nghiệm'] || rawObj['Kinh nghiệm'] || rawObj['experience'] || [];
-                const rawEdu = rawObj['education'] || rawObj['Học vấn'] || [];
-                const rawTech = rawObj['Kỹ năng kỹ thuật'] || rawObj['technical_skills'] || [];
-                const rawSoft = rawObj['soft_skills'] || rawObj['Kỹ năng mềm'] || [];
-
-                // Parse Years from text "Từ 2 đến 3 năm..."
-                let minYears = 0;
-                if (Array.isArray(rawExp) && rawExp.length > 0) {
-                    const match = rawExp[0].match(/(\d+)/);
-                    if (match) minYears = parseInt(match[1]);
-                }
-
-                result.job_requirements = {
-                    technical_skills: rawTech,
-                    soft_skills: rawSoft,
-                    years_of_experience: {
-                        min_years: minYears,
-                        description: Array.isArray(rawExp) ? rawExp.join('\n') : String(rawExp)
-                    },
-                    education: {
-                        degree_level: "",
-                        major: Array.isArray(rawEdu) ? rawEdu.join('\n') : String(rawEdu),
-                        certifications: [] // We merge all into major for list display
-                    }
-                };
-            }
-
-            // Sanity Check / Post-Processing (Hardened)
-            if (result.job_requirements) {
-                const jr = result.job_requirements;
-                const raw = (itemObj && (itemObj.output || itemObj.json || itemObj)) || {};
-
-                // 1. Recover Technical Skills from Keys (with stricter exclusions)
-                if ((!jr.technical_skills || jr.technical_skills.length === 0) && typeof raw === 'object') {
-                    const potentialSkills = Object.keys(raw).filter(k =>
-                        !['technical_skills', 'soft_skills', 'years_of_experience', 'education', 'job_requirements', 'output', 'json', 'data'].includes(k) &&
-                        !k.startsWith('Kỹ năng') &&
-                        !k.startsWith('Số năm') &&
-                        !k.startsWith('Kinh nghiệm') && // Explicit exclusion
-                        !k.match(/experience|education|skill|requirements|kinh nghiem|hoc van/i) &&
-                        k.length < 50 &&
-                        Array.isArray(raw[k]) && raw[k].length === 0
-                    );
-
-                    if (potentialSkills.length > 0) {
-                        jr.technical_skills = potentialSkills;
-                    }
-                }
-
-                // 2. Ensure Arrays
-                if (!Array.isArray(jr.technical_skills)) jr.technical_skills = [];
-                if (!Array.isArray(jr.soft_skills)) jr.soft_skills = [];
-            }
-
-        }
-
-        return result;
     } catch (error) {
-        console.error("Failed to extract requirements:", error);
+        console.error('Error extracting requirements:', error);
+        return { summary: "Could not extract requirements. Please verify manual input." };
+    }
+}
+
+export async function triggerEmailWorkflow(candidate: { name: string, email: string, status?: string, role?: string }) {
+    if (APP_CONFIG.useMockData) {
+        console.log('[Mock API] Triggering Email for:', candidate.name);
+        return new Promise(resolve => setTimeout(() => resolve({ success: true }), 1000));
+    }
+
+    try {
+        const res = await fetch('/api/n8n/trigger-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: candidate.name,
+                email: candidate.email,
+                status: candidate.status || 'shortlisted',
+                role: candidate.role || 'candidate'
+            }),
+        });
+
+        if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(`Failed to trigger email: ${errorText}`);
+        }
+
+        return await res.json();
+    } catch (error) {
+        console.error('Error triggering email workflow:', error);
         throw error;
     }
 }

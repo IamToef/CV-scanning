@@ -39,9 +39,10 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Check, Filter, Eye, X } from "lucide-react"
+import { Check, Filter, Eye, X, Download } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCandidates } from "@/components/candidate-context"
+import * as XLSX from "xlsx"
 
 
 interface CandidateTableProps {
@@ -99,15 +100,81 @@ export function CandidateTable({ candidates }: CandidateTableProps) {
         )
     }
 
+    const handleExportExcel = () => {
+        const exportData = sortedCandidates.map(c => {
+            // Helper to join arrays with newlines
+            const formatList = (min?: string[]) => min?.join("\n- ") ? "- " + min.join("\n- ") : "";
+            const details = c.score_details || c.reasoning || {};
+
+            return {
+                "Họ tên": c.name,
+                "Vị trí": c.experience_years > 5 ? "Senior Business Analyst" : "Business Analyst",
+                "Email": c.email,
+                "SDT": c.phone || "",
+                "Tổng điểm": c.score,
+                "Điểm Kinh nghiệm": details.experience_score || 0,
+                "Điểm Kỹ năng": details.skills_score || 0,
+                "Điểm Học vấn": details.education_score || 0,
+                "Điểm Tiềm năng": details.potential_score || 0,
+                "Số năm kinh nghiệm": c.experience_years,
+                "Trạng thái": c.status === 'shortlisted' ? 'Phù hợp' : c.status === 'rejected' ? 'Đã loại' : 'Mới',
+                "Tóm tắt hồ sơ": c.scoring_reason || c.summary,
+                "Ưu điểm": formatList(c.pros || c.strengths),
+                "Nhược điểm": formatList(c.cons || c.weaknesses),
+                "Kỹ năng phù hợp": c.skills_found.join(", "),
+                "Kỹ năng còn thiếu": c.skills_missing?.join(", ") || "",
+                "Câu hỏi chuyên môn": formatList(c.technical_questions),
+                "Câu hỏi kỹ năng mềm": formatList(c.soft_skill_questions),
+            };
+        });
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(exportData);
+
+        // Auto-width columns
+        const colWidths = [
+            { wch: 20 }, // Name
+            { wch: 20 }, // Role
+            { wch: 25 }, // Email
+            { wch: 15 }, // Phone
+            { wch: 10 }, // Total Score
+            { wch: 15 }, // Exp Score
+            { wch: 15 }, // Skill Score
+            { wch: 15 }, // Edu Score
+            { wch: 15 }, // Pot Score
+            { wch: 10 }, // Exp Years
+            { wch: 15 }, // Status
+            { wch: 50 }, // Summary
+            { wch: 40 }, // Pros
+            { wch: 40 }, // Cons
+            { wch: 40 }, // Skills Found
+            { wch: 40 }, // Skills Missing
+            { wch: 50 }, // Tech Questions
+            { wch: 50 }, // Soft Questions
+        ];
+        ws['!cols'] = colWidths;
+
+        XLSX.utils.book_append_sheet(wb, ws, "Danh sách chi tiết");
+
+        const date = new Date().toISOString().split('T')[0];
+        XLSX.writeFile(wb, `Danh_sach_ung_vien_CHITIET_${date}.xlsx`);
+    }
+
 
 
     return (
         <div className="space-y-4">
             {/* Header Section matches Image 1 */}
             {/* Header Section matches Image 1 */}
-            <div>
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-500 to-orange-500 bg-clip-text text-transparent inline-block">Danh sách ứng viên</h2>
-                <p className="text-muted-foreground">Quản lý và theo dõi kết quả phân tích</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-500 to-orange-500 bg-clip-text text-transparent inline-block">Danh sách ứng viên</h2>
+                    <p className="text-muted-foreground">Quản lý và theo dõi kết quả phân tích</p>
+                </div>
+                <Button variant="outline" onClick={handleExportExcel} className="gap-2">
+                    <Download className="h-4 w-4" />
+                    Xuất Excel
+                </Button>
             </div>
 
             <div className="rounded-xl border bg-card shadow-sm overflow-hidden">

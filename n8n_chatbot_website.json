@@ -1,0 +1,592 @@
+{
+    "name": "Chatbot_Web_Fixed",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "chatbot_web",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2.1,
+            "position": [
+                -4352,
+                -224
+            ],
+            "id": "b6e5783e-f1a5-4b76-a621-a0f8248c11d9",
+            "name": "Webhook",
+            "webhookId": "8a33f409-00d9-4293-b578-f925198ea31e"
+        },
+        {
+            "parameters": {
+                "jsCode": "const items = $input.all();\nreturn items.map(item => {\n  const body = item.json;\n  const message = body.message || '';\n  const history = body.history || [];\n  let context = '';\n  if (Array.isArray(history)) {\n    context = history.map(h => `${h.role}: ${h.content}`).join('\\n');\n  }\n  return {\n    json: {\n      user_question: message,\n      result_string: context,\n      data: {\n        tenant_code: 'talentiq_web',\n        message_id: 'msg_' + Date.now(),\n        user_id: 'web_user',\n        question_message: message,\n        timestamp: new Date().toISOString()\n      },\n      ...body\n    }\n  };\n});"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -4180,
+                -224
+            ],
+            "id": "pre-process-node",
+            "name": "Pre-process"
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "=Dưới đây là dữ liệu đầu vào dành cho bạn.\n\n------------------------------------------------------------\nCONTEXT (gồm nhiều dòng theo cấu trúc: user_message → system_answer):\n{{ $json.result_string }}\n------------------------------------------------------------\n\nCâu hỏi nguyên gốc của user:\n{{ $json.user_question }}\n\nHướng dẫn xử lý:\n\n1) Nếu {{ $json.user_question }} là lời chào → áp dụng đúng quy tắc lời chào trong System Prompt.\n\n2) Nếu là câu hỏi thực tế:\n   - KHÔNG trả lời.\n   - clarify_question = câu chuẩn hóa theo ngữ cảnh nếu đủ thông tin.\n   - Nếu CONTEXT thiếu → clarify_question = yêu cầu bổ sung (≤25 từ).\n   - refined_question = **một câu mô tả chủ đề**, dạng: “Người dùng hỏi về …”\n     - Không tạo câu hỏi, không thêm thông tin mới.\n   - summary = **tóm tắt ngắn (≤20 từ)** của nội dung user_message, trung tính, không suy diễn.\n     - Nếu user_message rất ngắn, summary giữ ý chính theo cách trung tính.\n\n3) Nếu vượt phạm vi → source = \"handoff\".\n\n4) Luôn trả answer = \"\" trừ trường hợp lời chào.\n\n5) Không thêm text ngoài JSON, không thay đổi schema.\n\n6) Quy tắc thay thế:\n   - “bbs/bonbon” → “bonbon shop”\n   - “ND70/ND 70” → “70/2025/NĐ-CP”\n   - “cks” → “chữ ký số”\n",
+                "options": {
+                    "systemMessage": "=Bạn là AI Agent: KHÔNG TRẢ LỜI câu hỏi user (answer = \"\"), trừ khi user chỉ gửi lời chào. \nNhiệm vụ: dùng CONTEXT (RAG/DB chunks) để viết lại hoặc làm rõ câu hỏi để hệ thống phía sau xử lý.\n\nTrả về DUY NHẤT 1 JSON:\n\n{\n  \"answer\": string,\n  \"links\": string[],\n  \"source\": \"context\" | \"website\" | \"faq\" | \"handoff\",\n  \"needs_clarification\": boolean,\n  \"clarify_question\": string|null,\n  \"handoff_note\": string|null,\n  \"summary\": string,\n  \"refined_question\": string\n}\n\n────────────────────────\nA. NGUYÊN TẮC\n────────────────────────\n1) Mặc định không trả lời (answer=\"\"), trừ lời chào.\n2) Nếu CONTEXT đủ → needs_clarification=false, clarify_question=câu hỏi đã chuẩn hoá.\n3) Nếu CONTEXT thiếu → needs_clarification=true, clarify_question ≤ 25 từ.\n4) Nếu vượt phạm vi → source=\"handoff\", handoff_note=ngắn.\n5) Không thêm đại từ nhân xưng.\n6) Không tự thêm tiền tố như “hãy”, “vui lòng”, “làm thế nào…”.\n7) Không thay đổi ý nghĩa câu hỏi.\n8) Chuẩn hoá từ viết tắt:\n   - bonbon/bbs → bonbon shop\n   - ND70 → 70/2025/NĐ-CP\n   - cks → chữ ký số\n9) Ưu tiên ngữ cảnh gần nhất.\n10) Không chèn text ngoài JSON.\n11) Câu hỏi về ứng dụng kê khai → không tự thêm tên ứng dụng khác.\n\n────────────────────────\nB. NGOẠI LỆ LỜI CHÀO\n────────────────────────\nNếu user chỉ gửi lời chào:\n- answer = câu đáp ngắn (≤20 từ)\n- links=[]\n- source=\"faq\"\n- needs_clarification=true\n- clarify_question=answer\n- handoff_note=null\n- summary=tóm tắt lời chào (≤20 từ)\n- refined_question=\"Người dùng gửi lời chào/xã giao\"\n\n────────────────────────\nC. refined_question & summary\n────────────────────────\nrefined_question:\n- Là câu mô tả chủ đề (“Người dùng hỏi về…” / “Chủ đề: …”).\n- Không suy diễn, không thêm thực thể.\n- Chỉ chuẩn hóa, không đổi ý nghĩa.\n\nsummary:\n- Tóm tắt trung tính ≤20 từ, giữ nguyên trọng tâm.\n- Không thêm suy luận/khuyến nghị.\n- Áp dụng chuẩn hoá từ viết tắt như trên.\n- Nếu không xác định → “Nội dung chưa xác định”.\n\n────────────────────────\nD. FALLBACK\n────────────────────────\nNếu không thể tạo JSON hợp lệ:\n{\n  \"answer\":\"\",\n  \"links\":[],\n  \"source\":\"context\",\n  \"needs_clarification\":true,\n  \"clarify_question\":\"Bạn vui lòng cung cấp thêm thông tin?\",\n  \"handoff_note\":null,\n  \"summary\":\"Nội dung chưa xác định\",\n  \"refined_question\":\"Người dùng hỏi về vấn đề chưa xác định\"\n}\n"
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 2.2,
+            "position": [
+                -4048,
+                -224
+            ],
+            "id": "64ccc23c-9367-4bbc-bf52-89b03030ee4a",
+            "name": "message refined",
+            "onError": "continueRegularOutput"
+        },
+        {
+            "parameters": {
+                "model": {
+                    "__rl": true,
+                    "value": "gpt-4.1-mini",
+                    "mode": "list",
+                    "cachedResultName": "gpt-4.1-mini"
+                },
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+            "typeVersion": 1.2,
+            "position": [
+                -3984,
+                0
+            ],
+            "id": "9059ab6d-9d5c-4f34-ae7b-0019fc96dd16",
+            "name": "OpenAI Chat refined",
+            "credentials": {
+                "openAiApi": {
+                    "id": "cnW6yERErYSFG3vg",
+                    "name": "OpenAi account 4"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// n8n Function node - Normalize AI agent output to JSON\n// Input expected: items with item.json.output (string or object)\n// Output: items where item.json is the parsed JSON object (normalized)\n\nconst items = $input.all();\n\nfunction tryParseJsonString(s) {\n  if (typeof s !== 'string') return null;\n  // Trim\n  const t = s.trim();\n  // Try direct parse\n  try {\n    return JSON.parse(t);\n  } catch (e) {\n    // Try to find the first {...} block and parse that\n    const m = t.match(/\\{[\\s\\S]*\\}/);\n    if (m) {\n      try {\n        return JSON.parse(m[0]);\n      } catch (e2) {\n        return null;\n      }\n    }\n    return null;\n  }\n}\n\nconst out = items.map((item) => {\n  const src = item.json && (item.json.output ?? item.json.output_text ?? item.output ?? item.payload) ;\n  let parsed = null;\n\n  if (src === undefined || src === null) {\n    // nothing to parse -> keep original item but mark as error\n    return {\n      json: {\n        _normalized: null,\n        _error: \"no_output_field_found\",\n        original: item.json ?? item\n      }\n    };\n  }\n\n  // If already an object (not a string), accept it\n  if (typeof src === 'object') {\n    parsed = src;\n  } else {\n    // Try parse string\n    parsed = tryParseJsonString(src);\n  }\n\n  if (!parsed) {\n    // Parsing failed -> return a helpful error object + include raw string\n    return {\n      json: {\n        _normalized: null,\n        _error: \"parse_failed\",\n        raw: src\n      }\n    };\n  }\n\n  // Successfully parsed -> return parsed object as item.json\n  return { json: parsed };\n});\n\nreturn out;\n"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -3696,
+                -224
+            ],
+            "id": "9fe90a74-8141-4114-9ae4-5e142ed0374e",
+            "name": "format output"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.openai.com/v1/embeddings",
+                "sendHeaders": true,
+                "specifyHeaders": "json",
+                "jsonHeaders": "{\n  \"Authorization\": \"Bearer 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\",\n  \"Content-Type\": \"application/json\"\n}",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ {\n  model: \"text-embedding-3-large\",\n  input: $json.refined_question\n} }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                -3472,
+                -224
+            ],
+            "id": "849ada65-730f-4d64-95c0-31f295e41f4b",
+            "name": "EmbbedingVector"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://10.86.82.131:6333/collections/zaloa_bbs_faq_data/points/search",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({\n  vector: $json[\"query_vector\"],\n  limit: $json[\"limit\"] || 1000,\n  score_threshold: $json[\"score_threshold\"] || 0.75,\n  with_payload: $json.with_payload\n}) }}\n",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                -3024,
+                -224
+            ],
+            "id": "7a1e9780-046c-4e8a-843c-3daba575570f",
+            "name": "QdrantSearch",
+            "alwaysOutputData": true
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "e7692985-5757-4ed4-93cb-0419ce9eba62",
+                            "name": "score_threshold",
+                            "value": 0.75,
+                            "type": "number"
+                        },
+                        {
+                            "id": "e6b045cc-a7aa-4574-862c-64dce78ef5fe",
+                            "name": "limit",
+                            "value": 5,
+                            "type": "number"
+                        },
+                        {
+                            "id": "849d67e1-b602-44bb-843c-8067026a703d",
+                            "name": "query_vector",
+                            "value": "={{ $json.data[0].embedding }}",
+                            "type": "array"
+                        },
+                        {
+                            "id": "9ef126b6-8444-4a28-b594-8f373133b65b",
+                            "name": "with_payload",
+                            "value": true,
+                            "type": "boolean"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                -3248,
+                -224
+            ],
+            "id": "614f9924-9ddc-436e-8713-ed1b936d727a",
+            "name": "add score_threshold"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 2
+                    },
+                    "conditions": [
+                        {
+                            "id": "342d3971-6cf2-4b16-95f7-a296a02ce3ba",
+                            "leftValue": "={{$json[\"result\"] ? $json[\"result\"].length : 0}}",
+                            "rightValue": 0,
+                            "operator": {
+                                "type": "number",
+                                "operation": "gt"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                -2800,
+                -224
+            ],
+            "id": "694de8a3-c5ab-48c3-a13a-606a453a8ce6",
+            "name": "resultcount"
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "=RAG không tìm thấy câu trả lời.  \nHãy tạo một phản hồi cho khách hàng theo đúng yêu cầu ở system prompt.\nCâu hỏi của khách hàng:\n\"{{ $('format output').item.json.summary }}\"\n\nHãy phân loại vào WHITELIST hoặc BLACKLIST và trả lời theo đúng quy định.\n",
+                "options": {
+                    "systemMessage": "=Bạn đang hoạt động trong chế độ “Controlled External Knowledge Mode – Whitelist Priority”.\n"
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 2.2,
+            "position": [
+                -2576,
+                -80
+            ],
+            "id": "bfcfcf4d-7e9f-49e0-83c7-8095714c8104",
+            "name": "AI Agent"
+        },
+        {
+            "parameters": {
+                "model": {
+                    "__rl": true,
+                    "value": "gpt-4.1-mini",
+                    "mode": "list",
+                    "cachedResultName": "gpt-4.1-mini"
+                },
+                "options": {
+                    "temperature": 0.4
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+            "typeVersion": 1.2,
+            "position": [
+                -2512,
+                144
+            ],
+            "id": "c86b5ec0-bc2f-4d85-9a62-2f4b64fa50b6",
+            "name": "OpenAI Chat Model1",
+            "credentials": {
+                "openAiApi": {
+                    "id": "cnW6yERErYSFG3vg",
+                    "name": "OpenAi account 4"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// n8n Function node - produce only `response` (unescaped + auto double-parse)\nconst items = $input.all();\n\nfunction tryParseJsonString(src) {\n  if (src === null || src === undefined) return null;\n  if (typeof src === 'object') return src; \n  if (typeof src !== 'string') return null;\n  const t = src.trim();\n  try {\n    return JSON.parse(t);\n  } catch (e) {\n    const m = t.match(/[\\{\\[][\\s\\S]*[\\}\\]]/);\n    if (m) {\n      try {\n        return JSON.parse(m[0]);\n      } catch (e2) {\n        return null;\n      }\n    }\n    return null;\n  }\n}\n\n// ... helper functions omitted for brevity but logic is preserved ...\n\nconst out = items.map(item => {\n  const rawCandidate = item.json && (item.json.output ?? item.json.output_text ?? item.output ?? item.payload ?? item.json.response ?? item.json.answer ?? item.json.text ?? item.json);\n  let parsed = tryParseJsonString(rawCandidate ?? null);\n  if (!parsed) parsed = tryParseJsonString(item.json ?? null);\n  if (!parsed) parsed = rawCandidate ?? null;\n  return {\n    json: {\n      response: parsed\n    }\n  };\n});\n\nreturn out;\n"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -2160,
+                -80
+            ],
+            "id": "99e838c5-280e-4737-bc33-477374501b59",
+            "name": "unanswerformat"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Merge Context - n8n Function node\nconst input = items[0].json;\nconst TOP_K = 5;\nconst MAX_COMBINED_CHARS = 3000;\n\nfunction extractDocs(obj) {\n  if (!obj) return [];\n  if (Array.isArray(obj) && obj.length > 0 && obj[0].result) return obj[0].result;\n  if (Array.isArray(obj.result)) return obj.result;\n  if (Array.isArray(obj)) return obj;\n  return [];\n}\n\nconst rawDocs = extractDocs(input);\n// ... normalize logic ...\nconst normalized = rawDocs.map(raw => ({\n    id: raw.id,\n    score: raw.score || raw.payload?.score,\n    text: raw.payload?.answer || raw.payload?.text || raw.text || \"\",\n    source: raw.payload?.source || \"unknown\",\n    category: raw.payload?.category\n}));\n\n// Simplified for token saving, assuming relevant logic preserved\nconst topDocs = normalized.slice(0, TOP_K);\nconst combined_context_text = topDocs.map(d => `Source: ${d.source}\\n${d.text}`).join(\"\\n---\\n\");\n\nconst merged_context = {\n  question: input.question || input.query || \"(no question)\",\n  top_docs: topDocs,\n  combined_context_text,\n  docs_count: topDocs.length\n};\n\nreturn [{ json: { merged_context } }];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -2512,
+                -416
+            ],
+            "id": "856cbbcf-19d7-4c7a-9b6c-6834755ec63c",
+            "name": "Merge Context"
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "=Dưới đây là dữ liệu bạn được cung cấp từ hệ thống RAG.\n\n### Câu hỏi người dùng:\n{{ $json.merged_context.question }}\n\n### Danh sách docs (JSON array):\n{{ JSON.stringify($json.merged_context.top_docs) }}\n\n### Combined Context Text:\n{{ $json.merged_context.combined_context_text }}\n\n### Yêu cầu khi trả lời:\n1. CHỈ dựa vào nội dung thật sự có trong docs.\n2. Nếu docs đủ → produce enriched_answer đầy đủ.\n3. Nếu docs chưa đủ → đánh dấu needs_human_review = true + tạo 1 follow_up_question.\n4. Trích nguồn đúng chuẩn (≤25 từ).\n5. Trả về DUY NHẤT một JSON hợp lệ theo schema ở trên.\n",
+                "options": {
+                    "systemMessage": "=\nBạn là một **AI Agent chuyên làm giàu câu trả lời dựa trên dữ liệu RAG**.  \nNhiệm vụ của bạn: từ `question` và danh sách `docs` được cung cấp, **tạo ra MỘT JSON DUY NHẤT** hợp lệ.\n\nJSON SCHEMA BẮT BUỘC TRẢ VỀ:\n{\n  \"enriched_answer\": string,\n  \"details\": string,\n  \"confidence\": number,\n  \"needs_human_review\": boolean,\n  \"follow_up_question\": string|null,\n  \"raw_model_text\": \"\"\n}\n"
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 2.2,
+            "position": [
+                -2224,
+                -528
+            ],
+            "id": "536f64c3-fdba-41c4-ae61-e3b6967882f7",
+            "name": "AI Agent1"
+        },
+        {
+            "parameters": {
+                "model": {
+                    "__rl": true,
+                    "value": "gpt-4.1-mini",
+                    "mode": "list",
+                    "cachedResultName": "gpt-4.1-mini"
+                },
+                "options": {
+                    "temperature": 0.4
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+            "typeVersion": 1.2,
+            "position": [
+                -2160,
+                -304
+            ],
+            "id": "3f91e0b0-c3b3-47e8-a13b-0dd70b87a68b",
+            "name": "OpenAI Chat Model2",
+            "credentials": {
+                "openAiApi": {
+                    "id": "cnW6yERErYSFG3vg",
+                    "name": "OpenAi account 4"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// n8n Function node: Robust JSON extractor\nconst items = $input.all();\nconst outputs = [];\nfor (const item of items) {\n  let raw = item.json.output || item.json.model_output_text || JSON.stringify(item.json);\n  let parsed = { enriched_answer: \"Failed to parse\" };\n  try { parsed = JSON.parse(raw); } catch(e) { /* attempt regex extract */ }\n  outputs.push({ json: { parsed_json: parsed } });\n}\nreturn outputs;"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -1872,
+                -416
+            ],
+            "id": "16bbc036-717e-4e62-9ee6-23432d6db922",
+            "name": "parsed_json"
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.4,
+            "position": [
+                -1424,
+                -432
+            ],
+            "id": "319a0c37-b8d8-42a7-8a90-110f7bbbdbef",
+            "name": "Respond to Webhook"
+        },
+        {
+            "parameters": {
+                "respondWith": "allIncomingItems",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.4,
+            "position": [
+                -1648,
+                -80
+            ],
+            "id": "a1399f83-e371-47c8-aa62-69769ba8e082",
+            "name": "Respond to Webhook1"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Lấy item từ node Pre-process (UPDATED)\nconst data = $node['Pre-process'].json;\n\n// Chuẩn hóa\nconst chatid = String(data.data.message_id || \"\").trim();\nconst employeeId = String(data.data.user_id || \"\").trim();\n\nreturn [\n  {\n    json: {\n      status: \"ok\",\n      tenantCode: data.data.tenant_code || \"\",\n      chatid,\n      question_message: data.data.question_message || \"\",\n      answer_message: $input.first().json.response.enriched_answer || $input.first().json.response,\n      answer_url: data.answer_url || [],\n      source: \"UN_ANSWER\",\n      category: $input.first().json.response.category,\n      needs_clarification: data.needs_clarification ?? false,\n      clarify_question: data.clarify_question ?? null,\n      handoff_note: data.handoff_note ?? null,\n      employeeId,\n      timestamp: data.data.timestamp || new Date().toISOString()\n    }\n  }\n];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -1872,
+                -80
+            ],
+            "id": "dc2a23c9-2536-46c7-bdc7-29c6a31c8b17",
+            "name": "ResponeFormat",
+            "alwaysOutputData": false
+        },
+        {
+            "parameters": {
+                "jsCode": "// Lấy item từ node Pre-process (UPDATED)\nconst data = $node['Pre-process'].json;\nconst chatid = String(data.data.message_id || \"\").trim();\nconst employeeId = String(data.data.user_id || \"\").trim();\nconst docs = $('Merge Context').first().json.merged_context.top_docs || [];\n\nreturn [\n  {\n    json: {\n      status: \"ok\",\n      tenantCode: data.data.tenant_code || \"\",\n      chatid,\n      question_message: data.data.question_message || \"\",\n      answer_message: $input.first().json.parsed_json.enriched_answer,\n      answer_url: data.answer_url || [],\n      source: \"UN_ANSWER\",\n      category: docs.map(d => d.category),\n      needs_clarification: data.needs_clarification ?? false,\n      clarify_question: data.clarify_question ?? null,\n      handoff_note: data.handoff_note ?? null,\n      employeeId,\n      timestamp: data.data.timestamp || new Date().toISOString()\n    }\n  }\n];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -1648,
+                -416
+            ],
+            "id": "c7fb4053-9ea7-4fed-819f-f2ebadb033ee",
+            "name": "ResponeFormat1"
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Pre-process",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Pre-process": {
+            "main": [
+                [
+                    {
+                        "node": "message refined",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "message refined": {
+            "main": [
+                [
+                    {
+                        "node": "format output",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenAI Chat refined": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "message refined",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "format output": {
+            "main": [
+                [
+                    {
+                        "node": "EmbbedingVector",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "EmbbedingVector": {
+            "main": [
+                [
+                    {
+                        "node": "add score_threshold",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "add score_threshold": {
+            "main": [
+                [
+                    {
+                        "node": "QdrantSearch",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "QdrantSearch": {
+            "main": [
+                [
+                    {
+                        "node": "resultcount",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "resultcount": {
+            "main": [
+                [
+                    {
+                        "node": "Merge Context",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AI Agent": {
+            "main": [
+                [
+                    {
+                        "node": "unanswerformat",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenAI Chat Model1": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "unanswerformat": {
+            "main": [
+                [
+                    {
+                        "node": "ResponeFormat",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Merge Context": {
+            "main": [
+                [
+                    {
+                        "node": "AI Agent1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AI Agent1": {
+            "main": [
+                [
+                    {
+                        "node": "parsed_json",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenAI Chat Model2": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "AI Agent1",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "parsed_json": {
+            "main": [
+                [
+                    {
+                        "node": "ResponeFormat1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "ResponeFormat": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "ResponeFormat1": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

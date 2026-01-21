@@ -20,28 +20,183 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
-import { CheckCircle2, X, AlertCircle, HelpCircle, Brain, Star, AlertTriangle, Briefcase, User, Phone, Mail, MessageSquare, Sparkles } from "lucide-react"
+import { CheckCircle2, X, AlertCircle, HelpCircle, Brain, Star, AlertTriangle, Briefcase, User, Phone, Mail, MessageSquare, Sparkles, Printer } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Candidate } from "@/types"
 import { useCandidates } from "@/components/candidate-context"
-import { useState, useRef, useEffect } from "react"
+import React, { useState, useRef, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Typewriter } from "@/components/ui/typewriter"
+import { useReactToPrint } from "react-to-print"
+import { triggerEmailWorkflow } from "@/lib/api"
 
 interface CandidateProfileProps {
     candidate: Candidate
     children: React.ReactNode
 }
 
+// --- Printable Component ---
+const PrintableProfile = React.forwardRef<HTMLDivElement, { candidate: Candidate }>(({ candidate }, ref) => {
+    return (
+        <div ref={ref} className="p-8 font-sans text-slate-900 bg-white min-h-[297mm] w-[210mm] mx-auto print:mx-0 print:w-full">
+            <style type="text/css" media="print">
+                {`
+               @page { size: A4; margin: 15mm; }
+               body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+               .no-print { display: none !important; }
+             `}
+            </style>
+
+            {/* Header */}
+            <div className="border-b-2 border-slate-800 pb-6 mb-8 flex justify-between items-start">
+                <div className="space-y-2">
+                    <h1 className="text-3xl font-extrabold tracking-tight uppercase text-slate-900">{candidate.name}</h1>
+                    <div className="flex flex-col gap-1 text-sm text-slate-600 font-medium">
+                        {candidate.email && (
+                            <div className="flex items-center gap-2">
+                                <Mail className="h-4 w-4" /> {candidate.email}
+                            </div>
+                        )}
+                        {candidate.phone && (
+                            <div className="flex items-center gap-2">
+                                <Phone className="h-4 w-4" /> {candidate.phone}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="text-right">
+                    <div className="inline-flex flex-col items-center justify-center bg-slate-100 border border-slate-200 p-4 rounded-xl min-w-[100px]">
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Điểm số</span>
+                        <span className="text-4xl font-black text-slate-900 mt-1">{candidate.score}</span>
+                        <span className="text-xs font-medium text-slate-400 mt-1">/ 100</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Layout Grid */}
+            <div className="grid grid-cols-12 gap-8">
+                {/* Left Col (Main) */}
+                <div className="col-span-8 space-y-8">
+                    {/* Summary */}
+                    <section>
+                        <h2 className="text-lg font-bold uppercase tracking-wider text-slate-900 mb-3 border-l-4 border-slate-800 pl-3">
+                            Tóm tắt hồ sơ
+                        </h2>
+                        <div className="text-sm leading-relaxed text-slate-700 text-justify bg-slate-50 p-4 rounded-lg">
+                            {candidate.summary}
+                        </div>
+                    </section>
+
+                    {/* Pros and Cons */}
+                    <div className="grid grid-cols-2 gap-6">
+                        <section>
+                            <h3 className="text-sm font-bold uppercase text-green-700 mb-2 flex items-center gap-2">
+                                <Star className="h-4 w-4" /> Ưu điểm
+                            </h3>
+                            <ul className="space-y-2">
+                                {(candidate.pros?.length ? candidate.pros : candidate.strengths)?.map((item, i) => (
+                                    <li key={i} className="text-xs text-slate-700 flex items-start gap-2">
+                                        <div className="h-1.5 w-1.5 rounded-full bg-green-600 mt-1 shrink-0" />
+                                        {item}
+                                    </li>
+                                ))}
+                            </ul>
+                        </section>
+                        <section>
+                            <h3 className="text-sm font-bold uppercase text-red-700 mb-2 flex items-center gap-2">
+                                <AlertTriangle className="h-4 w-4" /> Nhược điểm
+                            </h3>
+                            <ul className="space-y-2">
+                                {(candidate.cons?.length ? candidate.cons : candidate.weaknesses)?.map((item, i) => (
+                                    <li key={i} className="text-xs text-slate-700 flex items-start gap-2">
+                                        <div className="h-1.5 w-1.5 rounded-full bg-red-600 mt-1 shrink-0" />
+                                        {item}
+                                    </li>
+                                ))}
+                            </ul>
+                        </section>
+                    </div>
+
+                    {/* Interview Questions */}
+                    {((candidate.technical_questions?.length ?? 0) > 0) && (
+                        <section className="pt-4 border-t border-slate-200">
+                            <h2 className="text-lg font-bold uppercase tracking-wider text-slate-900 mb-4 border-l-4 border-slate-800 pl-3">
+                                Đề xuất phỏng vấn
+                            </h2>
+                            <div className="space-y-4">
+                                <div>
+                                    <h4 className="text-sm font-bold text-slate-800 mb-2">Chuyên môn</h4>
+                                    <ul className="list-disc pl-5 space-y-1">
+                                        {(candidate.technical_questions || []).slice(0, 4).map((q, i) => (
+                                            <li key={i} className="text-xs text-slate-700">{typeof q === 'string' ? q : ''}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        </section>
+                    )}
+                </div>
+
+                {/* Right Col (Sidebar) */}
+                <div className="col-span-4 space-y-8">
+                    {/* Details Breakdown */}
+                    <section>
+                        <h2 className="text-sm font-bold uppercase text-slate-400 mb-4">Chi tiết điểm</h2>
+                        <div className="space-y-3">
+                            {Object.entries((candidate as any).score_details || {} as any).map(([key, val]) => (
+                                <div key={key} className="flex justify-between items-center text-sm border-b border-dashed border-slate-200 pb-1">
+                                    <span className="capitalize text-slate-600">{key.replace('_score', '').replace('techStack', 'Tech')}</span>
+                                    <span className="font-bold text-slate-900">{String(val)}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+
+                    {/* Skills */}
+                    <section>
+                        <h2 className="text-sm font-bold uppercase text-slate-400 mb-4">Kỹ năng chuyên môn</h2>
+                        <div className="flex flex-wrap gap-2">
+                            {candidate.skills_found?.map((skill, i) => (
+                                <span key={i} className="px-2 py-1 bg-slate-100 text-slate-700 text-xs font-semibold rounded border border-slate-200">
+                                    {skill}
+                                </span>
+                            ))}
+                        </div>
+                    </section>
+
+                    {/* Experience */}
+                    <section>
+                        <h2 className="text-sm font-bold uppercase text-slate-400 mb-4">Kinh nghiệm</h2>
+                        <div className="p-3 bg-purple-50 rounded border border-purple-100">
+                            <span className="text-2xl font-bold text-purple-700 block">{candidate.experience_years} +</span>
+                            <span className="text-xs text-purple-600 uppercase font-semibold">Năm làm việc</span>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            {/* Footer */}
+            <div className="mt-12 pt-6 border-t font-mono text-xs text-slate-400 flex justify-between">
+                <span>Generated by CVs-Web AI</span>
+                <span>{new Date().toLocaleDateString('vi-VN')}</span>
+            </div>
+        </div>
+    )
+});
+PrintableProfile.displayName = "PrintableProfile";
+
+
 export function CandidateProfile({ candidate, children }: CandidateProfileProps) {
     const { updateCandidateStatus } = useCandidates()
     const [open, setOpen] = useState(false)
     const [showContactAlert, setShowContactAlert] = useState(false)
     const [showRejectAlert, setShowRejectAlert] = useState(false)
+    const [isContacting, setIsContacting] = useState(false)
 
     // Questions Derived State
     const questions = (candidate.technical_questions?.length || candidate.soft_skill_questions?.length)
@@ -50,16 +205,46 @@ export function CandidateProfile({ candidate, children }: CandidateProfileProps)
 
     const [showInlineQuestions, setShowInlineQuestions] = useState(false)
 
+    // Print Logic
+    const printRef = useRef<HTMLDivElement>(null);
+    const handlePrint = useReactToPrint({
+        contentRef: printRef,
+        documentTitle: `Report_${candidate.name.replace(/\s+/g, '_')}`,
+        onAfterPrint: () => toast.success("Đã xuất PDF thành công!")
+    });
 
-    const confirmContact = () => {
-        updateCandidateStatus(candidate.id, 'shortlisted')
-        setShowContactAlert(false)
-        toast.success(`Đã gửi liên hệ tới ${candidate.name}`, {
-            description: <span className="text-green-900 font-semibold text-base block mt-1">Email mời phỏng vấn đã được đưa vào hàng đợi xử lý.</span>,
-            duration: 4000,
-            className: "bg-green-50 border-green-200 group-[.toaster]:shadow-lg group-[.toaster]:bg-green-50 group-[.toaster]:border-green-200",
-            icon: <CheckCircle2 className="h-5 w-5 text-green-600" />
-        })
+
+    const confirmContact = async () => {
+        setIsContacting(true);
+        try {
+            // 1. Initial Toast
+            toast.info(`Đang gửi liên hệ tới ${candidate.name}...`);
+
+            // 2. Call API
+            await triggerEmailWorkflow({
+                name: candidate.name,
+                email: candidate.email,
+                status: 'shortlisted',
+                role: 'candidate'
+            });
+
+            // 3. Success
+            updateCandidateStatus(candidate.id, 'shortlisted')
+            setShowContactAlert(false)
+            toast.success(`Đã gửi liên hệ tới ${candidate.name}`, {
+                description: <span className="text-green-900 font-semibold text-base block mt-1">Email mời phỏng vấn đã được đưa vào hàng đợi xử lý.</span>,
+                duration: 4000,
+                className: "bg-green-50 border-green-200 group-[.toaster]:shadow-lg group-[.toaster]:bg-green-50 group-[.toaster]:border-green-200",
+                icon: <CheckCircle2 className="h-5 w-5 text-green-600" />
+            })
+        } catch (error) {
+            console.error("Contact failed:", error);
+            toast.error("Gửi email thất bại", {
+                description: "Vui lòng kiểm tra lại kết nối hoặc thông tin ứng viên."
+            });
+        } finally {
+            setIsContacting(false);
+        }
     }
 
     const confirmReject = () => {
@@ -341,6 +526,18 @@ export function CandidateProfile({ candidate, children }: CandidateProfileProps)
                 </Tabs>
 
                 <DialogFooter className="p-4 border-t bg-muted/10 dark:bg-slate-900 shrink-0 gap-2 sm:gap-2 z-20">
+                    {/* PRINT BUTTON */}
+                    <div className="flex-1 sm:flex-none mr-auto">
+                        <Button
+                            variant="secondary"
+                            onClick={() => handlePrint()}
+                            className="gap-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 shadow-sm"
+                        >
+                            <Printer className="h-4 w-4" />
+                            Export PDF
+                        </Button>
+                    </div>
+
                     <div className="flex w-full sm:justify-end gap-2">
                         <Button
                             variant="destructive"
@@ -393,6 +590,15 @@ export function CandidateProfile({ candidate, children }: CandidateProfileProps)
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* 
+               HIDDEN PRINTABLE SECTION 
+               Rendered off-screen so useReactToPrint can grab it.
+               Using 'absolute top-0 opacity-0 -z-50' to hide it visually but keep it in DOM.
+            */}
+            <div className="absolute top-0 left-0 -z-50 opacity-0 pointer-events-none h-0 w-0 overflow-hidden">
+                <PrintableProfile ref={printRef} candidate={candidate} />
+            </div>
         </Dialog>
     )
 }

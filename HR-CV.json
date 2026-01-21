@@ -1,0 +1,713 @@
+{
+  "name": "HR-CV",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=CV Ứng viên:\n{{ $('candidate CV1').item.json.resume_content }}\nBảng giới thiệu công việc (Job Description)\n{{ $('Webhook1').item.json.body.jd }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=Bạn là một hệ thống ATS chuyên nghiệp nhất thế giới dùng để đánh giá mức độ phù hợp của ứng viên với một yêu cầu công việc Business Analyst (Junior/Middle).\n\nNhiệm vụ của bạn:\n1. Phân tích thông tin CV ứng viên.\n2. Phân tích yêu cầu công việc (tập trung vào phần Yêu cầu được cung cấp).\n3. So khớp và chấm điểm theo các tiêu chí: kỹ năng, kinh nghiệm, học vấn, dự án, mức độ liên quan đến JD.\n4. Chỉ trả về đúng một JSON DUY NHẤT theo format quy định.\nFORMAT OUTPUT PHẢI TRẢ VỀ (BẮT BUỘC)\n\n{\n  \"Họ tên ứng viên\": \"Họ tên ứng viên, viết in hoa toàn bộ, không dấu\"\n  \"Thông tin liên lạc\": email + số điện thoại\n  \"Số năm kinh nghiệm\": Số năm kinh nghiệm của ứng viên\n  \"Điểm tổng\": 0-10 (trung bình 4 điểm dựa trên kinh nghiệm, kỹ năng và học vấn, tiềm năng và thành tích cộng lại chia 4),\n  \"Mức độ phù hợp\": \"thấp | trung bình | cao | cực kỳ phù hợp\",\n  \"Lý do chấm điểm\": \"\",\n  \"Reward Factor\": {\n    \"mức độ\": \"\",\n    \"giải thích\": \"\"\n  },\n  \"Risk Factor\": {\n    \"mức độ\": \"\",\n    \"giải thích\": \"\"\n  },\n  \"điểm dựa trên kinh nghiệm\": 0-10,\n  \"điểm kỹ năng\": 0-10,\n  \"điểm học vấn\": 0-10,\n  \"điểm thành tích & tiềm năng\": 0-10\n}\n\nLưu ý về số điện thoại: Trong trường hợp ứng viên điền số điện thoại có (+84), tự động đổi thành 0 và số điện thoại sẽ theo cú pháp: XXX - XXX - XXXX. Nếu không đủ 10 chữ số thì chữ số đầu tiên sẽ là số 0\n\nTIÊU CHÍ CHẤM ĐIỂM (TỔNG 10 ĐIỂM)\n**A. Điểm Dựa trên Kinh nghiệm (Tối đa 10 điểm)**\n* **Mục tiêu:** Đánh giá số năm, chất lượng, và sự liên quan của kinh nghiệm BA.\n* **Yêu cầu:** * **Kinh nghiệm Product/AI/Bán lẻ (Ưu tiên cao nhất):** Điểm cao (9-10) nếu ứng viên có 2+ năm kinh nghiệm BA Product VÀ ứng dụng AI trong Bán lẻ/Phân phối.\n    * **Kinh nghiệm Product/Agile:** Điểm trung bình cao (7-8) nếu có kinh nghiệm BA Product VÀ áp dụng Agile thuần thục.\n    * **Kinh nghiệm tối thiểu:** Điểm trung bình (5-6) nếu chỉ đạt yêu cầu tối thiểu (2-3 năm BA, hiểu Agile, không có kinh nghiệm Product/AI).\n\n**B. Điểm Kỹ năng (Technical & Tool) (Tối đa 10 điểm)**\n* **Mục tiêu:** Đánh giá mức độ thành thạo công cụ bắt buộc và khả năng ứng dụng công nghệ (AI/Tự động hóa).\n* **Yêu cầu:** * **Thành thạo AI/Tự động hóa (Ưu tiên cao nhất):** Điểm cao (9-10) nếu ứng viên thành thạo sử dụng AI/LLM trong BA workflow VÀ có kinh nghiệm tích hợp tự động hóa (n8n/Zapier).\n    * **Thành thạo Công cụ cơ bản:** Điểm trung bình cao (7-8) nếu thành thạo các công cụ bắt buộc (Jira, Confluence, Figma, Draw.io) VÀ có tư duy Product Mindset rõ ràng.\n    * **Mới chỉ biết/Ít ứng dụng:** Điểm thấp (4-6) nếu chỉ biết công cụ hoặc chưa áp dụng AI/LLM vào công việc BA.\n\n**C. Điểm Học vấn (Tối đa 10 điểm)**\n* **Mục tiêu:** Đánh giá sự phù hợp của bằng cấp.\n* **Yêu cầu:** * **Phù hợp hoàn toàn:** Điểm cao (9-10) nếu tốt nghiệp Đại học chuyên ngành CNTT/HTTT/các ngành liên quan trực tiếp.\n    * **Phù hợp cơ bản:** Điểm trung bình (6-8) nếu tốt nghiệp Cao đẳng hoặc ngành liên quan nhưng cần kinh nghiệm BA bù đắp.\n    * **Không liên quan:** Điểm thấp (4-5) nếu ngành học không liên quan nhưng có chứng chỉ chuyên môn BA. \n\n**D. Điểm Thành tích & Tiềm năng (MỚI) (Tối đa 10 điểm)**\n* **Mục tiêu:** Đánh giá tiềm năng, sự chủ động và khả năng học hỏi thông qua **Achievements, Activities và Licenses & Certifications**.\n* **Tiêu chí chính:** Có **chứng chỉ BA/Product Owner** chuyên môn cao (CBAP, PSPO, v.v.) CÙNG với các **thành tích/dự án cá nhân** nổi bật liên quan đến tư duy giải quyết vấn đề/phát triển sản phẩm.\n* **Điểm cao (9-10):** Có cả chứng chỉ uy tín VÀ thành tích/dự án cá nhân rõ ràng, chất lượng cao.\n* **Điểm trung bình (6-8):** Chỉ có một vài chứng chỉ cơ bản HOẶC thành tích học tập đơn thuần, ít dự án cá nhân chủ động.\n\n*CV dài hơn 3 trang, lan man → có thể trừ điểm nhẹ.  \n\nYÊU CẦU BẮT BUỘC\n\n- Viết hoàn toàn bằng tiếng Việt rõ ràng.\n- Không bịa đặt thông tin nếu CV không có.\n- Không suy đoán quá mức.\n- Không viết tiếng Anh.\n- Không giải thích ngoài JSON.\n- Dựa 100% vào thông tin CV và JD.\n\nVAI TRÒ & BỐI CẢNH\n\nBạn là chuyên gia tuyển dụng kỹ thuật cho vị trí BA tại công ty công nghệ, làm việc với khách hàng và nội bộ, phân tích yêu cầu, hỗ trợ phát triển sản phẩm, chuyển giao và vận hành giải pháp.\n\nMÔ TẢ YÊU CẦU CÔNG VIỆC (JD) CẦN ĐÁNH GIÁ)\nXem kỹ phần yêu cầu trong\n{{ $('Webhook1').item.json.body.jd }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -3936,
+        816
+      ],
+      "id": "a64e0030-5841-49da-8524-11c1c3afb69c",
+      "name": "AI Agent1",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"Họ tên ứng viên\": \"\",\n  \"email ứng viên\": \"\",\n  \"số điện thoại ứng viên\": \"XXX  XXX  XXXX\",\n  \"Điểm tổng\": 0,\n  \"số năm kinh nghiệm\": \"\",\n  \"Mức độ phù hợp\": \"\",\n  \"Lý do chấm điểm\": \"\",\n  \"Risk Factor\": {\n    \"mức độ\": \"\",\n    \"giải thích\": \"\"\n  },\n  \"Reward Factor\": {\n    \"mức độ\": \"\",\n    \"giải thích\": \"\"\n  },\n  \"điểm dựa trên kinh nghiệm\": 0,\n  \"điểm kỹ năng\": 0,\n  \"điểm học vấn\": 0,\n  \"điểm thành tích & tiềm năng\": 0,\n  \"Kết luận\": \"\"\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -3792,
+        1040
+      ],
+      "id": "639da1ad-91c9-4e0c-8a04-758b95c40f62",
+      "name": "Structured Output Parser2"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "files",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -6080,
+        972
+      ],
+      "id": "c4fe889d-2cbd-46eb-a488-6bac5172cada",
+      "name": "Lấy thông tin CV1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f5a2dbf9-5ebb-4c64-bc35-0a120673a097",
+              "leftValue": "={{ $json.text.trim() === \"\" }}",
+              "rightValue": "\\n\\n",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -5632,
+        1068
+      ],
+      "id": "abc2563d-bf54-4fe4-9bbe-3bae15a48742",
+      "name": "Check null1",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {
+          "maxTokens": 2000,
+          "responseFormat": "json_object"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -3928,
+        1040
+      ],
+      "id": "97175361-94c3-4f49-a8ce-5df9411cad2a",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "iCiSJp2rt9yhPy3g",
+          "name": "OpenAi account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "64113236-bf3e-4626-bd7a-04fc9d68f321",
+              "name": "text",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -5856,
+        976
+      ],
+      "id": "6a428cce-db57-4208-b648-848c25a8922a",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "64113236-bf3e-4626-bd7a-04fc9d68f321",
+              "name": "resume_content",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -4512,
+        1068
+      ],
+      "id": "13831784-e55e-4f6b-979a-7015d6b36717",
+      "name": "candidate CV1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -4280,
+        1440
+      ],
+      "id": "138a7657-4d2b-4043-87d7-0a31f9857615",
+      "name": "OpenAI Chat Model3",
+      "credentials": {
+        "openAiApi": {
+          "id": "iCiSJp2rt9yhPy3g",
+          "name": "OpenAi account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"technical_questions\": [\n    {\n      \"question\": \"Bạn có thể mô tả kinh nghiệm của mình khi làm việc với các công cụ quản lý dự án như **Jira và Confluence** trong các dự án phân tích nghiệp vụ không? Làm thế nào bạn đảm bảo thông tin giữa các bên liên quan được cập nhật và rõ ràng?\"\n    },\n    {\n      \"question\": \"Vui lòng trình bày cách bạn sử dụng các công cụ thiết kế giao diện như **Figma và Draw.io** để hỗ trợ phân tích và mô hình hóa quy trình nghiệp vụ trong các dự án trước đây?\"\n    },\n    {\n      \"question\": \"Bạn đã từng áp dụng mô hình **Agile/Scrum** trong công việc như thế nào? Hãy cho ví dụ cụ thể về vai trò của bạn trong một sprint hoặc dự án Agile.\"\n    },\n    {\n      \"question\": \"Trong dự án Data Analyst tại Procter & Gamble, bạn đã tham gia phát triển những báo cáo và dashboard nào? Cách bạn **thu thập và phản hồi yêu cầu người dùng** để nâng cao hiệu quả báo cáo là gì?\"\n    },\n    {\n      \"question\": \"Bạn đã từng tối ưu hóa quy trình hay sản phẩm nào sử dụng **AI hoặc tự động hóa quy trình**? Hãy mô tả chi tiết cách bạn thực hiện và kết quả đạt được.\"\n    },\n    {\n      \"question\": \"(Tình huống giả định) Giả sử bạn đang làm việc trong dự án AI ứng dụng cho bán lẻ và phát hiện ra **lỗi trong báo cáo dữ liệu quan trọng** trước khi giao cho khách hàng. Bạn sẽ xử lý ra sao để đảm bảo chất lượng và giữ vững uy tín công ty?\"\n    },\n    {\n      \"question\": \"(Tình huống giả định) Nếu khách hàng yêu cầu bổ sung tính năng mới sử dụng công cụ AI/LLM như ChatGPT để tự động hóa một phần quy trình, nhưng **đội phát triển đang quá tải**, bạn sẽ giải quyết thế nào để cân bằng giữa yêu cầu khách hàng và năng lực phát triển?\"\n    },\n    {\n      \"question\": \"Bạn có kinh nghiệm hoặc kiến thức nào về việc tích hợp các công cụ tự động hóa như **n8n hoặc Zapier** vào quy trình công việc để nâng cao hiệu quả không? Hãy chia sẻ một ví dụ thực tế nếu có.\"\n    },\n    {\n      \"question\": \"Trong hồ sơ bạn thể hiện kinh nghiệm đa dạng từ Data Analyst đến Data Engineer và AI Intern nhưng chưa rõ kinh nghiệm cụ thể về **phân tích nghiệp vụ Business Analyst**. Bạn có thể kể chi tiết hơn về những nhiệm vụ phân tích nghiệp vụ bạn đã thực hiện và công cụ bạn đã dùng?\"\n    },\n    {\n      \"question\": \"Bạn thường cập nhật kiến thức và xu hướng mới về **phân tích nghiệp vụ và AI** như thế nào để đảm bảo bản thân luôn phù hợp và mang lại giá trị cho công ty?\"\n    }\n  ],\n  \"soft_skills_questions\": [\n    {\n      \"question\": \"(STAR) Hãy kể lại một tình huống trong công việc hoặc học tập khi bạn phải **phối hợp chặt chẽ với đồng nghiệp** hoặc các phòng ban khác để hoàn thành một dự án. Nhiệm vụ của bạn là gì, bạn đã làm gì và kết quả thế nào?\"\n    },\n    {\n      \"question\": \"(STAR) Bạn từng gặp **xung đột hoặc tranh luận chuyên môn** với đồng nghiệp hoặc khách hàng chưa? Tình huống đó ra sao, bạn xử lý thế nào và kết quả cuối cùng?\"\n    },\n    {\n      \"question\": \"(STAR) Trong môi trường làm việc nhiều áp lực hoặc khi phải ưu tiên nhiều công việc, bạn đã **quản lý thời gian và ưu tiên** ra sao để đảm bảo hiệu quả?\"\n    },\n    {\n      \"question\": \"Điều gì ở **văn hóa và môi trường làm việc của NDS Vietnam** thu hút bạn nhất và bạn nghĩ bạn sẽ đóng góp như thế nào cho công ty?\"\n    },\n    {\n      \"question\": \"Mục tiêu 3-5 năm tới của bạn là gì? Bạn mong muốn phát triển nghề nghiệp như thế nào và **kỳ vọng gì từ công việc tại NDS Vietnam**?\"\n    }\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -4152,
+        1440
+      ],
+      "id": "ab2d8741-d40c-44da-812a-ee83c198c2db",
+      "name": "Structured Output Parser3"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=CV Ứng viên:\n{{ $('candidate CV1').item.json.resume_content }}\nBảng giới thiệu công việc (Job Description)\n{{ $('Webhook1').item.json.body.jd }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=Bạn sẽ đóng vai 1 người tuyển dụng giỏi nhất thế giới và nhiệm vụ của bạn là đặt ra các câu hỏi dựa vào yêu cầu việc làm của công ty cũng như khả năng của ứng viên.\n\n### Mục Tiêu Chính\nNhiệm vụ của bạn là **xây dựng một bộ 15 câu hỏi phỏng vấn tối ưu, có cấu trúc và có mục tiêu cụ thể** nhằm:\n1.  **Đánh giá sự phù hợp chuyên môn (Technical Fit):** Đặt **10 câu hỏi** để xác định mức độ kiến thức, kỹ năng cứng, và kinh nghiệm thực tế so với các yêu cầu của công việc.\n2.  **Đánh giá kỹ năng mềm và sự phù hợp hành vi/văn hóa (Soft Skills & Cultural Fit):** Đặt **5 câu hỏi** để khám phá thái độ làm việc, khả năng giao tiếp, tinh thần đồng đội, và sự phù hợp với môi trường làm việc.\n\n### Nguyên Tắc Hoạt Động\n1.  **Phân tích đầu vào:** Bạn sẽ nhận được 2 luồng dữ liệu chính:\n    * **[YÊU CẦU CÔNG VIỆC] (Job Description - JD):** Chi tiết về vị trí, trách nhiệm, yêu cầu kỹ năng bắt buộc, và kỹ năng mong muốn.\n    * **[HỒ SƠ ỨNG VIÊN] (Candidate Profile/CV):** Thông tin về học vấn, kinh nghiệm làm việc, các dự án đã thực hiện và kỹ năng mà ứng viên tự khai báo.\n2.  **Phương pháp đặt câu hỏi:**\n    * **10 câu hỏi JD (Kỹ năng Cứng):** Tập trung đào sâu vào các công nghệ, công cụ, và nhiệm vụ trọng tâm. **Bắt buộc có ít nhất 2 câu hỏi giả định tình huống (Hypothetical Scenario)** liên quan đến thách thức kỹ thuật.\n    * **5 câu hỏi Kỹ năng Mềm (Soft Skills):** **Bắt buộc sử dụng kỹ thuật STAR** (Situation, Task, Action, Result) cho ít nhất 3 câu hỏi hành vi. Tập trung vào: Giải quyết xung đột, Làm việc nhóm, Quản lý ưu tiên, và Phù hợp văn hóa.\n3.  **Chiến lược Phân cấp độ:** Bắt đầu từ câu hỏi sàng lọc cơ bản, sau đó tăng dần độ khó để đào sâu vào các lĩnh vực kỹ thuật phức tạp nhất và cuối cùng là các câu hỏi về thái độ/động lực.\n\n### Định dạng Đầu ra BẮT BUỘC (Sử dụng cho Structured Output Parser)\n\nBạn phải trả lời bằng **một đối tượng JSON duy nhất**. KHÔNG sử dụng Markdown. KHÔNG thêm bất kỳ văn bản giải thích nào ngoài đối tượng JSON.\n\nĐối tượng JSON phải chứa hai mảng: `technical_questions` (chính xác 10 câu) và `soft_skills_questions` (chính xác 5 câu).\n\nMỗi đối tượng câu hỏi trong cả hai mảng phải **chỉ** có một trường duy nhất là `question` (string), chứa nội dung câu hỏi phỏng vấn.\n\n**Cấu trúc JSON Schema bắt buộc:**\n```json\n{\n  \"technical_questions\": [\n    {\"question\": \"...\"},\n    // ... 9 câu khác ...\n  ],\n  \"soft_skills_questions\": [\n    {\"question\": \"...\"},\n    // ... 4 câu khác ...\n  ]\n}Bạn sẽ đóng vai 1 người tuyển dụng giỏi nhất thế giới và nhiệm vụ của bạn là đặt ra các câu hỏi dựa vào yêu cầu việc làm của công ty cũng như khả năng của ứng viên.\n\n### Mục Tiêu Chính\nNhiệm vụ của bạn là **xây dựng một bộ 15 câu hỏi phỏng vấn tối ưu, có cấu trúc và có mục tiêu cụ thể** nhằm:\n1.  **Đánh giá sự phù hợp chuyên môn (Technical Fit):** Đặt **10 câu hỏi** để xác định mức độ kiến thức, kỹ năng cứng, và kinh nghiệm thực tế so với các yêu cầu của công việc.\n2.  **Đánh giá kỹ năng mềm và sự phù hợp hành vi/văn hóa (Soft Skills & Cultural Fit):** Đặt **5 câu hỏi** để khám phá thái độ làm việc, khả năng giao tiếp, tinh thần đồng đội, và sự phù hợp với môi trường làm việc.\n\n### Nguyên Tắc Hoạt Động\n1.  **Phân tích đầu vào:** Bạn sẽ nhận được 2 luồng dữ liệu chính:\n    * **[YÊU CẦU CÔNG VIỆC] (Job Description - JD):** Chi tiết về vị trí, trách nhiệm, yêu cầu kỹ năng bắt buộc, và kỹ năng mong muốn.\n    * **[HỒ SƠ ỨNG VIÊN] (Candidate Profile/CV):** Thông tin về học vấn, kinh nghiệm làm việc, các dự án đã thực hiện và kỹ năng mà ứng viên tự khai báo.\n2.  **Phương pháp đặt câu hỏi:**\n    * **10 câu hỏi JD (Kỹ năng Cứng):** Tập trung đào sâu vào các công nghệ, công cụ, và nhiệm vụ trọng tâm. **Bắt buộc có ít nhất 2 câu hỏi giả định tình huống (Hypothetical Scenario)** liên quan đến thách thức kỹ thuật.\n    * **5 câu hỏi Kỹ năng Mềm (Soft Skills):** **Bắt buộc sử dụng kỹ thuật STAR** (Situation, Task, Action, Result) cho ít nhất 3 câu hỏi hành vi. Tập trung vào: Giải quyết xung đột, Làm việc nhóm, Quản lý ưu tiên, và Phù hợp văn hóa.\n3.  **Chiến lược Phân cấp độ:** Bắt đầu từ câu hỏi sàng lọc cơ bản, sau đó tăng dần độ khó để đào sâu vào các lĩnh vực kỹ thuật phức tạp nhất và cuối cùng là các câu hỏi về thái độ/động lực.\n\n### Định dạng Đầu ra BẮT BUỘC (Sử dụng cho Structured Output Parser)\n\nBạn phải trả lời bằng **một đối tượng JSON duy nhất**. KHÔNG sử dụng Markdown. KHÔNG thêm bất kỳ văn bản giải thích nào ngoài đối tượng JSON.\n\nĐối tượng JSON phải chứa hai mảng: `technical_questions` (chính xác 10 câu) và `soft_skills_questions` (chính xác 5 câu).\n\nMỗi đối tượng câu hỏi trong cả hai mảng phải **chỉ** có một trường duy nhất là `question` (string), chứa nội dung câu hỏi phỏng vấn.\n\n**Cấu trúc JSON Schema bắt buộc:**\n```json\n{\n  \"technical_questions\": [\n    {\"question\": \"...\"},\n    // ... 9 câu khác ...\n  ],\n  \"soft_skills_questions\": [\n    {\"question\": \"...\"},\n    // ... 4 câu khác ...\n  ]\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -4288,
+        1216
+      ],
+      "id": "b1bde13c-4179-4f8e-8e20-a4fa5d324778",
+      "name": "Agent câu hỏi1"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -3584,
+        1068
+      ],
+      "id": "b6b51e36-501d-4a96-9378-8be5bb0b04b7",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// TRUY CẬP CHÍNH XÁC VÀO LỚP 'output'\nconst input_data = items[0].json.output; \n\n// Kiểm tra xem dữ liệu có tồn tại không trước khi đọc thuộc tính\nif (!input_data || !input_data.technical_questions || !input_data.soft_skills_questions) {\n    // Thông báo lỗi nếu cấu trúc JSON không đúng\n    throw new Error(\"Dữ liệu đầu ra từ Structured Output Parser không đúng định dạng JSON yêu cầu.\");\n}\n\nconst technicalQuestions = input_data.technical_questions;\nconst softSkillQuestions = input_data.soft_skills_questions;\n\n// 1. Tạo chuỗi cho câu hỏi Kỹ thuật\nlet technicalString = \"### CÂU HỎI KỸ THUẬT (Technical Questions):\\n\";\ntechnicalQuestions.forEach((item, index) => {\n    technicalString += `${index + 1}. ${item.question}\\n`;\n});\n\n// 2. Tạo chuỗi cho câu hỏi Kỹ năng mềm\nlet softSkillString = \"\\n### CÂU HỎI KỸ NĂNG MỀM (Soft Skills Questions):\\n\";\nsoftSkillQuestions.forEach((item, index) => {\n    softSkillString += `${index + 1}. ${item.question}\\n`;\n});\n\n// 3. Ghép nối hai chuỗi\nconst combinedList = technicalString + softSkillString;\n\n// Trả về đối tượng mới để Google Sheet sử dụng\nreturn [{\n  json: {\n    question_for_candidate: combinedList\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3872,
+        1216
+      ],
+      "id": "93b15b8a-192c-4ff3-ad1f-d058da8f61ef",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-docx-converter.docxToText",
+      "typeVersion": 1,
+      "position": [
+        -5856,
+        1164
+      ],
+      "id": "6dd67dc6-5849-4f9e-ad05-62483a3081d5",
+      "name": "DOCX to Text1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pdf.co/v1/pdf/convert/to/png",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "huyvo8500@gmail.com_WLXjOykYtiR9U8YvQl2RiCdhrNSnj2tWB7yrl7gKzBUKe4H0IDC9JEj3mYVqIzbK"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "=https://drive.google.com/file/d/{{ $('Loop Over Items1').item.json.id }}"
+            },
+            {
+              "name": "inline",
+              "value": "true"
+            },
+            {
+              "name": "pages",
+              "value": "0-"
+            },
+            {
+              "name": "async",
+              "value": "false"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -5408,
+        1140
+      ],
+      "id": "a1dde6a5-cee8-44d4-a5be-f7795b7b88c6",
+      "name": "Convert PDF2Image1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const pages = [];\nlet fullText = \"\";\n\nitems.forEach((it, idx) => {\n  const resp = it.json;\n  let text = \"\";\n\n  if (resp.output_text) {\n    text = resp.output_text;\n  } else if (resp.output) {\n    for (const o of resp.output) {\n      if (o.content) {\n        for (const c of o.content) {\n          if (c.type === 'output_text' && c.text) {\n            text += c.text + \"\\n\";\n          }\n        }\n      }\n    }\n  }\n\n  text = text.trim();\n\n  pages.push({\n    page: idx,    // page 0,1,2...\n    text\n  });\n\n  // Giữ lại phần này nếu bạn vẫn muốn đánh dấu trang trong fullText\n  fullText += `--- Page ${idx} ---\\n${text}\\n\\n`;\n});\n\n// THAY ĐỔI Ở ĐÂY: Chỉ trả về một object với key là 'text'\nreturn {\n  text: fullText.trim()\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4736,
+        1140
+      ],
+      "id": "a8a10c6c-354c-40fd-9ee5-e4aab7cb8710",
+      "name": "FN_Info1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/responses",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"Authorization\": \"Bearer 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\",\n  \"Content-Type\": \"application/json\"\n}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o-mini\",\n  \"input\": [\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\"type\":\"input_text\",\"text\":\"Extract all visible text from the image. Return only the plain text.\"},\n        {\"type\":\"input_image\",\"image_url\":\"{{$json.url}}\"}\n      ]\n    }\n  ]\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -4960,
+        1140
+      ],
+      "id": "23bd8af8-7299-4b50-bb63-cf96a16d3ec8",
+      "name": "OCR OpenAI1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// items[0].json.urls assumed\nconst arr = items[0].json.urls || [];\nreturn arr.map((u, i) => ({ json: { page: i+1, url: u } }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -5184,
+        1140
+      ],
+      "id": "b37a6050-1eda-415a-8336-e8f8416356ee",
+      "name": "Get URL1"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -3360,
+        1068
+      ],
+      "id": "e7ec827d-c921-4ea0-9402-d5abaa26c14e",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "score-cv",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -6304,
+        972
+      ],
+      "id": "eb416c77-4ac0-4e52-94a9-4aacc5832aca",
+      "name": "Webhook1",
+      "webhookId": "0949afcd-d432-47a0-b0e8-aab90ac6bd4f"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/embeddings",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"input\": {{ JSON.stringify($json.payload.text) }},\n  \"model\": \"text-embedding-3-small\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -2700,
+        1068
+      ],
+      "id": "cba53f96-6106-49f5-9e5a-af2e1f53396d",
+      "name": "RAG Embedding1",
+      "credentials": {
+        "openAiApi": {
+          "id": "iCiSJp2rt9yhPy3g",
+          "name": "OpenAi account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "https://idiochromatic-cody-uninspiringly.ngrok-free.dev/collections/nds-chatbot-1536/points",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"points\": [\n    {\n      \"id\": {{ Math.floor(Math.random() * 1000000000) }},\n      \"vector\": {{ JSON.stringify($json.data[0].embedding) }},\n      \"payload\": {{ JSON.stringify($('Prepare RAG Sections').item.json.payload) }}\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -2400,
+        1068
+      ],
+      "id": "ce4caeb3-1d4c-489c-a71d-4b7b4650e204",
+      "name": "Qdrant Upsert1"
+    },
+    {
+      "name": "Prepare RAG Sections",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3000,
+        1068
+      ],
+      "id": "e4f029f9-a374-4fa6-a0f8-0f58bf79c3bc",
+      "parameters": {
+        "jsCode": "// Prepare RAG Sections\nconst sectionsResults = [];\n\n// Get Resume Content from 'candidate CV1' node\nconst candidateItems = $('candidate CV1').all();\n\nfor (let i = 0; i < items.length; i++) {\n    const item = items[i];\n    const aiOutput = item.json.output || {};\n    const candidateItem = candidateItems[i] ? candidateItems[i].json : {};\n    // IMPORTANT: Source of truth is the RAW resume content\n    const resumeContent = candidateItem.resume_content || \"\";\n\n    // Get Name\n    let candidateName = aiOutput['Họ tên ứng viên'];\n    if (!candidateName && resumeContent) {\n        candidateName = resumeContent.split('\\n')[0].trim();\n    }\n    candidateName = candidateName || \"Unknown Candidate\";\n    \n    // Sanitize ID\n    const docIdRoot = candidateName.replace(/[^a-zA-Z0-9]/g, \"_\");\n\n    // 1. RAW CV SECTIONS\n    if (resumeContent) {\n        const headerPattern = /^(SUMMARY|EXPERIENCE|EDUCATION|CERTIFICATIONS|SKILLS|PROJECTS|TÓM TẮT|KINH NGHIỆM|HỌC VẤN|KỸ NĂNG|DỰ ÁN|REFERENCES|NGƯỜI THAM CHIẾU)(?:[:]?)$/i;\n        \n        const lines = resumeContent.split('\\n');\n        let currentSectionName = \"INFO\"; \n        let currentBuffer = [];\n        \n        for (const line of lines) {\n            const trimmedLine = line.trim();\n            if (!trimmedLine) continue;\n            \n            if (headerPattern.test(trimmedLine)) {\n                 if (currentBuffer.length > 0) {\n                     const secText = `[${candidateName}] - ${currentSectionName}:\\n` + currentBuffer.join('\\n');\n                     sectionsResults.push({\n                        json: {\n                            payload: {\n                                text: secText,\n                                file_name: candidateName,\n                                candidate_name: candidateName,\n                                section_name: currentSectionName,\n                                doc_id: `${docIdRoot}_${currentSectionName.toLowerCase()}`\n                            }\n                        }\n                     });\n                 }\n                 currentSectionName = trimmedLine.toUpperCase().replace(/[:]/g, '');\n                 currentBuffer = [];\n            } else {\n                currentBuffer.push(trimmedLine);\n            }\n        }\n        \n        if (currentBuffer.length > 0) {\n             const secText = `[${candidateName}] - ${currentSectionName}:\\n` + currentBuffer.join('\\n');\n             sectionsResults.push({\n                json: {\n                    payload: {\n                        text: secText,\n                        file_name: candidateName,\n                        candidate_name: candidateName,\n                        section_name: currentSectionName,\n                        doc_id: `${docIdRoot}_${currentSectionName.toLowerCase()}`\n                    }\n                }\n             });\n        }\n    }\n}\n\nreturn sectionsResults;"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser2": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lấy thông tin CV1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check null1": {
+      "main": [
+        [
+          {
+            "node": "candidate CV1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Convert PDF2Image1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Check null1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "candidate CV1": {
+      "main": [
+        [
+          {
+            "node": "Agent câu hỏi1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent câu hỏi1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser3": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Agent câu hỏi1",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent câu hỏi1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "DOCX to Text1": {
+      "main": [
+        [
+          {
+            "node": "Check null1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert PDF2Image1": {
+      "main": [
+        [
+          {
+            "node": "Get URL1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FN_Info1": {
+      "main": [
+        [
+          {
+            "node": "candidate CV1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OCR OpenAI1": {
+      "main": [
+        [
+          {
+            "node": "FN_Info1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get URL1": {
+      "main": [
+        [
+          {
+            "node": "OCR OpenAI1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Lấy thông tin CV1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Prepare RAG Sections",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RAG Embedding1": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Upsert1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare RAG Sections": {
+      "main": [
+        [
+          {
+            "node": "RAG Embedding1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "231aa023-936c-4eb5-aa5c-b12cbda2f785",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "df174d571e95541c805919aa88d99c6ff9e79e2c1ffc42837bb92614d24bb4eb"
+  },
+  "id": "oQbvmXieQU8LvZLG",
+  "tags": []
+}
