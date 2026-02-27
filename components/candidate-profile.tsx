@@ -33,89 +33,94 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Typewriter } from "@/components/ui/typewriter"
 import { useReactToPrint } from "react-to-print"
 import { triggerEmailWorkflow } from "@/lib/api"
+import { EmailPreviewModal } from "./email-preview-modal"
 
 interface CandidateProfileProps {
     candidate: Candidate
     children: React.ReactNode
+    hideEmailButton?: boolean
 }
 
 // --- Printable Component ---
 const PrintableProfile = React.forwardRef<HTMLDivElement, { candidate: Candidate }>(({ candidate }, ref) => {
     return (
-        <div ref={ref} className="p-8 font-sans text-slate-900 bg-white min-h-[297mm] w-[210mm] mx-auto print:mx-0 print:w-full">
+        <div ref={ref} className="p-10 font-sans text-slate-900 bg-white min-h-[297mm] w-[210mm] mx-auto print:mx-0 print:w-[100%] print:p-8">
             <style type="text/css" media="print">
                 {`
-               @page { size: A4; margin: 15mm; }
-               body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+               @page { size: A4; margin: 10mm 15mm; }
+               body { -webkit-print-color-adjust: exact; print-color-adjust: exact; font-family: 'Inter', sans-serif; }
                .no-print { display: none !important; }
+               * { page-break-inside: avoid; }
              `}
             </style>
 
             {/* Header */}
-            <div className="border-b-2 border-slate-800 pb-6 mb-8 flex justify-between items-start">
-                <div className="space-y-2">
-                    <h1 className="text-3xl font-extrabold tracking-tight uppercase text-slate-900">{candidate.name}</h1>
-                    <div className="flex flex-col gap-1 text-sm text-slate-600 font-medium">
+            <div className="border-b-4 border-slate-800 pb-6 mb-6 flex justify-between items-start">
+                <div className="space-y-3 flex-1">
+                    <h1 className="text-4xl font-black tracking-tight uppercase text-slate-900">{candidate.name}</h1>
+                    <div className="flex flex-col gap-1.5 text-sm text-slate-700 font-medium pb-2">
                         {candidate.email && (
                             <div className="flex items-center gap-2">
-                                <Mail className="h-4 w-4" /> {candidate.email}
+                                <Mail className="h-4 w-4 text-slate-500" /> {candidate.email}
                             </div>
                         )}
                         {candidate.phone && (
                             <div className="flex items-center gap-2">
-                                <Phone className="h-4 w-4" /> {candidate.phone}
+                                <Phone className="h-4 w-4 text-slate-500" /> {candidate.phone}
                             </div>
                         )}
                     </div>
                 </div>
 
-                <div className="text-right">
-                    <div className="inline-flex flex-col items-center justify-center bg-slate-100 border border-slate-200 p-4 rounded-xl min-w-[100px]">
-                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Điểm số</span>
-                        <span className="text-4xl font-black text-slate-900 mt-1">{candidate.score}</span>
-                        <span className="text-xs font-medium text-slate-400 mt-1">/ 100</span>
+                <div className="text-right shrink-0">
+                    <div className="inline-flex flex-col items-center justify-center bg-slate-50 border-2 border-slate-200 p-5 rounded-2xl min-w-[120px]">
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Điểm Phù Hợp</span>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-5xl font-black text-slate-900 leading-none">{candidate.score}</span>
+                            <span className="text-lg font-bold text-slate-400">/ 100</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
             {/* Layout Grid */}
-            <div className="grid grid-cols-12 gap-8">
+            <div className="grid grid-cols-12 gap-10">
                 {/* Left Col (Main) */}
                 <div className="col-span-8 space-y-8">
                     {/* Summary */}
                     <section>
-                        <h2 className="text-lg font-bold uppercase tracking-wider text-slate-900 mb-3 border-l-4 border-slate-800 pl-3">
+                        <h2 className="text-xl font-black uppercase tracking-widest text-slate-900 mb-3 border-l-4 border-indigo-600 pl-3">
                             Tóm tắt hồ sơ
                         </h2>
-                        <div className="text-sm leading-relaxed text-slate-700 text-justify bg-slate-50 p-4 rounded-lg">
+                        <div className="text-sm leading-relaxed text-slate-800 text-justify bg-slate-50 p-5 rounded-xl border border-slate-100">
                             {candidate.summary}
                         </div>
                     </section>
 
                     {/* Pros and Cons */}
                     <div className="grid grid-cols-2 gap-6">
-                        <section>
-                            <h3 className="text-sm font-bold uppercase text-green-700 mb-2 flex items-center gap-2">
-                                <Star className="h-4 w-4" /> Ưu điểm
+                        <section className="bg-green-50/50 p-5 rounded-xl border border-green-100">
+                            <h3 className="text-base font-bold uppercase text-green-800 mb-3 flex items-center gap-2">
+                                <Star className="h-5 w-5" /> Ưu điểm
                             </h3>
-                            <ul className="space-y-2">
+                            <ul className="space-y-2.5">
                                 {(candidate.pros?.length ? candidate.pros : candidate.strengths)?.map((item, i) => (
-                                    <li key={i} className="text-xs text-slate-700 flex items-start gap-2">
-                                        <div className="h-1.5 w-1.5 rounded-full bg-green-600 mt-1 shrink-0" />
-                                        {item}
+                                    <li key={i} className="text-sm text-slate-800 flex items-start gap-2">
+                                        <div className="h-1.5 w-1.5 rounded-full bg-green-600 mt-1.5 shrink-0" />
+                                        <span className="leading-relaxed">{item}</span>
                                     </li>
                                 ))}
                             </ul>
                         </section>
-                        <section>
-                            <h3 className="text-sm font-bold uppercase text-red-700 mb-2 flex items-center gap-2">
-                                <AlertTriangle className="h-4 w-4" /> Nhược điểm
+                        <section className="bg-red-50/50 p-5 rounded-xl border border-red-100">
+                            <h3 className="text-base font-bold uppercase text-red-800 mb-3 flex items-center gap-2">
+                                <AlertTriangle className="h-5 w-5" /> Nhược điểm
                             </h3>
-                            <ul className="space-y-2">
+                            <ul className="space-y-2.5">
                                 {(candidate.cons?.length ? candidate.cons : candidate.weaknesses)?.map((item, i) => (
-                                    <li key={i} className="text-xs text-slate-700 flex items-start gap-2">
-                                        <div className="h-1.5 w-1.5 rounded-full bg-red-600 mt-1 shrink-0" />
-                                        {item}
+                                    <li key={i} className="text-sm text-slate-800 flex items-start gap-2">
+                                        <div className="h-1.5 w-1.5 rounded-full bg-red-600 mt-1.5 shrink-0" />
+                                        <span className="leading-relaxed">{item}</span>
                                     </li>
                                 ))}
                             </ul>
@@ -124,16 +129,21 @@ const PrintableProfile = React.forwardRef<HTMLDivElement, { candidate: Candidate
 
                     {/* Interview Questions */}
                     {((candidate.technical_questions?.length ?? 0) > 0) && (
-                        <section className="pt-4 border-t border-slate-200">
-                            <h2 className="text-lg font-bold uppercase tracking-wider text-slate-900 mb-4 border-l-4 border-slate-800 pl-3">
+                        <section className="pt-4 mt-6 border-t-2 border-slate-100">
+                            <h2 className="text-xl font-black uppercase tracking-widest text-slate-900 mb-4 border-l-4 border-indigo-600 pl-3">
                                 Đề xuất phỏng vấn
                             </h2>
-                            <div className="space-y-4">
+                            <div className="space-y-4 bg-slate-50 p-5 rounded-xl border border-slate-100">
                                 <div>
-                                    <h4 className="text-sm font-bold text-slate-800 mb-2">Chuyên môn</h4>
-                                    <ul className="list-disc pl-5 space-y-1">
+                                    <h4 className="text-sm font-bold text-indigo-900 mb-3 flex items-center gap-2">
+                                        <Brain className="h-4 w-4" /> Kỹ năng chuyên môn
+                                    </h4>
+                                    <ul className="space-y-2">
                                         {(candidate.technical_questions || []).slice(0, 4).map((q, i) => (
-                                            <li key={i} className="text-xs text-slate-700">{typeof q === 'string' ? q : ''}</li>
+                                            <li key={i} className="text-sm text-slate-700 flex items-start gap-2">
+                                                <span className="text-indigo-400 font-bold mt-0.5">•</span>
+                                                <span>{typeof q === 'string' ? q : ''}</span>
+                                            </li>
                                         ))}
                                     </ul>
                                 </div>
@@ -144,46 +154,73 @@ const PrintableProfile = React.forwardRef<HTMLDivElement, { candidate: Candidate
 
                 {/* Right Col (Sidebar) */}
                 <div className="col-span-4 space-y-8">
+                    {/* Experience */}
+                    <section>
+                        <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">Kinh nghiệm</h2>
+                        <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100 flex items-center gap-3">
+                            <div className="bg-white p-3 rounded-lg print:border print:border-indigo-200">
+                                <Briefcase className="h-6 w-6 text-indigo-600" />
+                            </div>
+                            <div>
+                                <span className="text-3xl font-black text-indigo-700 block leading-none mb-1">{candidate.experience_years}+</span>
+                                <span className="text-[10px] text-indigo-600 uppercase font-black tracking-widest">Năm làm việc</span>
+                            </div>
+                        </div>
+                    </section>
+
                     {/* Details Breakdown */}
                     <section>
-                        <h2 className="text-sm font-bold uppercase text-slate-400 mb-4">Chi tiết điểm</h2>
-                        <div className="space-y-3">
-                            {Object.entries((candidate as any).score_details || {} as any).map(([key, val]) => (
-                                <div key={key} className="flex justify-between items-center text-sm border-b border-dashed border-slate-200 pb-1">
-                                    <span className="capitalize text-slate-600">{key.replace('_score', '').replace('techStack', 'Tech')}</span>
-                                    <span className="font-bold text-slate-900">{String(val)}</span>
-                                </div>
-                            ))}
+                        <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4">Chi tiết điểm</h2>
+                        <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            {Object.entries((candidate as any).score_details || {} as any).map(([key, val]) => {
+                                const labelMap: Record<string, string> = {
+                                    'experience_score': 'Kinh nghiệm',
+                                    'skills_score': 'Kỹ năng',
+                                    'education_score': 'Học vấn',
+                                    'potential_score': 'Tiềm năng'
+                                };
+                                const label = labelMap[key] || key.replace('_score', '');
+                                return (
+                                    <div key={key} className="flex justify-between items-center text-sm border-b border-dashed border-slate-200 pb-2 last:border-0 last:pb-0">
+                                        <span className="font-semibold text-slate-600">{label}</span>
+                                        <span className="font-black text-indigo-900 bg-white px-2 py-0.5 rounded shadow-sm print:border">{String(val)}</span>
+                                    </div>
+                                )
+                            })}
                         </div>
                     </section>
 
                     {/* Skills */}
                     <section>
-                        <h2 className="text-sm font-bold uppercase text-slate-400 mb-4">Kỹ năng chuyên môn</h2>
+                        <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4">Kỹ năng tìm thấy</h2>
                         <div className="flex flex-wrap gap-2">
                             {candidate.skills_found?.map((skill, i) => (
-                                <span key={i} className="px-2 py-1 bg-slate-100 text-slate-700 text-xs font-semibold rounded border border-slate-200">
+                                <span key={i} className="px-3 py-1.5 bg-slate-100 text-slate-800 text-xs font-bold rounded-lg border border-slate-200 print:bg-white">
                                     {skill}
                                 </span>
                             ))}
                         </div>
                     </section>
 
-                    {/* Experience */}
-                    <section>
-                        <h2 className="text-sm font-bold uppercase text-slate-400 mb-4">Kinh nghiệm</h2>
-                        <div className="p-3 bg-purple-50 rounded border border-purple-100">
-                            <span className="text-2xl font-bold text-purple-700 block">{candidate.experience_years} +</span>
-                            <span className="text-xs text-purple-600 uppercase font-semibold">Năm làm việc</span>
+                    {/* File / Link Note */}
+                    <section className="pt-4 border-t-2 border-slate-100">
+                        <div className="text-xs text-slate-500 italic p-3 bg-yellow-50 rounded-lg border border-yellow-100 text-center">
+                            Hồ sơ gốc được lưu trữ trên hệ thống NDS.
                         </div>
                     </section>
                 </div>
             </div>
 
             {/* Footer */}
-            <div className="mt-12 pt-6 border-t font-mono text-xs text-slate-400 flex justify-between">
-                <span>Generated by CVs-Web AI</span>
-                <span>{new Date().toLocaleDateString('vi-VN')}</span>
+            <div className="mt-12 pt-6 border-t-2 border-slate-800 font-mono text-[10px] text-slate-500 flex justify-between uppercase tracking-widest items-end">
+                <div>
+                    <strong className="block text-slate-900 mb-1">Talent-IQ / NDS Vietnam</strong>
+                    <span>Báo cáo phân tích ứng viên tự động</span>
+                </div>
+                <div className="text-right">
+                    <span className="block border-b border-slate-300 pb-1 mb-1">Ngày xuất báo cáo</span>
+                    <strong className="text-slate-900">{new Date().toLocaleDateString('vi-VN')}</strong>
+                </div>
             </div>
         </div>
     )
@@ -191,12 +228,13 @@ const PrintableProfile = React.forwardRef<HTMLDivElement, { candidate: Candidate
 PrintableProfile.displayName = "PrintableProfile";
 
 
-export function CandidateProfile({ candidate, children }: CandidateProfileProps) {
-    const { updateCandidateStatus } = useCandidates()
+export function CandidateProfile({ candidate, children, hideEmailButton = false }: CandidateProfileProps) {
+    const { updateCandidateStatus, jobRequirements } = useCandidates()
     const [open, setOpen] = useState(false)
     const [showContactAlert, setShowContactAlert] = useState(false)
     const [showRejectAlert, setShowRejectAlert] = useState(false)
     const [isContacting, setIsContacting] = useState(false)
+    const [isRejecting, setIsRejecting] = useState(false)
 
     // Questions Derived State
     const questions = (candidate.technical_questions?.length || candidate.soft_skill_questions?.length)
@@ -247,15 +285,34 @@ export function CandidateProfile({ candidate, children }: CandidateProfileProps)
         }
     }
 
-    const confirmReject = () => {
-        updateCandidateStatus(candidate.id, 'rejected')
-        setShowRejectAlert(false)
-        toast.error(`Đã từ chối ứng viên ${candidate.name}`, {
-            description: <span className="text-red-900 font-semibold text-base block mt-1">Ứng viên đã được chuyển sang danh sách loại.</span>,
-            duration: 4000,
-            className: "bg-red-50 border-red-200 group-[.toaster]:shadow-lg group-[.toaster]:bg-red-50 group-[.toaster]:border-red-200",
-            icon: <AlertCircle className="h-5 w-5 text-red-600" />
-        })
+    const confirmReject = async () => {
+        setIsRejecting(true);
+        try {
+            toast.info(`Đang xử lý từ chối ứng viên ${candidate.name}...`);
+
+            await triggerEmailWorkflow({
+                name: candidate.name,
+                email: candidate.email,
+                status: 'rejected',
+                role: 'candidate'
+            });
+
+            updateCandidateStatus(candidate.id, 'rejected')
+            setShowRejectAlert(false)
+            toast.error(`Đã từ chối ứng viên ${candidate.name}`, {
+                description: <span className="text-red-900 font-semibold text-base block mt-1">Ứng viên đã được chuyển sang danh sách loại và email thông báo đã được gửi.</span>,
+                duration: 4000,
+                className: "bg-red-50 border-red-200 group-[.toaster]:shadow-lg group-[.toaster]:bg-red-50 group-[.toaster]:border-red-200",
+                icon: <AlertCircle className="h-5 w-5 text-red-600" />
+            })
+        } catch (error) {
+            console.error("Reject failed:", error);
+            toast.error("Từ chối thất bại", {
+                description: "Vui lòng kiểm tra lại kết nối hoặc thử lại sau."
+            });
+        } finally {
+            setIsRejecting(false);
+        }
     }
 
 
@@ -320,9 +377,24 @@ export function CandidateProfile({ candidate, children }: CandidateProfileProps)
                         </div>
 
                         {/* Status (Right Side) */}
-                        <div className="flex items-center gap-4">
-                            <Badge variant="outline" className="text-base px-3 py-1 font-medium bg-muted/50">
-                                {candidate.status.toUpperCase()}
+                        <div className="flex items-center gap-2 sm:gap-4">
+                            {!hideEmailButton && (
+                                <>
+                                    <EmailPreviewModal candidate={candidate} jobPosition={jobRequirements?.job_position}>
+                                        <Button variant="outline" size="sm" className="gap-2 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 border-indigo-200 shadow-sm hidden sm:flex">
+                                            <Mail className="h-4 w-4" />
+                                            Gửi Email
+                                        </Button>
+                                    </EmailPreviewModal>
+                                    <EmailPreviewModal candidate={candidate} jobPosition={jobRequirements?.job_position}>
+                                        <Button variant="outline" size="icon" className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 border-indigo-200 sm:hidden">
+                                            <Mail className="h-4 w-4" />
+                                        </Button>
+                                    </EmailPreviewModal>
+                                </>
+                            )}
+                            <Badge variant="outline" className="text-base px-3 py-1 font-medium bg-muted/50 hidden sm:inline-flex">
+                                {(candidate.status || "NEW").toUpperCase()}
                             </Badge>
                         </div>
                     </div>
@@ -531,7 +603,7 @@ export function CandidateProfile({ candidate, children }: CandidateProfileProps)
                         <Button
                             variant="secondary"
                             onClick={() => handlePrint()}
-                            className="gap-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 shadow-sm"
+                            className="gap-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 shadow-sm"
                         >
                             <Printer className="h-4 w-4" />
                             Export PDF
@@ -541,14 +613,16 @@ export function CandidateProfile({ candidate, children }: CandidateProfileProps)
                     <div className="flex w-full sm:justify-end gap-2">
                         <Button
                             variant="destructive"
-                            className="flex-1 sm:flex-none border-red-200 dark:border-red-900/50 bg-white dark:bg-slate-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 border shadow-sm"
+                            className="flex-1 sm:flex-none border-red-200 dark:border-red-900/50 bg-white dark:bg-slate-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 border shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                             onClick={() => setShowRejectAlert(true)}
+                            disabled={candidate.status === 'rejected' || candidate.status === 'shortlisted'}
                         >
                             <X className="mr-2 h-4 w-4" /> Từ chối
                         </Button>
                         <Button
-                            className="flex-1 sm:flex-none bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 hover:from-purple-700 hover:via-pink-700 hover:to-orange-600 border-0 text-white shadow-md hover:shadow-lg transition-all"
+                            className="flex-1 sm:flex-none bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 hover:from-purple-700 hover:via-pink-700 hover:to-orange-600 border-0 text-white shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             onClick={() => setShowContactAlert(true)}
+                            disabled={candidate.status === 'rejected' || candidate.status === 'shortlisted'}
                         >
                             <CheckCircle2 className="mr-2 h-4 w-4" /> Liên hệ phỏng vấn
                         </Button>
@@ -584,8 +658,8 @@ export function CandidateProfile({ candidate, children }: CandidateProfileProps)
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Hủy</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmReject} className="bg-red-600 hover:bg-red-700 text-white">
-                            Xác nhận từ chối
+                        <AlertDialogAction onClick={confirmReject} disabled={isRejecting} className="bg-red-600 hover:bg-red-700 text-white">
+                            {isRejecting ? "Đang xử lý..." : "Xác nhận từ chối"}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

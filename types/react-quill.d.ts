@@ -1,0 +1,34 @@
+declare module 'react-quill' {
+    import React from 'react';
+    export interface QuillOptions {
+        theme?: string;
+        modules?: Record<string, any>;
+        formats?: string[];
+        bounds?: string | HTMLElement;
+        placeholder?: string;
+        readOnly?: boolean;
+        scrollingContainer?: string | HTMLElement;
+        tabIndex?: number;
+    }
+    export interface ReactQuillProps extends QuillOptions {
+        value?: string;
+        defaultValue?: string;
+        onChange?: (content: string, delta: any, source: string, editor: any) => void;
+        onChangeSelection?: (selection: any, source: string, editor: any) => void;
+        onFocus?: (selection: any, source: string, editor: any) => void;
+        onBlur?: (previousSelection: any, source: string, editor: any) => void;
+        onKeyDown?: React.EventHandler<any>;
+        onKeyPress?: React.EventHandler<any>;
+        onKeyUp?: React.EventHandler<any>;
+        preserveWhitespace?: boolean;
+        className?: string;
+        style?: React.CSSProperties;
+        id?: string;
+        children?: React.ReactElement;
+    }
+    export default class ReactQuill extends React.Component<ReactQuillProps> {
+        focus(): void;
+        blur(): void;
+        getEditor(): any;
+    }
+}

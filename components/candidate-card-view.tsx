@@ -22,6 +22,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { EmailPreviewModal } from "./email-preview-modal"
 
 interface CandidateCardViewProps {
     candidates: Candidate[]
@@ -48,7 +49,7 @@ function ExpandableSummary({ text }: { text: string }) {
 }
 
 export function CandidateCardView({ candidates }: CandidateCardViewProps) {
-    const { sortConfig, deleteCandidate } = useCandidates()
+    const { sortConfig, deleteCandidate, jobRequirements } = useCandidates()
 
 
 
@@ -165,7 +166,7 @@ export function CandidateCardView({ candidates }: CandidateCardViewProps) {
                                     {candidate.name}
                                 </h3>
                                 <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/30 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors font-semibold border-transparent">
-                                    {candidate.experience_years > 5 ? "Senior BA" : "Business Analyst"} • {candidate.experience_years} năm
+                                    {candidate.applied_role || "Business Analyst"} • {candidate.experience_years} năm
                                 </Badge>
                             </div>
                             {/* Score Badge */}
@@ -208,11 +209,13 @@ export function CandidateCardView({ candidates }: CandidateCardViewProps) {
                                 </Tooltip>
 
                                 <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30" onClick={() => window.open(`mailto:${candidate.email}`)}>
-                                            <Mail className="h-4 w-4" />
-                                        </Button>
-                                    </TooltipTrigger>
+                                    <EmailPreviewModal candidate={candidate} jobPosition={jobRequirements?.job_position}>
+                                        <TooltipTrigger asChild>
+                                            <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30">
+                                                <Mail className="h-4 w-4" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                    </EmailPreviewModal>
                                     <TooltipContent>
                                         <p>{candidate.email}</p>
                                     </TooltipContent>

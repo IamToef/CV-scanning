@@ -1,0 +1,110 @@
+{
+    "name": "Send Email",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "send-email",
+                "responseMode": "lastNode",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2.1,
+            "position": [
+                -200,
+                300
+            ],
+            "id": "webhook-send-email",
+            "name": "Webhook",
+            "webhookId": "send-email-webhook-id"
+        },
+        {
+            "parameters": {
+                "fromEmail": "nhansu@ndsvn.vn",
+                "toEmail": "={{ $json.body.to }}",
+                "subject": "={{ $json.body.subject }}",
+                "emailFormat": "both",
+                "text": "={{ $json.body.text }}",
+                "html": "={{ $json.body.html }}",
+                "options": {
+                    "appendAttribution": false
+                }
+            },
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 2.1,
+            "position": [
+                100,
+                300
+            ],
+            "id": "send-email-node",
+            "name": "Send Email",
+            "credentials": {
+                "smtp": {
+                    "id": "YCqLHT8aOzZtR5VD",
+                    "name": "SMTP account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "result-field",
+                            "name": "success",
+                            "value": true,
+                            "type": "boolean"
+                        },
+                        {
+                            "id": "result-message",
+                            "name": "message",
+                            "value": "Email sent successfully",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                400,
+                300
+            ],
+            "id": "result-node",
+            "name": "Result"
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Send Email",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send Email": {
+            "main": [
+                [
+                    {
+                        "node": "Result",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "meta": {
+        "templateCredsSetupCompleted": true
+    },
+    "tags": []
+}

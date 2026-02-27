@@ -25,6 +25,13 @@ const robotoMono = Roboto_Mono({
 export const metadata: Metadata = {
   title: "RecruitPRO - AI Recruitment Dashboard",
   description: "AI-powered Applicant Tracking System",
+  icons: {
+    icon: [
+      { url: "/favicon.webp", type: "image/webp" },
+      { url: "/icon", type: "image/webp" },
+    ],
+    apple: "/favicon.webp",
+  },
 };
 
 export default function RootLayout({
@@ -34,6 +41,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="icon" href="/favicon.webp" type="image/webp" />
+        <link rel="apple-touch-icon" href="/favicon.webp" />
+      </head>
       <body
         className={`${inter.variable} ${robotoMono.variable} antialiased`}
         suppressHydrationWarning

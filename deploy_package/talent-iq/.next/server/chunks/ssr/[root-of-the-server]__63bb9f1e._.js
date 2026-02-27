@@ -1,0 +1,3 @@
+module.exports=[24361,(a,b,c)=>{b.exports=a.x("util",()=>require("util"))},14747,(a,b,c)=>{b.exports=a.x("path",()=>require("path"))},96320,a=>{"use strict";let b=(0,a.i(51059).default)("briefcase",[["path",{d:"M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16",key:"jecpp"}],["rect",{width:"20",height:"14",x:"2",y:"6",rx:"2",key:"i6l2r4"}]]);a.s(["Briefcase",()=>b],96320)},22734,(a,b,c)=>{b.exports=a.x("fs",()=>require("fs"))},88947,(a,b,c)=>{b.exports=a.x("stream",()=>require("stream"))},27699,(a,b,c)=>{b.exports=a.x("events",()=>require("events"))},874,(a,b,c)=>{b.exports=a.x("buffer",()=>require("buffer"))},46786,(a,b,c)=>{b.exports=a.x("os",()=>require("os"))}];
+
+//# sourceMappingURL=%5Broot-of-the-server%5D__63bb9f1e._.js.map

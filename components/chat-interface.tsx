@@ -39,7 +39,7 @@ export function ChatInterface() {
             return dbName === chatName || dbName.includes(chatName) || chatName.includes(dbName);
         });
 
-        if (!fullCandidate) return chatCandidate;
+        if (!fullCandidate) return { ...chatCandidate, status: 'new' };
 
         // Calculate Score dynamically (like in CandidateTable)
         const details = fullCandidate.score_details || fullCandidate.reasoning || {};
@@ -159,10 +159,11 @@ export function ChatInterface() {
                                                                     rel="noopener noreferrer"
                                                                 />
                                                             ),
-                                                            p: ({ node, ...props }) => <p {...props} className="mb-2 last:mb-0" />,
+                                                            p: ({ node, ...props }) => <p {...props} className="mb-2 last:mb-0 whitespace-pre-wrap" />,
                                                             ul: ({ node, ...props }) => <ul {...props} className="list-disc ml-4 mb-2" />,
                                                             ol: ({ node, ...props }) => <ol {...props} className="list-decimal ml-4 mb-2" />,
-                                                            li: ({ node, ...props }) => <li {...props} className="mb-0.5" />
+                                                            li: ({ node, ...props }) => <li {...props} className="mb-0.5" />,
+                                                            strong: ({ node, ...props }) => <span {...props} className="font-bold text-indigo-600 dark:text-indigo-400 block mt-4 mb-1" />
                                                         }}
                                                     >
                                                         {msg.content}
@@ -199,7 +200,7 @@ export function ChatInterface() {
 
                                             {msg.candidates && msg.candidates.length > 0 && (
                                                 <div className="pl-12 mt-3 w-full animate-in fade-in slide-in-from-bottom-2 duration-500">
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         {msg.candidates.map((candidate, idx) => (
                                                             <div key={idx} className="w-full">
                                                                 <ChatCandidateCard candidate={getEnrichedCandidate(candidate)} />

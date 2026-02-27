@@ -17,6 +17,8 @@ export async function POST(
         targetUrl = process.env.N8N_CHAT_WEBHOOK_URL;
     } else if (path.includes('jd-extraction') && process.env.N8N_EXTRACTJD_WEBHOOK_URL) {
         targetUrl = process.env.N8N_EXTRACTJD_WEBHOOK_URL;
+    } else if (path.includes('send-email') && process.env.N8N_SENDEMAIL_WEBHOOK_URL) {
+        targetUrl = process.env.N8N_SENDEMAIL_WEBHOOK_URL;
     } else {
         // Fallback to base URL logic
         const n8nBase = process.env.N8N_WEBHOOK_BASE;

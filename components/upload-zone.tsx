@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useCandidates } from "@/components/candidate-context"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
-import { Upload, FileText, Loader2, CloudUpload, FileType, CheckCircle2, X, ArrowRight, Sparkles, Edit2, Briefcase, GraduationCap, Code2, Users, Save } from "lucide-react"
+import { Upload, FileText, Loader2, CloudUpload, FileType, CheckCircle2, X, ArrowRight, Sparkles, Edit2, Briefcase, GraduationCap, Code2, Users, Save, MapPin } from "lucide-react"
 import { toast } from "sonner"
 import { uploadJDAndCVs, extractRequirementsFromJD } from "@/lib/api"
 import { Candidate, JobRequirements } from "@/types"
@@ -174,8 +174,13 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
         try {
             const result = await uploadJDAndCVs(jd, files)
             if (result && result.candidates) {
-                onAnalysisComplete(result.candidates)
-                toast.success(`Hoàn tất! Đã chấm ${result.candidates.length} ứng viên.`, { id: toastId })
+                const currentRole = jobRequirements?.job_position || "Business Analyst";
+                const updatedCandidates = result.candidates.map(c => ({
+                    ...c,
+                    applied_role: currentRole !== "Business Analyst" ? currentRole : (c.applied_role || "Business Analyst")
+                }));
+                onAnalysisComplete(updatedCandidates)
+                toast.success(`Hoàn tất! Đã chấm ${updatedCandidates.length} ứng viên.`, { id: toastId })
                 setFiles([]); // Clear files after successful processing
             } else {
                 throw new Error("No candidates received")
@@ -366,6 +371,17 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
                             <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
                                 <div className="space-y-2">
                                     <label className="text-xs font-semibold text-primary flex items-center gap-2">
+                                        <MapPin className="h-3 w-3" /> Vị trí công việc
+                                    </label>
+                                    <Input
+                                        value={editForm.job_position || ''}
+                                        onChange={(e) => setEditForm(p => ({ ...p, job_position: e.target.value }))}
+                                        placeholder="VD: Business Analyst (Junior/Middle)"
+                                        className="text-sm"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-semibold text-primary flex items-center gap-2">
                                         <Code2 className="h-3 w-3" /> Kỹ năng chuyên môn
                                     </label>
                                     <Textarea
@@ -443,6 +459,19 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
                             </div>
                         ) : jobRequirements ? (
                             <div className="space-y-4 animate-in fade-in duration-500">
+                                {/* Job Position */}
+                                {jobRequirements.job_position && (
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2 text-primary font-semibold text-sm">
+                                            <MapPin className="h-4 w-4" />
+                                            <span>Vị trí tuyển dụng</span>
+                                        </div>
+                                        <p className="pl-6 text-sm font-medium text-foreground">{jobRequirements.job_position}</p>
+                                    </div>
+                                )}
+
+                                {jobRequirements.job_position && jobRequirements.technical_skills?.length > 0 && <Separator className="bg-primary/10" />}
+
                                 {/* Technical Skills */}
                                 {jobRequirements.technical_skills?.length > 0 && (
                                     <div className="space-y-2">
@@ -476,14 +505,14 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
                                                     {jobRequirements.years_of_experience.min_years} năm:
                                                 </span>
                                             )} */}
-                                            {jobRequirements.years_of_experience.description.includes('\n') ? (
+                                            {jobRequirements.years_of_experience.description?.includes('\n') ? (
                                                 <ul className="list-disc pl-4 mt-1 space-y-1">
                                                     {jobRequirements.years_of_experience.description.split('\n').map((line, i) => (
                                                         <li key={i}>{line}</li>
                                                     ))}
                                                 </ul>
                                             ) : (
-                                                <span>{jobRequirements.years_of_experience.description}</span>
+                                                <span>{jobRequirements.years_of_experience.description || ''}</span>
                                             )}
                                         </div>
                                     </div>
@@ -500,14 +529,14 @@ export function UploadZone({ onAnalysisComplete }: UploadZoneProps) {
                                         </div>
                                         <div className="pl-6 text-sm text-foreground/80 leading-relaxed">
                                             {jobRequirements.education.degree_level && <p className="font-medium">{jobRequirements.education.degree_level}</p>}
-                                            {jobRequirements.education.major.includes('\n') ? (
+                                            {jobRequirements.education.major?.includes('\n') ? (
                                                 <ul className="list-disc pl-4 mt-1 space-y-1">
                                                     {jobRequirements.education.major.split('\n').map((line, i) => (
                                                         <li key={i}>{line}</li>
                                                     ))}
                                                 </ul>
                                             ) : (
-                                                <p>{jobRequirements.education.major}</p>
+                                                <p>{jobRequirements.education.major || ''}</p>
                                             )}
 
                                             {jobRequirements.education.certifications?.length > 0 && (

@@ -1,0 +1,8 @@
+1:"$Sreact.fragment"
+2:I[9708,["/_next/static/chunks/d3ab59a1369cf594.js","/_next/static/chunks/049f3bbf4e4d1fc8.js","/_next/static/chunks/ea4e3a8aa3c40962.js","/_next/static/chunks/b9291a0cd40df845.js","/_next/static/chunks/2f2284bbf9f8e762.js"],"ViewportBoundary"]
+4:I[9708,["/_next/static/chunks/d3ab59a1369cf594.js","/_next/static/chunks/049f3bbf4e4d1fc8.js","/_next/static/chunks/ea4e3a8aa3c40962.js","/_next/static/chunks/b9291a0cd40df845.js","/_next/static/chunks/2f2284bbf9f8e762.js"],"MetadataBoundary"]
+5:"$Sreact.suspense"
+7:I[36959,["/_next/static/chunks/d3ab59a1369cf594.js","/_next/static/chunks/049f3bbf4e4d1fc8.js","/_next/static/chunks/ea4e3a8aa3c40962.js","/_next/static/chunks/b9291a0cd40df845.js","/_next/static/chunks/2f2284bbf9f8e762.js"],"IconMark"]
+0:{"buildId":"ClVwL8qLINOaMyXN1Y6rm","rsc":["$","$1","h",{"children":[["$","meta",null,{"name":"robots","content":"noindex"}],["$","$L2",null,{"children":"$@3"}],["$","div",null,{"hidden":true,"children":["$","$L4",null,{"children":["$","$5",null,{"name":"Next.Metadata","children":"$@6"}]}]}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}],"loading":null,"isPartial":false}
+3:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]
+6:[["$","title","0",{"children":"RecruitPRO - AI Recruitment Dashboard"}],["$","meta","1",{"name":"description","content":"AI-powered Applicant Tracking System"}],["$","link","2",{"rel":"icon","href":"/favicon.webp","type":"image/webp"}],["$","link","3",{"rel":"icon","href":"/icon","type":"image/webp"}],["$","link","4",{"rel":"apple-touch-icon","href":"/favicon.webp"}],["$","$L7","5",{}]]

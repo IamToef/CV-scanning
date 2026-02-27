@@ -73,6 +73,7 @@ export interface AnalysisResult {
 }
 
 export interface JobRequirements {
+    job_position?: string;
     technical_skills: string[];
     soft_skills: string[];
     years_of_experience: {

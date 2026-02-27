@@ -1,0 +1,217 @@
+{
+  "name": "Automated Email Candidates",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "trigger-email",
+        "options": {}
+      },
+      "id": "2090fa12-fab6-434b-b147-6bb458f40059",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -464,
+        112
+      ],
+      "webhookId": "candidate-status-webhook"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.status }}",
+                    "rightValue": "shortlisted",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "bfb0ca9e-651e-4180-9619-3f81c6999431"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Shortlisted"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.status }}",
+                    "rightValue": "rejected",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "d02248f8-9627-4fe7-81ab-fb1ba0e59283"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Rejected"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "45e49073-bd2a-4403-a2fd-57ca2afebf1c",
+      "name": "Switch Status",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        -240,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.body.email }}",
+        "subject": "=Mời phỏng vấn - {{ $json.body.role }}",
+        "emailType": "text",
+        "message": "=Chào {{$json.body.name }},|Chúc mừng bạn! Hồ sơ của bạn đã gây ấn tượng mạnh với chúng tôi.Chúng tôi trân trọng mời bạn tham gia buổi phỏng vấn cho vị trí {{ $json.body.role }}.HR sẽ liên hệ chi tiết qua điện thoại sớm.Trân trọng,Recruitment Team",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "ae79a821-2146-4f66-9b59-41e7ffdce260",
+      "name": "Email Shortlisted",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [
+        16,
+        -16
+      ],
+      "webhookId": "cf2b85f5-dce7-4b85-9197-d5a197d4872d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "wsOSkFhDMprFCRIT",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.body.email }}",
+        "subject": "Thông báo kết quả hồ sơ",
+        "emailType": "text",
+        "message": "Chào {{ $json.body.name }},\n\nCảm ơn bạn đã quan tâm đến vị trí {{ $json.body.role || 'Business Analyst' }}.\n\nSau khi xem xét kỹ lưỡng, chúng tôi rất tiếc phải thông báo rằng hồ sơ của bạn chưa phù hợp với nhu cầu hiện tại của chúng tôi.\n\nChúng tôi đã lưu hồ sơ của bạn vào Talent Pool và sẽ liên hệ lại khi có cơ hội phù hợp.\n\nChúc bạn sớm tìm được công việc như ý!\n\nTrân trọng,\nRecruitment Team",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "a666d703-c682-4e8b-b598-ac3bba01df35",
+      "name": "Email Rejected",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [
+        0,
+        208
+      ],
+      "webhookId": "893ebc2b-9384-41d2-9001-57d11f34066e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "wsOSkFhDMprFCRIT",
+          "name": "Gmail account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "connection": "upgrade",
+            "host": "n8ndev.ndsvn.vn",
+            "x-real-ip": "10.86.101.254",
+            "x-forwarded-for": "2a09:bac1:7ac0:10::17:1f3, 10.86.101.254",
+            "x-forwarded-proto": "https",
+            "content-length": "103",
+            "accept": "*/*",
+            "accept-language": "*",
+            "accept-encoding": "gzip, br",
+            "user-agent": "node",
+            "cf-ray": "9c0c74df8b906e43-HKG",
+            "sec-fetch-mode": "cors",
+            "content-type": "application/json",
+            "cdn-loop": "cloudflare; loops=1",
+            "cf-connecting-ip": "2a09:bac1:7ac0:10::17:1f3",
+            "cf-ipcountry": "VN",
+            "cf-visitor": "{\"scheme\":\"https\"}"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "name": "TRAN TIEN PHONG",
+            "email": "tranphong14204@gmail.com",
+            "status": "shortlisted",
+            "role": "candidate"
+          },
+          "webhookUrl": "https://n8ndev.ndsvn.vn/webhook/trigger-email",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Switch Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Status": {
+      "main": [
+        [
+          {
+            "node": "Email Shortlisted",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "80ac3ecf-4d00-4499-868e-20ecf5ac112f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "df174d571e95541c805919aa88d99c6ff9e79e2c1ffc42837bb92614d24bb4eb"
+  },
+  "id": "aiVgV3uPvZO4q6kW",
+  "tags": []
+}

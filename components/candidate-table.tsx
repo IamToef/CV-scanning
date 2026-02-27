@@ -39,9 +39,10 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Check, Filter, Eye, X, Download } from "lucide-react"
+import { Check, Filter, Eye, X, Download, Mail } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCandidates } from "@/components/candidate-context"
+import { EmailPreviewModal, BulkEmailModal } from "./email-preview-modal"
 import * as XLSX from "xlsx"
 
 
@@ -52,6 +53,7 @@ interface CandidateTableProps {
 
 
 export function CandidateTable({ candidates }: CandidateTableProps) {
+    const { jobRequirements } = useCandidates()
     const [selectedSkills, setSelectedSkills] = React.useState<string[]>([])
 
     // Extract unique skills
@@ -108,7 +110,7 @@ export function CandidateTable({ candidates }: CandidateTableProps) {
 
             return {
                 "Họ tên": c.name,
-                "Vị trí": c.experience_years > 5 ? "Senior Business Analyst" : "Business Analyst",
+                "Vị trí": c.applied_role || "Business Analyst",
                 "Email": c.email,
                 "SDT": c.phone || "",
                 "Tổng điểm": c.score,
@@ -171,10 +173,18 @@ export function CandidateTable({ candidates }: CandidateTableProps) {
                     <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-500 to-orange-500 bg-clip-text text-transparent inline-block">Danh sách ứng viên</h2>
                     <p className="text-muted-foreground">Quản lý và theo dõi kết quả phân tích</p>
                 </div>
-                <Button variant="outline" onClick={handleExportExcel} className="gap-2">
-                    <Download className="h-4 w-4" />
-                    Xuất Excel
-                </Button>
+                <div className="flex gap-2">
+                    <BulkEmailModal candidates={sortedCandidates} jobPosition={jobRequirements?.job_position}>
+                        <Button variant="outline" className="gap-2 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 border-indigo-200">
+                            <Mail className="h-4 w-4" />
+                            Gửi Email hàng loạt
+                        </Button>
+                    </BulkEmailModal>
+                    <Button variant="outline" onClick={handleExportExcel} className="gap-2">
+                        <Download className="h-4 w-4" />
+                        Xuất Excel
+                    </Button>
+                </div>
             </div>
 
             <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
@@ -266,7 +276,7 @@ export function CandidateTable({ candidates }: CandidateTableProps) {
 }
 
 function CandidateRow({ candidate }: { candidate: Candidate }) {
-    const { deleteCandidate } = useCandidates()
+    const { deleteCandidate, jobRequirements } = useCandidates()
     const [isExpanded, setIsExpanded] = React.useState(false)
 
     return (
@@ -278,7 +288,7 @@ function CandidateRow({ candidate }: { candidate: Candidate }) {
                         {candidate.name}
                     </div>
                     <div className="text-xs text-muted-foreground font-medium">
-                        {candidate.experience_years > 5 ? "Senior Business Analyst" : "Business Analyst"}
+                        {candidate.applied_role || "Business Analyst"}
                     </div>
                 </div>
             </TableCell>
@@ -343,6 +353,11 @@ function CandidateRow({ candidate }: { candidate: Candidate }) {
 
             {/* Actions */}
             <TableCell className="text-right">
+                <EmailPreviewModal candidate={candidate} jobPosition={jobRequirements?.job_position}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-all">
+                        <Mail className="h-4 w-4" />
+                    </Button>
+                </EmailPreviewModal>
                 <CandidateProfile candidate={candidate}>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-full transition-all">
                         <Eye className="h-4 w-4" />

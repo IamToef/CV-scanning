@@ -67,7 +67,7 @@ export default function LeaderboardPage() {
         sortedCandidates.forEach(c => {
             worksheet.addRow({
                 name: c.name,
-                position: (c.experience_years || 0) > 5 ? "Senior Business Analyst" : "Business Analyst",
+                position: c.applied_role || "Business Analyst",
                 email: c.email || "",
                 phone: c.phone || "",
                 cv_link: c.link_cv || "",

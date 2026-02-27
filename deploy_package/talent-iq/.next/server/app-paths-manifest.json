@@ -1,0 +1,12 @@
+{
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/extract-text/route": "app/api/extract-text/route.js",
+  "/api/n8n/[...path]/route": "app/api/n8n/[...path]/route.js",
+  "/api/n8n/trigger-email/route": "app/api/n8n/trigger-email/route.js",
+  "/chat/page": "app/chat/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/leaderboard/page": "app/leaderboard/page.js",
+  "/page": "app/page.js",
+  "/upload/page": "app/upload/page.js"
+}

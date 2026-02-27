@@ -1,0 +1,1930 @@
+{
+  "name": "Chatbot_Web_Fixed",
+  "nodes": [
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        720,
+        0
+      ],
+      "id": "e9a10b6d-3505-424b-89a8-4ad7fafae040",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Lấy dữ liệu từ Node Parser (Output của AI đã được làm sạch)\nconst parserOutput = $input.first().json.parsed_json || {};\n\n// 2. Lấy dữ liệu gốc từ Request ban đầu (Node 'Webhook')\nlet requestData = {};\ntry {\n  requestData = $node['Webhook'].json.body || {};\n} catch (e) {\n  requestData = {};\n}\n\n// 3. Lấy thông tin Context (Danh sách ứng viên đã tìm thấy)\nlet contextData = {};\ntry {\n  contextData = $('Merge Context').first().json.merged_context || {};\n} catch (e) {}\n\n// Chuẩn hóa ID\nconst chatid = String(requestData.message_id || \"\").trim();\nconst employeeId = String(requestData.user_id || \"\").trim();\n\n// --- XỬ LÝ ANSWER MESSAGE CHO DỄ NHÌN ---\nlet finalAnswer = \"\";\n\n// Cách 1: Nếu node trước đã tách dòng thành mảng (enriched_lines) -> Nối lại\nif (parserOutput.enriched_lines && Array.isArray(parserOutput.enriched_lines) && parserOutput.enriched_lines.length > 0) {\n    finalAnswer = parserOutput.enriched_lines.join('\\n');\n} \n// Cách 2: Nếu chỉ có chuỗi (enriched_answer)\nelse {\n    finalAnswer = parserOutput.enriched_answer || \"\";\n}\n\n// QUAN TRỌNG: Đảm bảo xuống dòng hiển thị đúng\n// Replace \\\\n (chuỗi ký tự do AI sinh ra) thành \\n (ký tự xuống dòng thật)\nif (typeof finalAnswer === 'string') {\n    finalAnswer = finalAnswer.replace(/\\\\n/g, '\\n').replace(/\\\\t/g, '\\t');\n}\n// ------------------------------------------\n\n// 4. Tạo Response JSON chuẩn cho Frontend\nreturn [\n  {\n    json: {\n      status: \"ok\",\n      \n      // Thông tin định danh phiên chat\n      tenantCode: requestData.tenant_code || \"\",\n      chatid: chatid,\n      employeeId: employeeId,\n      timestamp: requestData.timestamp || new Date().toISOString(),\n      \n      // Câu hỏi và Câu trả lời chính\n      question_message: $('Webhook').first().json.body.message || \"\",\n      \n      // Gán biến đã xử lý ở trên vào đây\n      answer_message: finalAnswer || \"Xin lỗi, hệ thống chưa thể xử lý yêu cầu này.\",\n      \n      // Câu trả lời tóm tắt\n      short_message: parserOutput.short_answer || \"\",\n\n      // Nguồn dữ liệu\n      source: parserOutput.source || \"TalentIQ Database\",\n      \n      // Các cờ nghiệp vụ\n      needs_human_review: parserOutput.needs_human_review || false,\n      follow_up_question: parserOutput.follow_up_question || null,\n      \n      // Metadata bổ sung\n      candidate_list: contextData.top_candidates ? contextData.top_candidates.map(c => c.name) : [],\n      \n      // Tương thích ngược\n      answer_url: [], \n      category: contextData.top_candidates ? contextData.top_candidates.map(c => \"Candidate Profile\") : [],\n      clarify_question: null,\n      handoff_note: null\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        -288
+      ],
+      "id": "3325b290-965a-475b-9c0c-d4299d2f4cf8",
+      "name": "ResponeFormat1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lấy item từ node Webhook\nconst data = $node['Webhook'].json;\n\n// Chuẩn hóa khoảng trắng cho chatid và employeeId\nconst chatid = String(data.body.message_id || \"\").trim();\nconst employeeId = String(data.body.user_id || \"\").trim();\n\n// Tạo response JSON\nreturn [\n  {\n    json: {\n      status: \"ok\",\n      tenantCode: data.body.tenant_code || \"\",\n      chatid,\n      question_message: data.body.question_message || \"\",\n      answer_message: $input.first().json.response.enriched_answer,\n      answer_url: data.body.answer_url || [],\n      source: \"UN_ANSWER\",\n      category: $input.first().json.response.category,\n      needs_clarification: data.body.needs_clarification ?? false,\n      clarify_question: data.body.clarify_question ?? null,\n      handoff_note: data.body.handoff_note ?? null,\n      employeeId,\n      timestamp: data.body.timestamp || new Date().toISOString()\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        0
+      ],
+      "id": "7ffd97b6-1e6c-4b08-8801-5947e36cc501",
+      "name": "ResponeFormat",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        944,
+        -288
+      ],
+      "id": "5112edc6-d286-4288-a663-9fca6e1e1a8d",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Function node: Robust JSON extractor & parser for TalentIQ CV Assessment\n// FIX: Added filtering logic to remove \"ghost\" candidates (lines parsed as names but having no data)\n\n// --- 1. HELPER FUNCTIONS (GIỮ NGUYÊN) ---\nfunction tryJsonParse(text) {\n  try { return { ok: true, value: JSON.parse(text), method: 'JSON.parse(raw)' }; }\n  catch (e) { return { ok: false, error: e.message }; }\n}\n\nfunction extractFirstObjectBlock(text) {\n  const m = text.match(/\\{[\\s\\S]*\\}/);\n  return m ? m[0] : null;\n}\n\nfunction unescapeCommonEscapes(s){\n  return s.replace(/\\\\n/g, '\\n').replace(/\\\\r/g, '\\r').replace(/\\\\\"/g, '\"').replace(/\\\\'/g, \"'\").replace(/\\\\\\\\/g, '\\\\'); \n}\n\nfunction parseRobust(raw) {\n  const attempts = [];\n  if (raw === null || raw === undefined) return { parsed: null, attempts };\n  if (typeof raw === 'object') return { parsed: raw, attempts };\n\n  const s = String(raw);\n  let attempt = tryJsonParse(s);\n  if (attempt.ok) return { parsed: attempt.value, attempts };\n\n  try {\n    const first = JSON.parse(s);\n    if (typeof first === 'object') return { parsed: first, attempts };\n    if (typeof first === 'string') {\n      const secondAttempt = tryJsonParse(first);\n      if (secondAttempt.ok) return { parsed: secondAttempt.value, attempts };\n      var candidate = first;\n    } else var candidate = s;\n  } catch(e) { var candidate = s; }\n\n  const block = extractFirstObjectBlock(candidate);\n  if (block) {\n    attempt = tryJsonParse(block);\n    if (attempt.ok) return { parsed: attempt.value, attempts };\n  }\n\n  const unescaped = unescapeCommonEscapes(candidate);\n  if (unescaped !== candidate) {\n    attempt = tryJsonParse(unescaped);\n    if (attempt.ok) return { parsed: attempt.value, attempts };\n  }\n\n  const cleaned = candidate.replace(/\\u201c|\\u201d/g, '\"').replace(/\\u2018|\\u2019/g, \"'\").replace(/[\\u0000-\\u0019]+/g, ''); \n  attempt = tryJsonParse(cleaned);\n  if (attempt.ok) return { parsed: attempt.value, attempts };\n\n  return { parsed: null, attempts };\n}\n\n// --- 2. MAIN LOGIC ---\nconst outputs = [];\n\nfor (const item of items) {\n  const rawCandidates = [];\n  if (item.json?.output) rawCandidates.push(item.json.output);\n  if (item.json?.message?.content) rawCandidates.push(item.json.message.content); \n  if (item.json?.response) rawCandidates.push(item.json.response);\n  if (item.json?.text) rawCandidates.push(item.json.text);\n  if (rawCandidates.length === 0) rawCandidates.push(JSON.stringify(item.json));\n\n  let finalParsed = null;\n  for (const raw of rawCandidates) {\n    const { parsed } = parseRobust(raw);\n    if (parsed) { finalParsed = parsed; break; }\n  }\n\n  if (!finalParsed) {\n    finalParsed = {\n      \"enriched_answer\": \"Hệ thống gặp lỗi khi xử lý dữ liệu từ AI.\",\n      \"short_answer\": \"Lỗi hệ thống\",\n      \"confidence\": 0\n    };\n  }\n\n  // Tách dòng\n  if (finalParsed.enriched_answer && typeof finalParsed.enriched_answer === 'string') {\n      const normalizedText = finalParsed.enriched_answer.replace(/\\\\n/g, '\\n').replace(/\\\\t/g, '\\t');\n      finalParsed.enriched_answer = normalizedText;\n      finalParsed.enriched_lines = normalizedText.split('\\n').map(line => line.trim()).filter(line => line.length > 0);\n  } else {\n      finalParsed.enriched_lines = [];\n  }\n\n  // --- 3. PARSE CANDIDATES LOGIC ---\n  let candidatesList = [];\n  let currentCandidate = null;\n\n  for (const line of finalParsed.enriched_lines) {\n    const isDetailLine = line.startsWith('-') || line.startsWith('•');\n    const linkMatch = line.match(/\\[(.*?)\\]\\((.*?)\\)/); \n\n    if (!isDetailLine) {\n        // Lưu ứng viên trước đó\n        if (currentCandidate) candidatesList.push(currentCandidate);\n\n        // Tạo ứng viên mới\n        let name = line;\n        let cvUrl = null;\n\n        if (linkMatch) {\n            const namePart = line.substring(0, linkMatch.index).trim();\n            name = namePart.replace(/[\\–\\-\\:]+$/, '').trim();\n            cvUrl = linkMatch[2];\n        }\n\n        currentCandidate = {\n            name: name,\n            cv_link: cvUrl,\n            email: null,\n            phone: null,\n            total_experience: null,\n            raw_details: []\n        };\n    } \n    else if (currentCandidate) {\n        currentCandidate.raw_details.push(line);\n        \n        const emailMatch = line.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\\.[a-zA-Z0-9_-]+)/);\n        if (emailMatch) currentCandidate.email = emailMatch[1];\n\n        const phoneMatch = line.match(/(?:Phone|SĐT|Mobile|Tel)[:\\.\\s]*([0-9\\+\\s]{9,15})/i);\n        if (phoneMatch) currentCandidate.phone = phoneMatch[1].trim();\n\n        const expLower = line.toLowerCase();\n        if (expLower.includes('kinh nghiệm') || expLower.includes('experience')) {\n            const expParts = line.split(/[:：]/);\n            if (expParts.length > 1) currentCandidate.total_experience = expParts.slice(1).join(':').trim();\n        }\n    }\n  }\n  if (currentCandidate) candidatesList.push(currentCandidate);\n\n  // ============================================================\n  // [FIX] BƯỚC LỌC ỨNG VIÊN MA (GHOST CANDIDATE FILTER)\n  // Loại bỏ các dòng text thừa bị nhận diện nhầm là ứng viên\n  // ============================================================\n  const validCandidates = candidatesList.filter(c => {\n      // 1. Nếu có Link CV -> Chắc chắn là ứng viên thật\n      if (c.cv_link) return true;\n      \n      // 2. Nếu có Email HOẶC Phone -> Chắc chắn là ứng viên thật\n      if (c.email || c.phone) return true;\n\n      // 3. Nếu tên quá dài (> 50 ký tự) VÀ không có link/contact -> Đây là dòng văn bản/kết luận -> Loại\n      if (c.name && c.name.length > 50) return false;\n\n      // 4. Nếu tên chứa các từ khóa kết luận -> Loại\n      const lowerName = (c.name || \"\").toLowerCase();\n      if (lowerName.includes(\"tổng cộng\") || lowerName.includes(\"kết luận\") || lowerName.includes(\"tìm thấy\")) return false;\n\n      // Trường hợp còn lại: Tên ngắn nhưng không có info. \n      // Để an toàn, trong bài toán CV này, không có Link/Email/Phone thì coi như rác.\n      return false; \n  });\n\n  // Gán lại danh sách đã làm sạch\n  finalParsed.candidates_list = validCandidates;\n\n  // --- 4. UPDATE SHORT_ANSWER THEO DANH SÁCH THẬT ---\n  if (validCandidates.length > 0) {\n      finalParsed.short_answer = `Tìm thấy ${validCandidates.length} ứng viên phù hợp.`;\n  } \n  else if (finalParsed.enriched_answer) {\n      let text = String(finalParsed.enriched_answer).trim();\n      let firstLine = text.split('\\n')[0];\n      finalParsed.short_answer = firstLine.length > 150 ? firstLine.substring(0, 150) + \"...\" : firstLine;\n  } else {\n      finalParsed.short_answer = \"Không có kết quả trả về.\";\n  }\n\n  outputs.push({ json: { parsed_json: finalParsed } });\n}\n\nreturn outputs;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        -288
+      ],
+      "id": "e67107f6-3114-44b4-bf4a-50bcf8a8b250",
+      "name": "parsed_json"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {
+          "temperature": 0.4
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        208,
+        -176
+      ],
+      "id": "49a932f3-36d1-40a3-858b-6e9a229a4686",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "xH06mHp5QmirxiW0",
+          "name": "OpenAi account 6"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Bạn là TalentIQ - Trợ lý tuyển dụng AI chuyên nghiệp. Dưới đây là dữ liệu hồ sơ ứng viên (CV) được tìm thấy từ hệ thống Vector Search.\n\n=== DỮ LIỆU ĐẦU VÀO ===\nCâu hỏi/Yêu cầu của nhà tuyển dụng:\n\"{{ $json.merged_context.question }}\"\n\nThông tin các ứng viên tìm thấy (Context):\n{{ $json.merged_context.combined_context_text }}",
+        "options": {
+          "systemMessage": "=## VAI TRÒ\nBạn là TalentIQ, trợ lý AI tuyển dụng chuyên nghiệp. Nhiệm vụ của bạn là trích xuất thông tin ứng viên từ dữ liệu được cung cấp (đặc biệt là field `combined_context_text`).\n\n## NGUỒN DỮ LIỆU (RẤT QUAN TRỌNG)\n- Thông tin chi tiết (Email, Số điện thoại, Kinh nghiệm cụ thể) nằm trong biến văn bản `combined_context_text`.\n- Bạn PHẢI đọc kỹ `combined_context_text` để lấy Email và SĐT chính xác cho từng người.\n- Nếu `combined_context_text` không có thông tin, tuyệt đối không được bịa đặt.\n\n## QUY TẮC PHẢN HỒI\n\n### 1. CHẾ ĐỘ TÌM KIẾM & LIỆT KÊ (MẶC ĐỊNH)\nKhi người dùng yêu cầu tìm kiếm hoặc hỏi thông tin danh sách (VD: \"Tìm dev java\", \"Cho xin email/sđt của ứng viên\", \"Danh sách hồ sơ\"):\n\n- **Cấu trúc hiển thị bắt buộc:**\n  Mỗi ứng viên là một khối thông tin, xuống dòng mỗi khi kết thúc thông tin của 1 ứng viên.\n\n  **[Tên Ứng Viên]** – [Link CV](URL_THỰC_TẾ)\n  - [Thông tin phụ nến user hỏi: Email | SĐT | Kinh nghiệm...]\n\n- **Yêu cầu về Link:** - Text hiển thị hyperlink BẮT BUỘC là chữ \"Link CV\".\n  - URL phải lấy chính xác từ dữ liệu.\n  - Ví dụ ĐÚNG: `[Link CV](https://drive.google.com/file/d/xyz...)`\n\n- **Xử lý câu hỏi \"Thông tin liên hệ/Email/Phone\":**\n  - Nếu user hỏi contact, BẮT BUỘC phải thêm dòng gạch đầu dòng thứ 2 chứa Email và SĐT trích xuất được.\n\n### 2. CHẾ ĐỘ PHÂN TÍCH CHI TIẾT\nKhi và CHỈ KHI người dùng hỏi sâu về một người cụ thể (VD: \"Đánh giá chi tiết bạn Tuan\", \"Điểm mạnh yếu của Khoa\"):\n- Lúc này mới được viết đoạn văn dài, phân tích sâu, trích dẫn chi tiết từ CV.\n\n## OUTPUT FORMAT (JSON ONLY)\nBạn chỉ được trả về DUY NHẤT một JSON object, không được bọc trong markdown (```json ... ```), theo schema sau:\n\n{\n  \"enriched_answer\": string, // Nội dung text đã format ở trên (dùng \\n để xuống dòng)\n  \"short_answer\": string,    // Câu trả lời ngắn gọn (VD: \"Tìm thấy 5 ứng viên có kinh nghiệm trên 4 năm kèm thông tin liên hệ.\")\n  \"source\": string,          // Danh sách nguồn dạng: \"Tên A - Link; Tên B - Link\"\n  \"needs_human_review\": boolean, // True nếu không tìm thấy thông tin quan trọng\n  \"confidence\": number       // Từ 0.0 đến 1.0\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        144,
+        -400
+      ],
+      "id": "3fb54db9-d2c6-49f8-96c0-cb21ab8720ca",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = items[0].json;\n\n// ---- CONFIG ----\nconst TOP_K_CANDIDATES = 100;      // Số lượng ứng viên tối đa muốn đưa vào context\nconst MAX_COMBINED_CHARS = 200000; // Tăng giới hạn lên vì thông tin CV thường dài\n// ----------------\n\n/**\n * 1. TRÍCH XUẤT DOCS TỪ OUTPUT QDRANT\n * Xử lý các trường hợp output khác nhau của n8n\n */\nfunction extractDocs(obj) {\n  if (!obj) return [];\n  // Trường hợp chuẩn của bạn: item.json.result\n  if (obj.result && Array.isArray(obj.result)) return obj.result;\n  // Trường hợp n8n output array trực tiếp\n  if (Array.isArray(obj)) return obj;\n  return [];\n}\n\nconst rawDocs = extractDocs(input);\n\n/**\n * 2. GOM NHÓM THEO ỨNG VIÊN (GROUP BY CANDIDATE_ID)\n * Thay vì dedupe (xóa trùng), ta sẽ merge (gộp) thông tin lại.\n */\nconst candidatesMap = new Map();\n\nfor (const doc of rawDocs) {\n  const p = doc.payload || {};\n  \n  // Bỏ qua nếu không có ID ứng viên\n  const cid = p.candidate_id;\n  if (!cid) continue;\n\n  const score = doc.score || p.score || 0;\n  const textContent = (p.text || \"\").trim();\n\n  // Nếu ứng viên chưa có trong map, tạo mới\n  if (!candidatesMap.has(cid)) {\n    candidatesMap.set(cid, {\n      id: cid,\n      name: p.candidate_name || \"Unknown Candidate\",\n      email: p.candidate_email || \"N/A\",\n      phone: p.candidate_phone || \"N/A\",\n      link_cv: p.link_cv || \"\",\n      max_score: score, // Điểm cao nhất trong các chunk tìm thấy\n      matched_chunks: [textContent], // Lưu danh sách các đoạn text khớp\n      matched_types: [p.type || p.key || \"general\"] // Lưu loại (skill, exp...)\n    });\n  } else {\n    // Nếu ứng viên đã tồn tại, cập nhật thêm thông tin\n    const c = candidatesMap.get(cid);\n    \n    // Cập nhật điểm max nếu chunk này điểm cao hơn\n    if (score > c.max_score) {\n      c.max_score = score;\n    }\n    \n    // Thêm đoạn text khớp vào hồ sơ (tránh trùng lặp nội dung y hệt)\n    if (!c.matched_chunks.includes(textContent)) {\n      c.matched_chunks.push(textContent);\n      c.matched_types.push(p.type || p.key || \"general\");\n    }\n  }\n}\n\n/**\n * 3. SẮP XẾP & LỌC TOP ỨNG VIÊN\n */\n// Chuyển Map thành Array\nlet candidates = Array.from(candidatesMap.values());\n\n// Sắp xếp giảm dần theo điểm cao nhất (Ai khớp nhất lên đầu)\ncandidates.sort((a, b) => b.max_score - a.max_score);\n\n// Lấy Top K ứng viên\nconst topCandidates = candidates.slice(0, TOP_K_CANDIDATES);\n\n/**\n * 4. XÂY DỰNG CONTEXT TEXT CHO AI\n * Format lại thành dạng hồ sơ dễ đọc\n */\nlet combined_context_text = \"\";\n\nfor (const c of topCandidates) {\n  // Header của mỗi ứng viên\n  const profileHeader = `\\n=== ỨNG VIÊN: ${c.name} (Độ phù hợp: ${(c.max_score * 100).toFixed(1)}%) ===\\n` +\n                        `- Contact: ${c.email} | ${c.phone}\\n` +\n                        `- Link CV: ${c.link_cv}\\n` +\n                        `- Thông tin tìm thấy:\\n`;\n  \n  // Nội dung chi tiết các chunk khớp\n  const chunksText = c.matched_chunks.map((chunk, index) => {\n    return `  ${index + 1}. ${chunk}`;\n  }).join(\"\\n\");\n\n  const fullProfile = profileHeader + chunksText + \"\\n\";\n\n  // Kiểm tra giới hạn ký tự\n  if (combined_context_text.length + fullProfile.length > MAX_COMBINED_CHARS) {\n    // Nếu sắp tràn context thì dừng lại, nhưng cố gắng thêm nốt ứng viên này nếu còn nhiều chỗ\n    if (MAX_COMBINED_CHARS - combined_context_text.length > 500) {\n       combined_context_text += fullProfile.slice(0, MAX_COMBINED_CHARS - combined_context_text.length) + \"... [Truncated]\";\n    }\n    break;\n  }\n  \n  combined_context_text += fullProfile;\n}\n\n// Nếu không tìm thấy ai\nif (topCandidates.length === 0) {\n  combined_context_text = \"Không tìm thấy ứng viên nào phù hợp với yêu cầu.\";\n}\n\n/**\n * 5. TẠO OUTPUT\n */\n// Lấy câu hỏi từ input (nếu có)\nlet question = $('format output').first().json.refined_question;\n\nconst merged_context = {\n  question: question,\n  candidate_count: topCandidates.length,\n  top_candidates: topCandidates.map(c => ({\n    name: c.name,\n    score: c.max_score,\n    link_cv: c.link_cv,\n    matched_info_count: c.matched_chunks.length\n  })),\n  combined_context_text: combined_context_text,\n  created_at: new Date().toISOString()\n};\n\nreturn [\n  {\n    json: {\n      merged_context\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -144,
+        -288
+      ],
+      "id": "dbbbd55c-d0b0-4766-bcb2-93fc682adb34",
+      "name": "Merge Context"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Function node - produce only `response` (unescaped + auto double-parse)\nconst items = $input.all();\n\n/** Try to extract and parse a JSON object from a string. */\nfunction tryParseJsonString(src) {\n  if (src === null || src === undefined) return null;\n  if (typeof src === 'object') return src; // already parsed\n  if (typeof src !== 'string') return null;\n  const t = src.trim();\n\n  // direct parse\n  try {\n    return JSON.parse(t);\n  } catch (e) {\n    // find first {...} or [...] block\n    const m = t.match(/[\\{\\[][\\s\\S]*[\\}\\]]/);\n    if (m) {\n      try {\n        return JSON.parse(m[0]);\n      } catch (e2) {\n        return null;\n      }\n    }\n    return null;\n  }\n}\n\n/** Unescape common escape sequences inside strings */\nfunction unescapeStringValue(s) {\n  if (typeof s !== 'string') return s;\n  if (s.indexOf('\\\\') === -1) return s;\n  let r = s;\n  r = r.replace(/\\\\r\\\\n/g, '\\n'); // escaped CRLF -> newline\n  r = r.replace(/\\\\n/g, '\\n');    // escaped newline -> newline\n  r = r.replace(/\\\\t/g, '\\t');\n  r = r.replace(/\\\\\"/g, '\"');\n  r = r.replace(/\\\\\\\\/g, '\\\\');\n  // trim only trailing whitespace\n  return r.replace(/\\s+$/u, '');\n}\n\nfunction unescapeRecursively(obj) {\n  if (obj === null || obj === undefined) return obj;\n  if (typeof obj === 'string') return unescapeStringValue(obj);\n  if (Array.isArray(obj)) return obj.map(unescapeRecursively);\n  if (typeof obj === 'object') {\n    const out = {};\n    for (const k of Object.keys(obj)) out[k] = unescapeRecursively(obj[k]);\n    return out;\n  }\n  return obj;\n}\n\n/** Extract canonical response from parsed content */\nfunction extractCanonicalResponse(parsed) {\n  if (typeof parsed === 'string' || typeof parsed === 'number' || typeof parsed === 'boolean') {\n    return { response: parsed, original_key: null };\n  }\n  if (Array.isArray(parsed)) {\n    if (parsed.length === 1) return extractCanonicalResponse(parsed[0]);\n    return { response: parsed, original_key: null };\n  }\n  const keyCandidates = [\n    'response','answer','answwer','output','reply','message','text','response_text','output_text',\n    'result','body','data','content','completion','choices'\n  ];\n  const lowerMap = {};\n  for (const k of Object.keys(parsed || {})) lowerMap[k.toLowerCase()] = k;\n\n  for (const cand of keyCandidates) {\n    if (lowerMap[cand]) {\n      const realKey = lowerMap[cand];\n      return { response: parsed[realKey], original_key: realKey };\n    }\n  }\n\n  // OpenAI-like choices\n  if (parsed.choices && Array.isArray(parsed.choices) && parsed.choices.length > 0) {\n    const first = parsed.choices[0];\n    if (first.message && first.message.content) return { response: first.message.content, original_key: 'choices[0].message.content' };\n    if (first.text) return { response: first.text, original_key: 'choices[0].text' };\n  }\n\n  // fallback: whole object\n  return { response: parsed, original_key: null };\n}\n\n/** Helper: if a string looks like JSON (starts with { or [), try parse it */\nfunction tryDoubleParseString(s) {\n  if (typeof s !== 'string') return s;\n  const trimmed = s.trim();\n  if (!trimmed) return s;\n  if (trimmed[0] === '{' || trimmed[0] === '[') {\n    try {\n      return JSON.parse(trimmed);\n    } catch (e) {\n      // maybe it's an escaped JSON inside (contains \\\\n etc) -> unescape then try\n      const un = unescapeStringValue(s);\n      try {\n        return JSON.parse(un);\n      } catch (e2) {\n        return s; // keep original string\n      }\n    }\n  }\n  return s;\n}\n\nconst out = items.map(item => {\n  // candidate raw fields\n  const rawCandidate = item.json && (item.json.output ?? item.json.output_text ?? item.output ?? item.payload ?? item.json.response ?? item.json.answer ?? item.json.text ?? item.json);\n\n  // First try parse rawCandidate (if string)\n  let parsed = tryParseJsonString(rawCandidate ?? null);\n\n  // fallback: maybe item.json is already an object\n  if (!parsed) parsed = tryParseJsonString(item.json ?? null);\n\n  // if still not parsed and rawCandidate is string, keep rawCandidate as parsed value (string)\n  if (!parsed) parsed = rawCandidate ?? null;\n\n  // unescape strings inside parsed structure\n  const unescaped = unescapeRecursively(parsed);\n\n  // extract canonical response\n  const extracted = extractCanonicalResponse(unescaped);\n\n  // If response is a string that itself contains JSON, try double-parse to object/array\n  let responseVal = extracted.response;\n  if (typeof responseVal === 'string') {\n    // unescape again (safe)\n    responseVal = unescapeStringValue(responseVal);\n    // try parse if looks like JSON\n    const doubleParsed = tryDoubleParseString(responseVal);\n    responseVal = doubleParsed;\n  }\n\n  return {\n    json: {\n      response: responseVal\n    }\n  };\n});\n\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "c478ad57-d87c-4eec-b073-74518550a985",
+      "name": "unanswerformat"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {
+          "temperature": 0.4
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -144,
+        224
+      ],
+      "id": "11f70e60-4794-4f51-9d12-906eafe3fc6d",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "xH06mHp5QmirxiW0",
+          "name": "OpenAi account 6"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=RAG không tìm thấy câu trả lời.  \nHãy tạo một phản hồi cho khách hàng theo đúng yêu cầu ở system prompt.\nCâu hỏi của khách hàng:\n\"{{ $('format output').item.json.refined_question }}\"\n\nHãy phân loại vào WHITELIST hoặc BLACKLIST và trả lời theo đúng quy định.\n",
+        "options": {
+          "systemMessage": "=### VAI TRÒ\nBạn là một trợ lý tuyển dụng AI chuyên nghiệp. Bạn đang hỗ trợ người dùng tìm kiếm ứng viên trong cơ sở dữ liệu hồ sơ (CV).\n\n### NGỮ CẢNH HIỆN TẠI\nHệ thống truy vấn dữ liệu (Vector Store/Qdrant) đã trả về kết quả RỖNG. Điều này có nghĩa là không có bất kỳ hồ sơ nào khớp với từ khóa hoặc tiêu chí mà người dùng vừa yêu cầu.\n\n### NHIỆM VỤ CỦA BẠN\n1. **Thông báo:** Báo cho người dùng biết rằng hiện tại không tìm thấy hồ sơ nào phù hợp.\n2. **Gợi ý:** Đề xuất người dùng thử tìm lại bằng cách:\n   - Dùng từ khóa phổ thông hơn.\n   - Giảm bớt các yêu cầu về kỹ năng phụ hoặc số năm kinh nghiệm.\n3. **Thái độ:** Lịch sự, chuyên nghiệp, hỗ trợ. Tuyệt đối KHÔNG tự bịa ra thông tin ứng viên.\n\n### ĐỊNH DẠNG TRẢ LỜI\nHãy viết câu trả lời ngắn gọn, súc tích.\nBẮT BUỘC kết thúc câu trả lời bằng nguyên văn câu hỏi sau:\n\"Bạn có muốn tôi thử tìm kiếm lại với tiêu chí mở rộng hơn (ví dụ: giảm yêu cầu số năm kinh nghiệm) không?\"\n\nOutput bắt buộc theo cấu trúc JSON như sau:\n{\n  \"message\": \"Lời thông báo lịch sự rằng không tìm thấy hồ sơ phù hợp. Đưa ra 1-2 lý do có thể (do từ khóa quá hẹp, yêu cầu quá cao...).\",\n  \"follow_up\": \"Bạn có muốn tôi thử tìm kiếm lại với tiêu chí mở rộng hơn (ví dụ: giảm yêu cầu số năm kinh nghiệm) không?\",\n  \"suggested_actions\": [\"Tìm với từ khóa rộng hơn\", \"Giảm yêu cầu kinh nghiệm\", \"Bỏ bớt kỹ năng phụ\"]\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -208,
+        0
+      ],
+      "id": "f96ac925-f1d8-4b09-a15a-9db883bffa55",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "342d3971-6cf2-4b16-95f7-a296a02ce3ba",
+              "leftValue": "={{$json[\"result\"] ? $json[\"result\"].length : 0}}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -384,
+        -208
+      ],
+      "id": "cc46f763-08bf-42ab-b9bf-805747e6627e",
+      "name": "resultcount"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Function node - Normalize AI agent output to JSON & Sanitize Data\n// Input expected: items with item.json.output (string or object)\n// Output: items where item.json is the parsed JSON object with normalized fields\n\nconst items = $input.all();\n\n// --- HELPER 1: Parse JSON an toàn ---\nfunction tryParseJsonString(s) {\n  if (typeof s !== 'string') return null;\n  const t = s.trim();\n  try {\n    return JSON.parse(t);\n  } catch (e) {\n    // Cố gắng tìm block JSON {...} đầu tiên nếu chuỗi bị lẫn text rác\n    const m = t.match(/\\{[\\s\\S]*\\}/);\n    if (m) {\n      try { return JSON.parse(m[0]); } catch (e2) { return null; }\n    }\n    return null;\n  }\n}\n\n// --- HELPER 2: Chuẩn hóa danh sách (String -> Array) ---\nfunction normalizeList(input) {\n    if (!input) return [];\n    if (typeof input === 'string') {\n        return input.split(/,|;/).map(s => s.trim()).filter(s => s.length > 0);\n    }\n    if (Array.isArray(input)) {\n        return input.map(s => String(s).trim()).filter(s => s.length > 0);\n    }\n    return [];\n}\n\n// --- HELPER 3: Chuẩn hóa Kinh nghiệm (Text -> Math Symbol) ---\n// VD: \"trên 3 năm\" -> \"> 3\"\n// VD: \"dưới 2 năm\" -> \"< 2\"\n// VD: \"khoảng 5 năm\" -> \"= 5\"\nfunction normalizeExperience(input) {\n    if (!input || typeof input !== 'string') return null;\n    \n    const str = input.toLowerCase().trim();\n    \n    // 1. Tách lấy con số (chấp nhận cả số thập phân VD: 2.5)\n    const numberMatch = str.match(/(\\d+([.,]\\d+)?)/);\n    \n    // Nếu không tìm thấy số nào (VD: \"Senior level\"), giữ nguyên text gốc hoặc trả về null tùy nhu cầu\n    if (!numberMatch) return input; \n    \n    // Chuẩn hóa dấu phẩy thành dấu chấm để parse số (VD: 2,5 -> 2.5)\n    const number = parseFloat(numberMatch[0].replace(',', '.'));\n\n    // 2. Xác định toán tử dựa trên từ khóa\n    if (str.match(/trên|hơn|over|more than|>/)) {\n        return `> ${number}`;\n    }\n    if (str.match(/dưới|ít hơn|under|less than|</)) {\n        return `< ${number}`;\n    }\n    \n    // Mặc định là bằng (=)\n    return `= ${number}`;\n}\n\nconst out = items.map((item) => {\n  // Lấy dữ liệu nguồn\n  const src = item.json && (\n      item.json.parsed_json ?? \n      item.json.output ?? \n      item.json.output_text ?? \n      item.output ?? \n      item.payload\n  );\n\n  let parsed = null;\n\n  if (src === undefined || src === null) {\n    return {\n      json: { _error: \"no_output_field_found\", original: item.json }\n    };\n  }\n\n  // 1. PARSE DỮ LIỆU\n  if (typeof src === 'object') {\n    parsed = src;\n  } else {\n    parsed = tryParseJsonString(src);\n  }\n\n  if (!parsed) {\n    return {\n      json: { _error: \"parse_failed\", raw: src }\n    };\n  }\n\n  // 2. CHUẨN HÓA DỮ LIỆU\n  \n  // A. Chuẩn hóa Skills (Array)\n  if (parsed.filter_skills) {\n      parsed.filter_skills = normalizeList(parsed.filter_skills);\n  } else if (parsed.skills) {\n      parsed.filter_skills = normalizeList(parsed.skills);\n  }\n\n  // B. Chuẩn hóa Education (Array)\n  if (parsed.filter_education) {\n      parsed.filter_education = normalizeList(parsed.filter_education);\n  }\n\n  // C. Chuẩn hóa Experience (Math Symbol) [MỚI THÊM]\n  if (parsed.filter_experience) {\n      parsed.filter_experience = normalizeExperience(parsed.filter_experience);\n  }\n\n  // 3. Trả về kết quả\n  return { json: parsed };\n});\n\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1520,
+        -144
+      ],
+      "id": "27f15307-fbbc-40a9-99d2-91fefe53350f",
+      "name": "format output"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lấy item đầu tiên\nconst item = $input.first();\nconst json = item ? item.json : {};\n\n// 1. TÌM DỮ LIỆU NGUỒN (Quan trọng)\n// Webhook n8n thường để dữ liệu trong json.body.\n// Code này ưu tiên tìm trong body, nếu không có mới tìm ở root.\nconst inputData = json.body || json;\n\n// 2. LẤY CÂU HỎI USER\n// Tìm trường \"message\" hoặc \"question_message\" hoặc \"text\"\nconst userQuestion = inputData.message || inputData.question_message || inputData.text || \"\";\n\n// 3. XỬ LÝ LỊCH SỬ CHAT (HISTORY)\nlet historyRaw = inputData.history;\n\n// Fix lỗi: Nếu history bị gửi lên dưới dạng String (chưa parse), thì parse nó ra\nif (typeof historyRaw === 'string') {\n  try {\n    historyRaw = JSON.parse(historyRaw);\n  } catch (e) {\n    historyRaw = [];\n  }\n}\n\n// Đảm bảo history luôn là mảng\nif (!Array.isArray(historyRaw)) {\n  historyRaw = [];\n}\n\n// Duyệt qua từng tin nhắn để tạo chuỗi Context\nconst historyLines = historyRaw.map(item => {\n  const role = item.role;    \n  const content = item.content || \"\";\n\n  // Map role\n  if (role === 'user') {\n    return `user_message: ${content}`;\n  } else if (role === 'assistant' || role === 'system') {\n    return `system_answer: ${content}`;\n  }\n  return `${role}: ${content}`;\n});\n\n// Nối lại thành chuỗi, bỏ dòng trống\nconst resultString = historyLines.filter(line => line.trim() !== \"\").join('\\n');\n\n// 4. TRẢ VỀ KẾT QUẢ\nreturn [\n  {\n    json: {\n      result_string: resultString, // Context lịch sử\n      user_question: userQuestion, // Câu hỏi hiện tại\n      \n      // Debug: Trả về thêm field này để biết code đã tìm thấy dữ liệu ở đâu\n      _debug_source: json.body ? \"Found in Body\" : \"Found in Root\" \n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2112,
+        -144
+      ],
+      "id": "b3937372-7c91-44f3-98b3-057a07e5bf43",
+      "name": "Context-Merger",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -1824,
+        80
+      ],
+      "id": "ef2f7e1c-e94c-4805-8de1-c1e9779d527e",
+      "name": "OpenAI Chat refined",
+      "credentials": {
+        "openAiApi": {
+          "id": "xH06mHp5QmirxiW0",
+          "name": "OpenAi account 6"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Dưới đây là dữ liệu hội thoại cần xử lý:\n\n------------------------------------------------------------\nCONTEXT (Lịch sử hội thoại trước đó):\n{{ $json.result_string || \"Chưa có lịch sử\" }}\n------------------------------------------------------------\n\nCÂU HỎI HIỆN TẠI CỦA USER:\n\"{{ $json.user_question }}\"",
+        "options": {
+          "systemMessage": "=Bạn là TalentIQ - Chuyên gia phân tích ý định tìm kiếm tuyển dụng.\nNhiệm vụ: Chuyển đổi câu hỏi của user thành câu truy vấn (Refined Query) và trích xuất tham số lọc (Structured Filters) cho ADVANCED HYBRID SEARCH.\n\n---\nQUY TRÌNH TƯ DUY:\n\n1. XỬ LÝ LỜI CHÀO:\n   - Nếu input là lời chào xã giao -> source=\"greeting\", answer=\"Chào bạn...\".\n\n2. XỬ LÝ TÌM KIẾM (Search Mode):\n   - BẮT BUỘC: `answer` = \"\".\n   \n   A. TẠO TRUY VẤN (Refined Query):\n      - Viết lại câu hỏi thành câu lệnh tìm kiếm chuyên nghiệp, rõ nghĩa (VD: \"Tìm hồ sơ ứng viên...\").\n      - QUAN TRỌNG: TUYỆT ĐỐI KHÔNG tự ý thêm các tên công nghệ, kỹ năng, ví dụ hoặc từ khóa chuyên ngành cụ thể nếu user không nhắc đến trong input.\n      - VD ĐÚNG: \"Tìm ứng viên biết ERP\" -> \"Tìm hồ sơ ứng viên có kinh nghiệm về hệ thống ERP\".\n      - VD SAI: \"Tìm ứng viên biết ERP\" -> \"...như SAP, Oracle...\" (SAI vì tự bịa thêm).\n\n   B. TRÍCH XUẤT BỘ LỌC (Structured Filters):\n      Trích xuất thông tin để điền vào 4 trường lọc sau. Nếu không có thông tin, BẮT BUỘC trả về `null`.\n\n      1. `filter_candidate_name`: Tên riêng ứng viên (dựa trên nội dung từ refined_question và viết in hoa hết).\n      \n      2. `filter_skills` (Array[String]): Danh sách Kỹ năng, Công nghệ, Chức danh. \n         - NGUYÊN TẮC ĐỊNH DẠNG: \n           + Kỹ năng <= 3 ký tự: Viết IN HOA toàn bộ (VD: LLM, AI, SQL).\n           + Kỹ năng > 3 ký tự: Viết Hoa Chữ Cái Đầu (VD: Jira, React, Prompt Engineering).\n           + Kỹ năng mềm: Giữ nguyên tiếng Việt, bỏ từ thừa (khả năng, kỹ năng).\n\n         QUY TẮC KẾT NỐI VÀ GỘP CHUỖI (LOGIC OR PRIORITY) - XỬ LÝ THEO THỨ TỰ SAU:\n\n         ƯU TIÊN 1: CHUỖI LIÊN HOÀN (3 SKILL TRỞ LÊN: A, B hoặc C / A hoặc B hoặc C)\n         - Dấu hiệu: Danh sách 3+ kỹ năng có chứa từ \"hoặc\" ở cuối hoặc lặp lại từ \"hoặc\" liên tiếp.\n         - HÀNH ĐỘNG: Gộp TOÀN BỘ danh sách thành 1 chuỗi duy nhất. Thay thế dấu phẩy (,) bằng từ \"hoặc\".\n         - TUYỆT ĐỐI KHÔNG tách phần tử đầu tiên ra khỏi chuỗi.\n         - VD Input: \"Kinh nghiệm Prompt Engineering hoặc API OpenAI hoặc Gemini\"\n           -> Output ĐÚNG: [\"Prompt Engineering hoặc API OpenAI hoặc Gemini\"]\n         - VD Input: \"DMS, ERP hoặc SQL\" \n           -> Output ĐÚNG: [\"DMS hoặc ERP hoặc SQL\"]\n\n         ƯU TIÊN 2: LỰA CHỌN ĐÔI (A hoặc B)\n         - Dấu hiệu: 2 kỹ năng nối bằng \"hoặc/hay\".\n         - HÀNH ĐỘNG: Gộp thành 1 chuỗi.\n         - VD: \"Java hoặc Python\" -> [\"Java hoặc Python\"]\n         - VD: \"Lãnh đạo hoặc Quản lý team\" -> [\"Lãnh đạo hoặc Quản lý team\"]\n\n         ƯU TIÊN 3: DANH SÁCH RỜI RẠC (AND)\n         - Dấu hiệu: Nối bằng \"và\", \",\", \"cả\" (KHÔNG CÓ từ \"hoặc\" trong cụm đó).\n         - HÀNH ĐỘNG: Tách thành mảng các phần tử riêng biệt.\n         - VD: \"Figma, Jira\" -> [\"Figma\", \"Jira\"]\n         - VD: \"Bộ công cụ Atlassian (Jira, Confluence)\" -> [\"Jira\", \"Confluence\"]\n\n         ---\n         VÍ DỤ KIỂM CHỨNG (FEW-SHOT):\n         Input: \"Tìm người biết n8n hoặc Zapier\"\n         Output filter_skills: [\"n8n hoặc Zapier\"]\n\n         Input: \"Tìm ứng viên có kinh nghiệm về DMS, ERP hay CRM\"\n         Output filter_skills: [\"DMS hoặc ERP hoặc CRM\"]\n\n         Input: \"Tìm ứng viên có tố chất lãnh đạo hoặc quản lý team\"\n         Output filter_skills: [\"Lãnh đạo hoặc Quản lý team\"]\n\n         Input: \"Yêu cầu biết Figma và (biết Sketch hoặc Adobe XD)\"\n         Output filter_skills: [\"Figma\", \"Sketch hoặc Adobe XD\"]\n         ---\n      - Nếu user hỏi \"kĩ năng tiếng Nhật\" hay \"ai có kĩ năng tiếng Nhật\" -> Lấy [\"N3 hoặc Tiếng Nhật\"] .\n         - - Nếu user hỏi \"ai có kĩ năng tiếng Anh\" -> Lấy [\"Toeic hoặc IELTS hoặc Tiếng Anh\"]. \n\n      3. `filter_experience`: Kinh nghiệm làm việc thực tế (Số năm, Cấp bậc, Công ty cũ, Lĩnh vực).\n         - NGUYÊN TẮC GHÉP CHUỖI: Nếu tìm thấy nhiều thông tin kinh nghiệm khác nhau (ví dụ: vừa có Số năm, vừa có Tên công ty), hãy nối chúng lại thành một chuỗi duy nhất, sử dụng từ \"và\" để ngăn cách.\n         - VD: \"trên 3 năm kinh nghiệm làm việc tại FPT\" -> Lấy \"trên 3 năm và FPT\".\n         - VD: \"Có kinh nghiệm Banking và từng làm ở Viettel\" -> Lấy \"Banking và Viettel\".\n         \n         - NGUYÊN TẮC TRÍCH XUẤT: Chỉ trích xuất DANH TỪ hoặc CỤM DANH TỪ định danh (Con số cụ thể, Tên riêng công ty, Tên ngành).\n         - TUYỆT ĐỐI KHÔNG: Không trích xuất cả câu văn mô tả hành động.\n           + VD SAI: \"đã từng quản lý nhóm\", \"có kinh nghiệm làm việc tại...\"\n         - SUY LUẬN CHỨC DANH (ROLE): Nếu user mô tả hành động, hãy chuyển đổi nó thành Chức danh tương ứng rồi mới ghép chuỗi.\n           + VD: \"từng quản lý team 3 người\" -> Lấy \"Team Lead\" (hoặc Manager).\n           + VD: \"biết lead team\" -> Lấy \"Leader\".\n\n      4. `filter_education`: Trường học, bằng cấp, Chứng chỉ Ngoại ngữ.\n         - Bao gồm tên trường, chuyên ngành VÀ các chứng chỉ cấp độ (Language Certificates). Chỉ lấy tên riêng của trường đại học và chứng chỉ, không cần phải thêm từ \"đại học\".\n         - VD: \"Bách Khoa\", \"Cử nhân CNTT\", \"N3\", \"N2\", \"IELTS 7.0\", \"TOEIC\".\n         \n         - XỬ LÝ LOGIC \"VÀ\" (AND): Tách mảng [\"A\", \"B\"].\n         - XỬ LÝ LOGIC \"HOẶC\" (OR): Gộp chuỗi [\"A hoặc B\"] (áp dụng quy tắc ưu tiên như phần skills).\n          - Nếu user hỏi \"Bằng tiếng Nhật\" hay \"ai biết tiếng Nhật\" -> Lấy [\"N3 hoặc Tiếng Nhật\"].\n         - - Nếu user hỏi \"Bằng tiếng Anh\" hay \"ai biết tiếng Anh\" -> Lấy [\"Toeic hoặc IELTS hoặc Tiếng Anh\"].\n---\nOUTPUT FORMAT (BẮT BUỘC JSON ONLY):\nBạn phải trả về DUY NHẤT chuỗi JSON này, không markdown, không giải thích thêm:\n\n{\n  \"answer\": string,                   // \"\" nếu là search\n  \"refined_question\": string,         // Câu truy vấn ngữ nghĩa\n  \"filter_candidate_name\": string|null,\n  \"filter_skills\": string[]|null,     // Luôn là mảng chuỗi hoặc null\n  \"filter_experience\": string|null,   // Chuỗi kết hợp (VD: \"5 năm và FPT\") hoặc null\n  \"filter_education\": string|string[]|null,\n  \"source\": \"search\" | \"greeting\",\n  \"needs_clarification\": boolean\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -1888,
+        -144
+      ],
+      "id": "ea0ac74c-326d-4ee1-9379-aa3d396fd142",
+      "name": "message refined",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e7692985-5757-4ed4-93cb-0419ce9eba62",
+              "name": "score_threshold",
+              "value": 0,
+              "type": "number"
+            },
+            {
+              "id": "e6b045cc-a7aa-4574-862c-64dce78ef5fe",
+              "name": "limit",
+              "value": 200,
+              "type": "number"
+            },
+            {
+              "id": "849d67e1-b602-44bb-843c-8067026a703d",
+              "name": "query_vector",
+              "value": "={{ $json.data[0].embedding }}",
+              "type": "array"
+            },
+            {
+              "id": "9ef126b6-8444-4a28-b594-8f373133b65b",
+              "name": "with_payload",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -816,
+        -128
+      ],
+      "id": "1442b8e3-7d6b-4555-b539-f0243c2027ec",
+      "name": "add score_threshold"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://idiochromatic-cody-uninspiringly.ngrok-free.dev/collections/RAG_FOR_CV/points/search",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  (() => {\n    // =====================================================================\n    // 1. HELPER FUNCTIONS\n    // =====================================================================\n    function removeAccents(str) {\n      if (!str) return \"\";\n      return str.normalize(\"NFD\").replace(/[\\u0300-\\u036f]/g, \"\").replace(/đ/g, \"d\").replace(/Đ/g, \"D\").trim();\n    }\n\n    function generateMatchClauses(keyword, targetFields) {\n        const rawKey = keyword.trim();\n        if (!rawKey) return [];\n        const variants = [...new Set([rawKey, rawKey.toLowerCase(), removeAccents(rawKey)])];\n        const conditions = [];\n        targetFields.forEach(field => {\n            variants.forEach(v => { \n                conditions.push({ \"key\": field, \"match\": { \"text\": v } }); \n            });\n        });\n        return conditions;\n    }\n\n    // Hàm tạo bộ lọc tên\n    function generateNameClauses(nameKeyword) {\n        // Xử lý trường hợp input là mảng hoặc null (do AI trả về [null])\n        if (!nameKeyword || (Array.isArray(nameKeyword) && nameKeyword[0] === null)) return [];\n        const rawName = String(nameKeyword).trim();\n        if (rawName === \"null\" || rawName === \"\") return [];\n\n        const upperName = rawName.toUpperCase();\n        const upperNoAccent = removeAccents(upperName);\n        \n        const variants = [...new Set([\n            upperName,          // PHONG (Ưu tiên)\n            upperNoAccent,\n            rawName, \n            removeAccents(rawName)\n        ])];\n\n        const conditions = [];\n        // Danh sách trường cần quét\n        const nameFields = [\"candidate_name\", \"contact_info.name\", \"name\", \"text\"]; \n\n        nameFields.forEach(field => {\n            variants.forEach(v => {\n                conditions.push({ \"key\": field, \"match\": { \"text\": v } });\n            });\n        });\n        return conditions;\n    }\n\n    function processLogicFilter(textArray, fields, targetMustArray) {\n        if (!textArray) return;\n        // Xử lý trường hợp [null] từ AI\n        if (Array.isArray(textArray) && textArray[0] === null) return;\n        \n        const items = Array.isArray(textArray) ? textArray : [textArray];\n        items.forEach(item => {\n            if (!item || item === \"null\" || String(item).length > 150) return;\n            \n            if (String(item).match(/\\s+(?:hoặc|or)\\s+/i)) {\n                const parts = String(item).split(/\\s+(?:hoặc|or)\\s+/i);\n                let aggregatedShoulds = [];\n                parts.forEach(part => { aggregatedShoulds.push(...generateMatchClauses(part, fields)); });\n                if (aggregatedShoulds.length > 0) targetMustArray.push({ \"should\": aggregatedShoulds });\n            } else {\n                const parts = String(item).split(/\\s*(?:và|and|,)\\s*/i);\n                parts.forEach(part => {\n                    if(part.trim()) {\n                        const clauses = generateMatchClauses(part, fields);\n                        if (clauses.length > 0) targetMustArray.push({ \"should\": clauses });\n                    }\n                });\n            }\n        });\n    }\n\n    // =====================================================================\n    // 2. MAIN LOGIC\n    // =====================================================================\n\n    let vector = $json.query_vector || $json.vector;\n    if (!vector || vector.length === 0) { vector = new Array(1536).fill(0); }\n\n    let aiJson = {};\n    try {\n        // Cố gắng lấy JSON từ nhiều nguồn khác nhau để tránh lỗi\n        const rawSource = $('message refined').item.json || $json; \n        aiJson = rawSource.parsed_json || rawSource.output || rawSource || {};\n        if (typeof aiJson === 'string') { try { aiJson = JSON.parse(aiJson); } catch(e) {} }\n    } catch (e) { aiJson = {}; }\n\n    let mustConditions = [];\n    let isNameSearchMode = false;\n\n    // ---------------------------------------------------------------------\n    // [FIX QUAN TRỌNG] BẮT ĐÚNG BIẾN filter_candidate_name\n    // ---------------------------------------------------------------------\n    // Kiểm tra cả 2 biến để an toàn: filter_candidate_name HOẶC filter_name\n    const nameInput = aiJson.filter_candidate_name || aiJson.filter_name;\n\n    if (nameInput) {\n        const nameClauses = generateNameClauses(nameInput);\n        \n        if (nameClauses.length > 0) {\n            isNameSearchMode = true;\n            mustConditions.push({ \"should\": nameClauses });\n        }\n    }\n\n    // Nếu KHÔNG tìm tên, mới chạy các bộ lọc khác\n    if (!isNameSearchMode) {\n\n        // 1. KINH NGHIỆM\n        if (aiJson.filter_experience && aiJson.filter_experience !== \"[null]\") {\n            let expStr = String(aiJson.filter_experience).toLowerCase().trim();\n            // Chỉ chạy nếu không phải là null\n            if (expStr !== \"null\") {\n                let operator = \"gte\"; \n                if (expStr.includes(\"<\") || expStr.includes(\"dưới\")) operator = \"lte\"; \n                \n                const numberMatch = expStr.match(/(\\d+(?:[.,]\\d+)?)/);\n                if (numberMatch) {\n                    const number = parseFloat(numberMatch[1].replace(',', '.'));\n                    let rangeQuery = {};\n                    if (expStr.includes(\">=\")) rangeQuery = { \"gte\": number };\n                    else if (expStr.includes(\"<=\")) rangeQuery = { \"lte\": number };\n                    else rangeQuery[operator] = number;\n                    \n                    mustConditions.push({ \"key\": \"experience_years\", \"range\": rangeQuery });\n                }\n            }\n        }\n\n        // 2. SKILLS / COMPANY\n        const universalFields = [\"skills_list\", \"certificate\", \"education\", \"school\", \"major\", \"text\", \"role\"];\n        let combinedCompetencies = [];\n        \n        // Helper để check null array\n        const isValidFilter = (val) => val && val !== \"[null]\" && (!Array.isArray(val) || val[0] !== null);\n\n        if (isValidFilter(aiJson.filter_skills)) {\n            combinedCompetencies.push(...(Array.isArray(aiJson.filter_skills) ? aiJson.filter_skills : [aiJson.filter_skills]));\n        }\n        if (isValidFilter(aiJson.filter_education)) {\n            combinedCompetencies.push(...(Array.isArray(aiJson.filter_education) ? aiJson.filter_education : [aiJson.filter_education]));\n        }\n        \n        combinedCompetencies = [...new Set(combinedCompetencies)].filter(item => item && item !== \"null\");\n        if (combinedCompetencies.length > 0) processLogicFilter(combinedCompetencies, universalFields, mustConditions);\n\n        if (isValidFilter(aiJson.filter_company)) {\n            const companies = Array.isArray(aiJson.filter_company) ? aiJson.filter_company : [aiJson.filter_company];\n            processLogicFilter(companies, [\"company\", \"text\"], mustConditions);\n        }\n    }\n\n    // =========================================================\n    // CẤU HÌNH OUTPUT\n    // =========================================================\n    \n    let finalLimit = 50; \n    let finalThreshold = 0.6;\n\n    // Chế độ tìm tên: Tắt threshold, tăng limit\n    if (isNameSearchMode) {\n        finalThreshold = 0.0; \n        finalLimit = 200; \n    } else if (mustConditions.length > 0) {\n        finalThreshold = 0.0; \n    }\n\n    let body = {\n      \"vector\": vector,\n      \"limit\": finalLimit,      \n      \"with_payload\": true,\n      \"group_by\": \"candidate_id\", \n      \"group_size\": 1 \n    };\n\n    if (!isNameSearchMode && mustConditions.length === 0) {\n         if ($json.score_threshold !== undefined) finalThreshold = $json.score_threshold;\n         body.score_threshold = finalThreshold;\n    }\n\n    if (mustConditions.length > 0) {\n      body.filter = { \"must\": mustConditions };\n    }\n\n    return JSON.stringify(body);\n  })()\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -608,
+        -128
+      ],
+      "id": "0a69d736-8db4-4772-b807-5022d22763b2",
+      "name": "QdrantSearch",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/embeddings",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"Authorization\": \"Bearer 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\",\n  \"Content-Type\": \"application/json\"\n}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  model: \"text-embedding-3-small\",\n  input: $json.refined_question\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -992,
+        -128
+      ],
+      "id": "46612366-f4dd-4d29-b627-70876502f346",
+      "name": "EmbbedingVector"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chatbot_web",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2336,
+        -144
+      ],
+      "id": "da21a4e0-c52f-41a9-865c-6205d466e7ba",
+      "name": "Webhook",
+      "webhookId": "8a33f409-00d9-4293-b578-f925198ea31e"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "dbd60f56-9674-4a15-b430-5317a9d3aac6",
+              "leftValue": "={{ $json.answer }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1328,
+        -144
+      ],
+      "id": "9c40504c-a0ae-4ebb-9907-65b69bf761cc",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -512,
+        -544
+      ],
+      "id": "ec31f38d-1168-46e8-9881-9485441cbc21",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Duyệt qua tất cả các items đầu vào\nreturn items.map(item => {\n  return {\n    json: {\n      // Chỉ lấy duy nhất trường 'answer'\n      answer: item.json.answer\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -928,
+        -384
+      ],
+      "id": "f83321ec-6753-4a20-a16b-b851760309e1",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "connection": "upgrade",
+            "host": "n8ndev.ndsvn.vn",
+            "x-real-ip": "10.86.101.254",
+            "x-forwarded-for": "2a09:bac1:7ac0:10::3c1:28, 10.86.101.254",
+            "x-forwarded-proto": "https",
+            "content-length": "59153",
+            "accept": "*/*",
+            "accept-language": "*",
+            "accept-encoding": "gzip, br",
+            "user-agent": "node",
+            "cf-ray": "9c23ab146e0bf8fe-SIN",
+            "sec-fetch-mode": "cors",
+            "x-n8n-api-key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NDc5YTc1My05MDJkLTQ1NDItYTlkYy03Y2Y2ZWI2YTI5YjgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzY1NTA1MDY1fQ.2jvuZTRLH5v1aEp6aGO_-M6d8XT9e9JT8wVCDMcydBg",
+            "content-type": "application/json",
+            "cdn-loop": "cloudflare; loops=1",
+            "cf-connecting-ip": "2a09:bac1:7ac0:10::3c1:28",
+            "cf-ipcountry": "VN",
+            "cf-visitor": "{\"scheme\":\"https\"}"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "message": "cho tôi các ứng viên tên phong",
+            "history": [
+              {
+                "id": "1768893920335",
+                "role": "user",
+                "content": "Ứng viên có trên 4 năm kinh nghiệm",
+                "timestamp": 1768893920335
+              },
+              {
+                "id": "1768893979391",
+                "role": "assistant",
+                "content": "Tìm thấy 23 ứng viên phù hợp.\n\nTRAN QUOC KIET – [Link CV](https://drive.google.com/file/d/1HDZckkc3fiyJUtdD7GfEu0s_gH3fAmnJ)\n- Email: kiettran27101999@gmail.com | Phone: 0903854218\n- Kinh nghiệm: 5 năm làm IT Business Analyst tại nhiều công ty như GKIM Digital, NICHIETSU SYSTEM DEVELOPMENT, Prudential Vietnam Assurance, VIB - VIETNAM INTERNATIONAL BANK.\nPHAM ANH TUAN – [Link CV](https://drive.google.com/file/d/1ZUpeTS4yjYOkSy6NiY9lHOLyPPzhjnNq)\n- Email: phamtuanhp1994@gmail.com | Phone: +84 816 501 816\n- Kinh nghiệm: 5 năm làm Data Scientist, Intern tại Boston Consulting Group, Dialectica.\nNGUYEN DANG KHOA – [Link CV](https://drive.google.com/file/d/1YXz3mvO1Qlcg-lHhYgN8VbmYC1aEqAlZ)\n- Email: ngdkhoa3979@gmail.com | Phone: +84 979 398 692\n- Kinh nghiệm: 6 năm làm Business Data Analyst, Project Manager tại Prudential Vietnam Assurance, KIMEI Global, KOVA Trading JSC.\nLONG NGUYEN – [Link CV](https://drive.google.com/file/d/1YqKSEl5hTkoLczgXuZvbPvhdq6zwuLSd)\n- Email: nguyenthanhlong7997@gmail.com | Phone: 0768780801\n- Kinh nghiệm: 6 năm làm Business Analyst, Product Owner tại Liberty Group, Ideal Life Consultancy, Innotech Vietnam Corporation.\nDINH HOANG TIEN – [Link CV](https://drive.google.com/file/d/1hE9P-BN7Y6NGSqM9d1ENlJG_iAmD33Zt)\n- Email: tien.dh95@gmail.com | Phone: +84 703 844 100\n- Kinh nghiệm: 7 năm làm Business Analyst, Product Owner, Project Manager tại Vu Thao Software Solution, Vela Corporation, Devtify Coporation.\nVO HOANG NHAN – [Link CV](https://drive.google.com/file/d/1btW-4DoceMSk0KmbkZbVCskcbMPtqDji)\n- Email: chrisvo.hoang@gmail.com | Phone: +84 97 292 9219\n- Kinh nghiệm: 10 năm làm Business Analyst, Dispute Supervisor tại VIDIVA Technology, Shopee VietNam, DIGI-TEXX VN.\nVU VI HUNG – [Link CV](https://drive.google.com/file/d/1ua4RfRaUk2cOimzyTMfjissMHJGf3X63)\n- Email: vihung15@gmail.com | Phone: 0903164098\n- Kinh nghiệm: 10 năm làm Marketing Manager, Co-founder tại nhiều công ty như DOI TAC KHOI NGHIEP LTD, AGREX SAIGON JSC, GETFIT GROUP.\nDO HOANG LOC – [Link CV](https://drive.google.com/file/d/1-kxaiokO9heO4Me4HwsA5unPETgeK8bi)\n- Email: loc.dohoang@gmail.com | Phone: +84 909 735 666\n- Kinh nghiệm: 14 năm làm User Growth Sr Manager, Lead Product Manager, Marketing Director tại Lazada, Home Credit, POPS Worldwide.\nVAN PHONG BUI – [Link CV](https://drive.google.com/file/d/1ynUMDTEw7ooD13vxVLGsDJ4z28nA9lZg)\n- Email: phongbv.j4s@gmail.com | Phone: +84389813641\n- Kinh nghiệm: 14 năm làm Business Analyst tại Teccapro, TNEX (MSB), AI Trainer & RLHF Specialist.\nVAN PHONG BUI – [Link CV](https://drive.google.com/file/d/15SsdX2xxrCXTT6IMB61D5RjffBS6qYTH/view?usp=drivesdk)\n- Email: phongbv.j4s@gmail.com | Phone: +84 389 813 641\n- Kinh nghiệm: 9 năm làm Sales Consultant, Business Analyst, Data Annotation Project Manager, AI Trainer & RLHF Specialist.\nTUAN LE MINH NGUYEN – [Link CV](https://drive.google.com/file/d/1AGWufeLvDRmfp9vNnKCeRmAH0okOPADY)\n- Email: tuannguyen.2609@gmail.com | Phone: (84) 767562678\n- Kinh nghiệm: 13 năm làm Senior Operation Engineer, Software Engineer, Technical Support Engineer tại Lazada, FPT Software, DXC, FE Credit.\nKHANG TRUONG HUU – [Link CV](https://drive.google.com/file/d/1YQhHqYsqIr5pnQ89bnM9ns2uUOVazucm)\n- Email: khang.truong128000@gmail.com | Phone: 0888 077 924\n- Kinh nghiệm: 7 năm làm Business Analyst tại APETECHS SOLUTIONS và phục vụ quân đội.\nHA NHU NGOC – [Link CV](https://drive.google.com/file/d/1icLYUPy1IrjeppHt9Twy4iSq1zNdYS4o)\n- Email: Không có | Phone: Không có SĐT\n- Kinh nghiệm: 10 năm làm Developer, DevSecOps Engineer & SA tại Vietnam Mobile, MSB Banking, SHB Banking, Viettel Global, FPT Software.\nTHACH DUONG HOANG – [Link CV](https://drive.google.com/file/d/1El_TWdZB3MNaNcZfYMzcZxLNcgSHq__D)\n- Email: duong.hoangthach1012@gmail.com | Phone: +84-XXX-XXX-884\n- Kinh nghiệm: 8 năm làm Ops Lead, DevOps Engineer tại Deloitte CA, Titan Corps, TMA Solutions.\nPHAM ANH TUAN – [Link CV](https://drive.google.com/file/d/1ZUpeTS4yjYOkSy6NiY9lHOLyPPzhjnNq)\n- Email: phamtuanhp1994@gmail.com | Phone: +84 816 501 816\n- Kinh nghiệm: 5 năm làm Data Scientist và Intern tại Boston Consulting Group, Dialectica.\nHUY DOAN – [Link CV](https://drive.google.com/file/d/1UMAkYveKi-7YM74eld5urb8Dd4B9lj7t)\n- Email: nhathuyvn100497@gmail.com | Phone: +84 776 965 785\n- Kinh nghiệm: 5 năm làm Software Developer tại Tradelink Technology và Independent SaaS Projects.\nNGUYEN DANG KHOA – [Link CV](https://drive.google.com/file/d/1-C90djoAoa20L_XP0mfucm7EXC5sXZQ5)\n- Email: dangkhoa4466@gmail.com | Phone: 0369 144 041\n- Kinh nghiệm: 5 năm làm Trading Partner Analyst, Quality Control Specialist tại TrueCommerce, BEST Inc., AFR Cloud Computing.\nNGUYEN VAN DIEU – [Link CV](https://drive.google.com/file/d/1XEgNksYeDMCQYjkiypakEgE0_wLLNYU9)\n- Email: vandieupr@gmail.com | Phone: (+84) 348.285.185\n- Kinh nghiệm: 5 năm làm Electronic Data Interchange Specialist, System Operation Engineer tại DiCentral Vietnam, TrueCommerce DiCentral.\nNGUYEN TRUNG HIEU – [Link CV](https://drive.google.com/file/d/1zplqc2Hr8vk-8Bhpz6jSdA6sU0hUFoy1)\n- Email: hieunt07101999@gmail.com | Phone: 0942002794\n- Kinh nghiệm: 5 năm làm Product Owner cum Business Analyst tại Ocean Network Express, Nexcel Solutions, Timo Digital Bank.\nNGUYEN DUC NHAN – [Link CV](https://drive.google.com/file/d/1nw7yad_ikOSXatGWxDIDs4LDurpbZ_u2)\n- Email: nhannguyen14.dev@gmail.com | Phone: 0877522662\n- Kinh nghiệm: 4 năm làm Business Analyst tại Tien Phong CDS JSC, IIG Viet Nam.\nTRUONG MINH TIEN – [Link CV](https://drive.google.com/file/d/1yYhw0m4Jhb_gXgEvIFuBGZ55tGd25ZqU)\n- Email: tmtien3007@gmail.com | Phone: 0919 966 456\n- Kinh nghiệm: 4 năm làm Business Analyst tại FPT IS, UNITY Fitness.\nPHAN MINH NHAT – [Link CV](https://drive.google.com/file/d/1mNPq2lhq9T1YlIlHPCIu4bG_yY2jWE9K)\n- Email: phannht98@gmail.com | Phone: +84362979816\n- Kinh nghiệm: 4 năm làm Business Analyst tại FRACTAL TECHNOLOGY CORPORATION, AEGONA COMPANY, GSOFT COMPANY, VIHAT GROUP.\nPHAM DO KHOA – [Link CV](https://drive.google.com/file/d/1HfKf07C2guUpG5sORGuSVg83e0Ez1_IA)\n- Email: dokhoapham@gmail.com | Phone: 0346 73 23 80\n- Kinh nghiệm: 4 năm làm IT Business Analyst, IT Operations Warehouse Support tại HRS Company, SCLogistics Warehouse Company.",
+                "timestamp": 1768893979391,
+                "candidates": [
+                  {
+                    "id": "176889397938823249299063412954",
+                    "name": "TRAN QUOC KIET",
+                    "summary": "• Kinh nghiệm: 5 năm làm IT Business Analyst tại nhiều công ty như GKIM Digital, NICHIETSU SYSTEM DEVELOPMENT, Prudential Vietnam Assurance, VIB - VIETNAM INTERNATIONAL BANK.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 5,
+                    "skills_found": [],
+                    "email": "kiettran27101999@gmail.com",
+                    "phone": "0903854218",
+                    "link_cv": "https://drive.google.com/file/d/1HDZckkc3fiyJUtdD7GfEu0s_gH3fAmnJ",
+                    "file_url": "https://drive.google.com/file/d/1HDZckkc3fiyJUtdD7GfEu0s_gH3fAmnJ"
+                  },
+                  {
+                    "id": "1768893979389419630120403105",
+                    "name": "PHAM ANH TUAN",
+                    "summary": "• Kinh nghiệm: 5 năm làm Data Scientist, Intern tại Boston Consulting Group, Dialectica.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 5,
+                    "skills_found": [],
+                    "email": "phamtuanhp1994@gmail.com",
+                    "phone": "+84 816 501 816",
+                    "link_cv": "https://drive.google.com/file/d/1ZUpeTS4yjYOkSy6NiY9lHOLyPPzhjnNq",
+                    "file_url": "https://drive.google.com/file/d/1ZUpeTS4yjYOkSy6NiY9lHOLyPPzhjnNq"
+                  },
+                  {
+                    "id": "17688939793906493200899062148",
+                    "name": "NGUYEN DANG KHOA",
+                    "summary": "• Kinh nghiệm: 6 năm làm Business Data Analyst, Project Manager tại Prudential Vietnam Assurance, KIMEI Global, KOVA Trading JSC.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 6,
+                    "skills_found": [],
+                    "email": "ngdkhoa3979@gmail.com",
+                    "phone": "+84 979 398 692",
+                    "link_cv": "https://drive.google.com/file/d/1YXz3mvO1Qlcg-lHhYgN8VbmYC1aEqAlZ",
+                    "file_url": "https://drive.google.com/file/d/1YXz3mvO1Qlcg-lHhYgN8VbmYC1aEqAlZ"
+                  },
+                  {
+                    "id": "1768893979390769762125917148",
+                    "name": "LONG NGUYEN",
+                    "summary": "• Kinh nghiệm: 6 năm làm Business Analyst, Product Owner tại Liberty Group, Ideal Life Consultancy, Innotech Vietnam Corporation.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 6,
+                    "skills_found": [],
+                    "email": "nguyenthanhlong7997@gmail.com",
+                    "phone": "0768780801",
+                    "link_cv": "https://drive.google.com/file/d/1YqKSEl5hTkoLczgXuZvbPvhdq6zwuLSd",
+                    "file_url": "https://drive.google.com/file/d/1YqKSEl5hTkoLczgXuZvbPvhdq6zwuLSd"
+                  },
+                  {
+                    "id": "176889397939040243121618095257",
+                    "name": "DINH HOANG TIEN",
+                    "summary": "• Kinh nghiệm: 7 năm làm Business Analyst, Product Owner, Project Manager tại Vu Thao Software Solution, Vela Corporation, Devtify Coporation.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 7,
+                    "skills_found": [],
+                    "email": "tien.dh95@gmail.com",
+                    "phone": "+84 703 844 100",
+                    "link_cv": "https://drive.google.com/file/d/1hE9P-BN7Y6NGSqM9d1ENlJG_iAmD33Zt",
+                    "file_url": "https://drive.google.com/file/d/1hE9P-BN7Y6NGSqM9d1ENlJG_iAmD33Zt"
+                  },
+                  {
+                    "id": "17688939793908359900619524526",
+                    "name": "VO HOANG NHAN",
+                    "summary": "• Kinh nghiệm: 10 năm làm Business Analyst, Dispute Supervisor tại VIDIVA Technology, Shopee VietNam, DIGI-TEXX VN.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 10,
+                    "skills_found": [],
+                    "email": "chrisvo.hoang@gmail.com",
+                    "phone": "+84 97 292 9219",
+                    "link_cv": "https://drive.google.com/file/d/1btW-4DoceMSk0KmbkZbVCskcbMPtqDji",
+                    "file_url": "https://drive.google.com/file/d/1btW-4DoceMSk0KmbkZbVCskcbMPtqDji"
+                  },
+                  {
+                    "id": "1768893979390853698909504693",
+                    "name": "VU VI HUNG",
+                    "summary": "• Kinh nghiệm: 10 năm làm Marketing Manager, Co-founder tại nhiều công ty như DOI TAC KHOI NGHIEP LTD, AGREX SAIGON JSC, GETFIT GROUP.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 10,
+                    "skills_found": [],
+                    "email": "vihung15@gmail.com",
+                    "phone": "0903164098",
+                    "link_cv": "https://drive.google.com/file/d/1ua4RfRaUk2cOimzyTMfjissMHJGf3X63",
+                    "file_url": "https://drive.google.com/file/d/1ua4RfRaUk2cOimzyTMfjissMHJGf3X63"
+                  },
+                  {
+                    "id": "17688939793903088858613731543",
+                    "name": "DO HOANG LOC",
+                    "summary": "• Kinh nghiệm: 14 năm làm User Growth Sr Manager, Lead Product Manager, Marketing Director tại Lazada, Home Credit, POPS Worldwide.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 14,
+                    "skills_found": [],
+                    "email": "loc.dohoang@gmail.com",
+                    "phone": "+84 909 735 666",
+                    "link_cv": "https://drive.google.com/file/d/1-kxaiokO9heO4Me4HwsA5unPETgeK8bi",
+                    "file_url": "https://drive.google.com/file/d/1-kxaiokO9heO4Me4HwsA5unPETgeK8bi"
+                  },
+                  {
+                    "id": "176889397939006298007176055109",
+                    "name": "VAN PHONG BUI",
+                    "summary": "• Kinh nghiệm: 14 năm làm Business Analyst tại Teccapro, TNEX (MSB), AI Trainer & RLHF Specialist.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 14,
+                    "skills_found": [],
+                    "email": "phongbv.j4s@gmail.com",
+                    "phone": "+84389813641",
+                    "link_cv": "https://drive.google.com/file/d/1ynUMDTEw7ooD13vxVLGsDJ4z28nA9lZg",
+                    "file_url": "https://drive.google.com/file/d/1ynUMDTEw7ooD13vxVLGsDJ4z28nA9lZg"
+                  },
+                  {
+                    "id": "176889397939030591959610422426",
+                    "name": "VAN PHONG BUI",
+                    "summary": "• Kinh nghiệm: 9 năm làm Sales Consultant, Business Analyst, Data Annotation Project Manager, AI Trainer & RLHF Specialist.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 9,
+                    "skills_found": [],
+                    "email": "phongbv.j4s@gmail.com",
+                    "phone": "+84 389 813 641",
+                    "link_cv": "https://drive.google.com/file/d/15SsdX2xxrCXTT6IMB61D5RjffBS6qYTH/view?usp=drivesdk",
+                    "file_url": "https://drive.google.com/file/d/15SsdX2xxrCXTT6IMB61D5RjffBS6qYTH/view?usp=drivesdk"
+                  },
+                  {
+                    "id": "176889397939071264463278889",
+                    "name": "TUAN LE MINH NGUYEN",
+                    "summary": "• Kinh nghiệm: 13 năm làm Senior Operation Engineer, Software Engineer, Technical Support Engineer tại Lazada, FPT Software, DXC, FE Credit.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 13,
+                    "skills_found": [],
+                    "email": "tuannguyen.2609@gmail.com",
+                    "phone": "(84) 767562678",
+                    "link_cv": "https://drive.google.com/file/d/1AGWufeLvDRmfp9vNnKCeRmAH0okOPADY",
+                    "file_url": "https://drive.google.com/file/d/1AGWufeLvDRmfp9vNnKCeRmAH0okOPADY"
+                  },
+                  {
+                    "id": "1768893979390381727819924242",
+                    "name": "KHANG TRUONG HUU",
+                    "summary": "• Kinh nghiệm: 7 năm làm Business Analyst tại APETECHS SOLUTIONS và phục vụ quân đội.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 7,
+                    "skills_found": [],
+                    "email": "khang.truong128000@gmail.com",
+                    "phone": "0888 077 924",
+                    "link_cv": "https://drive.google.com/file/d/1YQhHqYsqIr5pnQ89bnM9ns2uUOVazucm",
+                    "file_url": "https://drive.google.com/file/d/1YQhHqYsqIr5pnQ89bnM9ns2uUOVazucm"
+                  },
+                  {
+                    "id": "17688939793907224805604829732",
+                    "name": "HA NHU NGOC",
+                    "summary": "• Email: Không có | Phone: Không có SĐT\n• Kinh nghiệm: 10 năm làm Developer, DevSecOps Engineer & SA tại Vietnam Mobile, MSB Banking, SHB Banking, Viettel Global, FPT Software.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 10,
+                    "skills_found": [],
+                    "email": "",
+                    "phone": "",
+                    "link_cv": "https://drive.google.com/file/d/1icLYUPy1IrjeppHt9Twy4iSq1zNdYS4o",
+                    "file_url": "https://drive.google.com/file/d/1icLYUPy1IrjeppHt9Twy4iSq1zNdYS4o"
+                  },
+                  {
+                    "id": "1768893979390539514698608145",
+                    "name": "THACH DUONG HOANG",
+                    "summary": "• Phone: +84-XXX-XXX-884\n• Kinh nghiệm: 8 năm làm Ops Lead, DevOps Engineer tại Deloitte CA, Titan Corps, TMA Solutions.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 8,
+                    "skills_found": [],
+                    "email": "duong.hoangthach1012@gmail.com",
+                    "phone": "",
+                    "link_cv": "https://drive.google.com/file/d/1El_TWdZB3MNaNcZfYMzcZxLNcgSHq__D",
+                    "file_url": "https://drive.google.com/file/d/1El_TWdZB3MNaNcZfYMzcZxLNcgSHq__D"
+                  },
+                  {
+                    "id": "176889397939007110598825009429",
+                    "name": "PHAM ANH TUAN",
+                    "summary": "• Kinh nghiệm: 5 năm làm Data Scientist và Intern tại Boston Consulting Group, Dialectica.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 5,
+                    "skills_found": [],
+                    "email": "phamtuanhp1994@gmail.com",
+                    "phone": "+84 816 501 816",
+                    "link_cv": "https://drive.google.com/file/d/1ZUpeTS4yjYOkSy6NiY9lHOLyPPzhjnNq",
+                    "file_url": "https://drive.google.com/file/d/1ZUpeTS4yjYOkSy6NiY9lHOLyPPzhjnNq"
+                  },
+                  {
+                    "id": "17688939793909739075241607283",
+                    "name": "HUY DOAN",
+                    "summary": "• Kinh nghiệm: 5 năm làm Software Developer tại Tradelink Technology và Independent SaaS Projects.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 5,
+                    "skills_found": [],
+                    "email": "nhathuyvn100497@gmail.com",
+                    "phone": "+84 776 965 785",
+                    "link_cv": "https://drive.google.com/file/d/1UMAkYveKi-7YM74eld5urb8Dd4B9lj7t",
+                    "file_url": "https://drive.google.com/file/d/1UMAkYveKi-7YM74eld5urb8Dd4B9lj7t"
+                  },
+                  {
+                    "id": "176889397939012470778488407341",
+                    "name": "NGUYEN DANG KHOA",
+                    "summary": "• Kinh nghiệm: 5 năm làm Trading Partner Analyst, Quality Control Specialist tại TrueCommerce, BEST Inc., AFR Cloud Computing.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 5,
+                    "skills_found": [],
+                    "email": "dangkhoa4466@gmail.com",
+                    "phone": "0369 144 041",
+                    "link_cv": "https://drive.google.com/file/d/1-C90djoAoa20L_XP0mfucm7EXC5sXZQ5",
+                    "file_url": "https://drive.google.com/file/d/1-C90djoAoa20L_XP0mfucm7EXC5sXZQ5"
+                  },
+                  {
+                    "id": "17688939793905940638253858076",
+                    "name": "NGUYEN VAN DIEU",
+                    "summary": "• Kinh nghiệm: 5 năm làm Electronic Data Interchange Specialist, System Operation Engineer tại DiCentral Vietnam, TrueCommerce DiCentral.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 5,
+                    "skills_found": [],
+                    "email": "vandieupr@gmail.com",
+                    "phone": "(+84) 348.285.185",
+                    "link_cv": "https://drive.google.com/file/d/1XEgNksYeDMCQYjkiypakEgE0_wLLNYU9",
+                    "file_url": "https://drive.google.com/file/d/1XEgNksYeDMCQYjkiypakEgE0_wLLNYU9"
+                  },
+                  {
+                    "id": "17688939793905761768988311563",
+                    "name": "NGUYEN TRUNG HIEU",
+                    "summary": "• Kinh nghiệm: 5 năm làm Product Owner cum Business Analyst tại Ocean Network Express, Nexcel Solutions, Timo Digital Bank.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 5,
+                    "skills_found": [],
+                    "email": "hieunt07101999@gmail.com",
+                    "phone": "0942002794",
+                    "link_cv": "https://drive.google.com/file/d/1zplqc2Hr8vk-8Bhpz6jSdA6sU0hUFoy1",
+                    "file_url": "https://drive.google.com/file/d/1zplqc2Hr8vk-8Bhpz6jSdA6sU0hUFoy1"
+                  },
+                  {
+                    "id": "17688939793908912623265096311",
+                    "name": "NGUYEN DUC NHAN",
+                    "summary": "• Kinh nghiệm: 4 năm làm Business Analyst tại Tien Phong CDS JSC, IIG Viet Nam.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "nhannguyen14.dev@gmail.com",
+                    "phone": "0877522662",
+                    "link_cv": "https://drive.google.com/file/d/1nw7yad_ikOSXatGWxDIDs4LDurpbZ_u2",
+                    "file_url": "https://drive.google.com/file/d/1nw7yad_ikOSXatGWxDIDs4LDurpbZ_u2"
+                  },
+                  {
+                    "id": "1768893979390989882429478919",
+                    "name": "TRUONG MINH TIEN",
+                    "summary": "• Kinh nghiệm: 4 năm làm Business Analyst tại FPT IS, UNITY Fitness.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "tmtien3007@gmail.com",
+                    "phone": "0919 966 456",
+                    "link_cv": "https://drive.google.com/file/d/1yYhw0m4Jhb_gXgEvIFuBGZ55tGd25ZqU",
+                    "file_url": "https://drive.google.com/file/d/1yYhw0m4Jhb_gXgEvIFuBGZ55tGd25ZqU"
+                  },
+                  {
+                    "id": "17688939793906745943294060396",
+                    "name": "PHAN MINH NHAT",
+                    "summary": "• Kinh nghiệm: 4 năm làm Business Analyst tại FRACTAL TECHNOLOGY CORPORATION, AEGONA COMPANY, GSOFT COMPANY, VIHAT GROUP.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "phannht98@gmail.com",
+                    "phone": "+84362979816",
+                    "link_cv": "https://drive.google.com/file/d/1mNPq2lhq9T1YlIlHPCIu4bG_yY2jWE9K",
+                    "file_url": "https://drive.google.com/file/d/1mNPq2lhq9T1YlIlHPCIu4bG_yY2jWE9K"
+                  },
+                  {
+                    "id": "176889397939010664167068069708",
+                    "name": "PHAM DO KHOA",
+                    "summary": "• Kinh nghiệm: 4 năm làm IT Business Analyst, IT Operations Warehouse Support tại HRS Company, SCLogistics Warehouse Company.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "dokhoapham@gmail.com",
+                    "phone": "0346 73 23 80",
+                    "link_cv": "https://drive.google.com/file/d/1HfKf07C2guUpG5sORGuSVg83e0Ez1_IA",
+                    "file_url": "https://drive.google.com/file/d/1HfKf07C2guUpG5sORGuSVg83e0Ez1_IA"
+                  }
+                ],
+                "technical_questions": [],
+                "soft_skill_questions": [
+                  "Ứng viên có trên 4 năm kinh nghiệm"
+                ]
+              },
+              {
+                "id": "1768894057949",
+                "role": "user",
+                "content": "ai ứng tuyển dev trên 3 năm kinh nghiệm",
+                "timestamp": 1768894057949
+              },
+              {
+                "id": "1768894073857",
+                "role": "assistant",
+                "content": "Tìm thấy 7 ứng viên phù hợp.\n\nNGUYEN HUU THIEN – [Link CV](https://drive.google.com/file/d/11_ZdO9FNmxeEPPZ_xZO_KW7NjiODgNNh)\n- Email: thiennh.me@gmail.com | SĐT: +84355127042 | Kinh nghiệm: 4 năm\nNGUYEN CAT TUONG – [Link CV](https://drive.google.com/file/d/12j9op7pHl8tUI1b0Mxd3G25gCPP_O31b)\n- Email: nguyentuong3568@gmail.com | SĐT: 0344891134 | Kinh nghiệm: 3 năm\nHA NHU NGOC – [Link CV](https://drive.google.com/file/d/1icLYUPy1IrjeppHt9Twy4iSq1zNdYS4o)\n- Email: N/A | SĐT: Không có | Kinh nghiệm: 10 năm\nHUY DOAN – [Link CV](https://drive.google.com/file/d/1UMAkYveKi-7YM74eld5urb8Dd4B9lj7t)\n- Email: nhathuyvn100497@gmail.com | SĐT: +84 776 965 785 | Kinh nghiệm: 5 năm\nKHANG TRUONG HUU – [Link CV](https://drive.google.com/file/d/1YQhHqYsqIr5pnQ89bnM9ns2uUOVazucm)\n- Email: khang.truong128000@gmail.com | SĐT: 0888 077 924 | Kinh nghiệm: 7 năm\nTUAN LE MINH NGUYEN – [Link CV](https://drive.google.com/file/d/1AGWufeLvDRmfp9vNnKCeRmAH0okOPADY)\n- Email: tuannguyen.2609@gmail.com | SĐT: (84) 767562678 | Kinh nghiệm: 13 năm\nVO MINH TAN – [Link CV](https://drive.google.com/file/d/1DA8rjcxIdtP6YtkmCc4IQT7Cx1QgED3m)\n- Email: vominhtan3105@gmail.com | SĐT: 0339016535 | Kinh nghiệm: 4 năm",
+                "timestamp": 1768894073857,
+                "candidates": [
+                  {
+                    "id": "17688940738563963879389353282",
+                    "name": "NGUYEN HUU THIEN",
+                    "summary": "• | Kinh nghiệm: 4 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 0,
+                    "skills_found": [],
+                    "email": "thiennh.me@gmail.com",
+                    "phone": "+84355127042",
+                    "link_cv": "https://drive.google.com/file/d/11_ZdO9FNmxeEPPZ_xZO_KW7NjiODgNNh",
+                    "file_url": "https://drive.google.com/file/d/11_ZdO9FNmxeEPPZ_xZO_KW7NjiODgNNh"
+                  },
+                  {
+                    "id": "17688940738565250937057432755",
+                    "name": "NGUYEN CAT TUONG",
+                    "summary": "• | Kinh nghiệm: 3 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 0,
+                    "skills_found": [],
+                    "email": "nguyentuong3568@gmail.com",
+                    "phone": "0344891134",
+                    "link_cv": "https://drive.google.com/file/d/12j9op7pHl8tUI1b0Mxd3G25gCPP_O31b",
+                    "file_url": "https://drive.google.com/file/d/12j9op7pHl8tUI1b0Mxd3G25gCPP_O31b"
+                  },
+                  {
+                    "id": "17688940738565667218680500433",
+                    "name": "HA NHU NGOC",
+                    "summary": "• Email: N/A | SĐT: Không có | Kinh nghiệm: 10 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 0,
+                    "skills_found": [],
+                    "email": "",
+                    "phone": "",
+                    "link_cv": "https://drive.google.com/file/d/1icLYUPy1IrjeppHt9Twy4iSq1zNdYS4o",
+                    "file_url": "https://drive.google.com/file/d/1icLYUPy1IrjeppHt9Twy4iSq1zNdYS4o"
+                  },
+                  {
+                    "id": "17688940738561802400217805521",
+                    "name": "HUY DOAN",
+                    "summary": "• | Kinh nghiệm: 5 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 0,
+                    "skills_found": [],
+                    "email": "nhathuyvn100497@gmail.com",
+                    "phone": "+84 776 965 785",
+                    "link_cv": "https://drive.google.com/file/d/1UMAkYveKi-7YM74eld5urb8Dd4B9lj7t",
+                    "file_url": "https://drive.google.com/file/d/1UMAkYveKi-7YM74eld5urb8Dd4B9lj7t"
+                  },
+                  {
+                    "id": "17688940738579661132573600768",
+                    "name": "KHANG TRUONG HUU",
+                    "summary": "• | Kinh nghiệm: 7 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 0,
+                    "skills_found": [],
+                    "email": "khang.truong128000@gmail.com",
+                    "phone": "0888 077 924",
+                    "link_cv": "https://drive.google.com/file/d/1YQhHqYsqIr5pnQ89bnM9ns2uUOVazucm",
+                    "file_url": "https://drive.google.com/file/d/1YQhHqYsqIr5pnQ89bnM9ns2uUOVazucm"
+                  },
+                  {
+                    "id": "176889407385707017406397792303",
+                    "name": "TUAN LE MINH NGUYEN",
+                    "summary": "• | Kinh nghiệm: 13 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 0,
+                    "skills_found": [],
+                    "email": "tuannguyen.2609@gmail.com",
+                    "phone": "(84) 767562678",
+                    "link_cv": "https://drive.google.com/file/d/1AGWufeLvDRmfp9vNnKCeRmAH0okOPADY",
+                    "file_url": "https://drive.google.com/file/d/1AGWufeLvDRmfp9vNnKCeRmAH0okOPADY"
+                  },
+                  {
+                    "id": "17688940738579365014689301312",
+                    "name": "VO MINH TAN",
+                    "summary": "• | Kinh nghiệm: 4 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 0,
+                    "skills_found": [],
+                    "email": "vominhtan3105@gmail.com",
+                    "phone": "0339016535",
+                    "link_cv": "https://drive.google.com/file/d/1DA8rjcxIdtP6YtkmCc4IQT7Cx1QgED3m",
+                    "file_url": "https://drive.google.com/file/d/1DA8rjcxIdtP6YtkmCc4IQT7Cx1QgED3m"
+                  }
+                ],
+                "technical_questions": [],
+                "soft_skill_questions": [
+                  "ai ứng tuyển dev trên 3 năm kinh nghiệm"
+                ]
+              },
+              {
+                "id": "1768895755769",
+                "role": "user",
+                "content": "cho tôi các ứng viên trên 3 năm kinh nghiệm",
+                "timestamp": 1768895755769
+              },
+              {
+                "id": "1768896545397",
+                "role": "user",
+                "content": "cho tôi các ứng viên trên 3 năm kinh nghiệm",
+                "timestamp": 1768896545397
+              },
+              {
+                "id": "1768896664763",
+                "role": "assistant",
+                "content": "Tìm thấy 28 ứng viên phù hợp.\n\nNGUYEN DANG KHOA – [Link CV](https://drive.google.com/file/d/1-C90djoAoa20L_XP0mfucm7EXC5sXZQ5)\n- Email: dangkhoa4466@gmail.com\n- Phone: 0369 144 041\n- Kinh nghiệm: 5 năm\nNGUYEN DANG KHOA – [Link CV](https://drive.google.com/file/d/1YXz3mvO1Qlcg-lHhYgN8VbmYC1aEqAlZ)\n- Email: ngdkhoa3979@gmail.com\n- Phone: +84 979 398 692\n- Kinh nghiệm: 6 năm\nTRAN THI THU OANH – [Link CV](https://drive.google.com/file/d/1fko4fFIVG98hcKvenyhc3y4GEng_lgRc)\n- Email: thuoanh06032001@gmail.com\n- Phone: 0979283870\n- Kinh nghiệm: 4 năm\nPHU NGUYEN – [Link CV](https://drive.google.com/file/d/1AmC4nFauqT3WKFYLHhkicYGEe_FFOYCL)\n- Email: nhdphu2@gmail.com\n- Phone: +84352202547\n- Kinh nghiệm: 4 năm\nTRAN QUOC KIET – [Link CV](https://drive.google.com/file/d/1HDZckkc3fiyJUtdD7GfEu0s_gH3fAmnJ)\n- Email: kiettran27101999@gmail.com\n- Phone: 0903854218\n- Kinh nghiệm: 5 năm\nTRAN VAN DUC – [Link CV](https://drive.google.com/file/d/1hqU14I3c06ZaH1XaL8A5fAUWcbdSKF8t)\n- Email: ducforwork@gmail.com\n- Phone: +84 905 955 256\n- Kinh nghiệm: 4 năm\nHA NGUYEN HAI DANG – [Link CV](https://drive.google.com/file/d/1rrSlWy4NHJVCFZxcGzuu3h4V-rgRfrmV)\n- Email: danghanguyenhai@gmail.com\n- Phone: 0833996989\n- Kinh nghiệm: 4 năm\nHOANG NGUYEN PHUONG THANH – [Link CV](https://drive.google.com/file/d/130KfBiYf3okuTcwx_zqJm10MPSmMqABK)\n- Email: hoangthanh6102003@gmail.com\n- Phone: 0838 299 280\n- Kinh nghiệm: 3 năm\nVU VI HUNG – [Link CV](https://drive.google.com/file/d/1ua4RfRaUk2cOimzyTMfjissMHJGf3X63)\n- Email: vihung15@gmail.com\n- Phone: 0903164098\n- Kinh nghiệm: 10 năm\nVAN PHONG BUI – [Link CV](https://drive.google.com/file/d/1ynUMDTEw7ooD13vxVLGsDJ4z28nA9lZg)\n- Email: phongbv.j4s@gmail.com\n- Phone: +84389813641\n- Kinh nghiệm: 14 năm\nVAN PHONG BUI – [Link CV](https://drive.google.com/file/d/15SsdX2xxrCXTT6IMB61D5RjffBS6qYTH/view?usp=drivesdk)\n- Email: phongbv.j4s@gmail.com\n- Phone: +84 389 813 641\n- Kinh nghiệm: 9 năm\nDINH HOANG TIEN – [Link CV](https://drive.google.com/file/d/1hE9P-BN7Y6NGSqM9d1ENlJG_iAmD33Zt)\n- Email: tien.dh95@gmail.com\n- Phone: +84 703 844 100\n- Kinh nghiệm: 7 năm\nVO QUOC THANG – [Link CV](https://drive.google.com/file/d/1_fuIioQiRt0G9DYjkHfzLW1Soy3fDCdF)\n- Email: thangvoquoc2810@gmail.com\n- Phone: 0927170723\n- Kinh nghiệm: 4 năm\nNGUYEN VAN DIEU – [Link CV](https://drive.google.com/file/d/1XEgNksYeDMCQYjkiypakEgE0_wLLNYU9)\n- Email: vandieupr@gmail.com\n- Phone: (+84) 348.285.185\n- Kinh nghiệm: 5 năm\nTRUONG QUANG LONG – [Link CV](https://drive.google.com/file/d/1yNG3td4CzImcCTSmRLU7uuYyc4hhd1Q-)\n- Email: quanglongtruong20@gmail.com\n- Phone: +84 86 881 5402\n- Kinh nghiệm: 4 năm\nTRUONG ANH THU – [Link CV](https://drive.google.com/file/d/1-cLvjrc6EHk1bH2OnCtO5SrupeNKPZdQ)\n- Email: youthutruong322000@gmail.com\n- Phone: 0377553765\n- Kinh nghiệm: 4 năm\nVO MINH TAN – [Link CV](https://drive.google.com/file/d/1DA8rjcxIdtP6YtkmCc4IQT7Cx1QgED3m)\n- Email: vominhtan3105@gmail.com\n- Phone: 0339016535\n- Kinh nghiệm: 4 năm\nNGUYEN THI THUY TRANG – [Link CV](https://drive.google.com/file/d/11s6Pzg4ASVvhOkgyTLWt4U7bvIDB4ffS)\n- Email: ntthuytrang247@gmail.com\n- Phone: 0338121441\n- Kinh nghiệm: 3 năm\nPHAM ANH TUAN – [Link CV](https://drive.google.com/file/d/1ZUpeTS4yjYOkSy6NiY9lHOLyPPzhjnNq)\n- Email: phamtuanhp1994@gmail.com\n- Phone: +84 816 501 816\n- Kinh nghiệm: 5 năm\nTUAN LE MINH NGUYEN – [Link CV](https://drive.google.com/file/d/1AGWufeLvDRmfp9vNnKCeRmAH0okOPADY)\n- Email: tuannguyen.2609@gmail.com\n- Phone: (84) 767562678\n- Kinh nghiệm: 13 năm\nDO HOANG LOC – [Link CV](https://drive.google.com/file/d/1-kxaiokO9heO4Me4HwsA5unPETgeK8bi)\n- Email: loc.dohoang@gmail.com\n- Phone: +84 909 735 666\n- Kinh nghiệm: 14 năm\nNGUYEN HUU THIEN – [Link CV](https://drive.google.com/file/d/11_ZdO9FNmxeEPPZ_xZO_KW7NjiODgNNh)\n- Email: thiennh.me@gmail.com\n- Phone: +84355127042\n- Kinh nghiệm: 4 năm\nNGUYEN THANH DAT – [Link CV](https://drive.google.com/file/d/1li5JbQHERZn6Bkywk-QrOuxOx_TXrtGx)\n- Email: catluong801@gmail.com\n- Phone: 0374047776\n- Kinh nghiệm: 3 năm\nTRUONG MINH TIEN – [Link CV](https://drive.google.com/file/d/1yYhw0m4Jhb_gXgEvIFuBGZ55tGd25ZqU)\n- Email: tmtien3007@gmail.com\n- Phone: 0919 966 456\n- Kinh nghiệm: 4 năm\nNGUYEN TRUNG HIEU – [Link CV](https://drive.google.com/file/d/1zplqc2Hr8vk-8Bhpz6jSdA6sU0hUFoy1)\n- Email: hieunt07101999@gmail.com\n- Phone: 0942002794\n- Kinh nghiệm: 5 năm\nKHANG TRUONG HUU – [Link CV](https://drive.google.com/file/d/1YQhHqYsqIr5pnQ89bnM9ns2uUOVazucm)\n- Email: khang.truong128000@gmail.com\n- Phone: 0888 077 924\n- Kinh nghiệm: 7 năm\nVO HOANG NHAN – [Link CV](https://drive.google.com/file/d/1btW-4DoceMSk0KmbkZbVCskcbMPtqDji)\n- Email: chrisvo.hoang@gmail.com\n- Phone: +84 97 292 9219\n- Kinh nghiệm: 10 năm\nNGUYEN THI ANH DAO – [Link CV](https://drive.google.com/file/d/14shkVGiNY8o-6XTKnZ-XLmG4_HGpx_-m)\n- Email: daohtttql@gmail.com\n- Phone: 0528871169\n- Kinh nghiệm: 3 năm",
+                "timestamp": 1768896664763,
+                "candidates": [
+                  {
+                    "id": "17688966647578258798614956306",
+                    "name": "NGUYEN DANG KHOA",
+                    "summary": "• Kinh nghiệm: 5 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 5,
+                    "skills_found": [],
+                    "email": "dangkhoa4466@gmail.com",
+                    "phone": "0369 144 041",
+                    "link_cv": "https://drive.google.com/file/d/1-C90djoAoa20L_XP0mfucm7EXC5sXZQ5",
+                    "file_url": "https://drive.google.com/file/d/1-C90djoAoa20L_XP0mfucm7EXC5sXZQ5"
+                  },
+                  {
+                    "id": "176889666475815749212373007204",
+                    "name": "NGUYEN DANG KHOA",
+                    "summary": "• Kinh nghiệm: 6 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 6,
+                    "skills_found": [],
+                    "email": "ngdkhoa3979@gmail.com",
+                    "phone": "+84 979 398 692",
+                    "link_cv": "https://drive.google.com/file/d/1YXz3mvO1Qlcg-lHhYgN8VbmYC1aEqAlZ",
+                    "file_url": "https://drive.google.com/file/d/1YXz3mvO1Qlcg-lHhYgN8VbmYC1aEqAlZ"
+                  },
+                  {
+                    "id": "17688966647595794586840361033",
+                    "name": "TRAN THI THU OANH",
+                    "summary": "• Kinh nghiệm: 4 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "thuoanh06032001@gmail.com",
+                    "phone": "0979283870",
+                    "link_cv": "https://drive.google.com/file/d/1fko4fFIVG98hcKvenyhc3y4GEng_lgRc",
+                    "file_url": "https://drive.google.com/file/d/1fko4fFIVG98hcKvenyhc3y4GEng_lgRc"
+                  },
+                  {
+                    "id": "17688966647602981687934681858",
+                    "name": "PHU NGUYEN",
+                    "summary": "• Kinh nghiệm: 4 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "nhdphu2@gmail.com",
+                    "phone": "+84352202547",
+                    "link_cv": "https://drive.google.com/file/d/1AmC4nFauqT3WKFYLHhkicYGEe_FFOYCL",
+                    "file_url": "https://drive.google.com/file/d/1AmC4nFauqT3WKFYLHhkicYGEe_FFOYCL"
+                  },
+                  {
+                    "id": "17688966647608004714193221687",
+                    "name": "TRAN QUOC KIET",
+                    "summary": "• Kinh nghiệm: 5 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 5,
+                    "skills_found": [],
+                    "email": "kiettran27101999@gmail.com",
+                    "phone": "0903854218",
+                    "link_cv": "https://drive.google.com/file/d/1HDZckkc3fiyJUtdD7GfEu0s_gH3fAmnJ",
+                    "file_url": "https://drive.google.com/file/d/1HDZckkc3fiyJUtdD7GfEu0s_gH3fAmnJ"
+                  },
+                  {
+                    "id": "1768896664760004406749528794385",
+                    "name": "TRAN VAN DUC",
+                    "summary": "• Kinh nghiệm: 4 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "ducforwork@gmail.com",
+                    "phone": "+84 905 955 256",
+                    "link_cv": "https://drive.google.com/file/d/1hqU14I3c06ZaH1XaL8A5fAUWcbdSKF8t",
+                    "file_url": "https://drive.google.com/file/d/1hqU14I3c06ZaH1XaL8A5fAUWcbdSKF8t"
+                  },
+                  {
+                    "id": "17688966647606082521185749677",
+                    "name": "HA NGUYEN HAI DANG",
+                    "summary": "• Kinh nghiệm: 4 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "danghanguyenhai@gmail.com",
+                    "phone": "0833996989",
+                    "link_cv": "https://drive.google.com/file/d/1rrSlWy4NHJVCFZxcGzuu3h4V-rgRfrmV",
+                    "file_url": "https://drive.google.com/file/d/1rrSlWy4NHJVCFZxcGzuu3h4V-rgRfrmV"
+                  },
+                  {
+                    "id": "17688966647609645855036236969",
+                    "name": "HOANG NGUYEN PHUONG THANH",
+                    "summary": "• Kinh nghiệm: 3 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 3,
+                    "skills_found": [],
+                    "email": "hoangthanh6102003@gmail.com",
+                    "phone": "0838 299 280",
+                    "link_cv": "https://drive.google.com/file/d/130KfBiYf3okuTcwx_zqJm10MPSmMqABK",
+                    "file_url": "https://drive.google.com/file/d/130KfBiYf3okuTcwx_zqJm10MPSmMqABK"
+                  },
+                  {
+                    "id": "176889666476032661127752359087",
+                    "name": "VU VI HUNG",
+                    "summary": "• Kinh nghiệm: 10 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 10,
+                    "skills_found": [],
+                    "email": "vihung15@gmail.com",
+                    "phone": "0903164098",
+                    "link_cv": "https://drive.google.com/file/d/1ua4RfRaUk2cOimzyTMfjissMHJGf3X63",
+                    "file_url": "https://drive.google.com/file/d/1ua4RfRaUk2cOimzyTMfjissMHJGf3X63"
+                  },
+                  {
+                    "id": "176889666476004092877450716559",
+                    "name": "VAN PHONG BUI",
+                    "summary": "• Kinh nghiệm: 14 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 14,
+                    "skills_found": [],
+                    "email": "phongbv.j4s@gmail.com",
+                    "phone": "+84389813641",
+                    "link_cv": "https://drive.google.com/file/d/1ynUMDTEw7ooD13vxVLGsDJ4z28nA9lZg",
+                    "file_url": "https://drive.google.com/file/d/1ynUMDTEw7ooD13vxVLGsDJ4z28nA9lZg"
+                  },
+                  {
+                    "id": "176889666476009797032262792316",
+                    "name": "VAN PHONG BUI",
+                    "summary": "• Kinh nghiệm: 9 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 9,
+                    "skills_found": [],
+                    "email": "phongbv.j4s@gmail.com",
+                    "phone": "+84 389 813 641",
+                    "link_cv": "https://drive.google.com/file/d/15SsdX2xxrCXTT6IMB61D5RjffBS6qYTH/view?usp=drivesdk",
+                    "file_url": "https://drive.google.com/file/d/15SsdX2xxrCXTT6IMB61D5RjffBS6qYTH/view?usp=drivesdk"
+                  },
+                  {
+                    "id": "17688966647606444250472571508",
+                    "name": "DINH HOANG TIEN",
+                    "summary": "• Kinh nghiệm: 7 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 7,
+                    "skills_found": [],
+                    "email": "tien.dh95@gmail.com",
+                    "phone": "+84 703 844 100",
+                    "link_cv": "https://drive.google.com/file/d/1hE9P-BN7Y6NGSqM9d1ENlJG_iAmD33Zt",
+                    "file_url": "https://drive.google.com/file/d/1hE9P-BN7Y6NGSqM9d1ENlJG_iAmD33Zt"
+                  },
+                  {
+                    "id": "17688966647603279595113410242",
+                    "name": "VO QUOC THANG",
+                    "summary": "• Kinh nghiệm: 4 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "thangvoquoc2810@gmail.com",
+                    "phone": "0927170723",
+                    "link_cv": "https://drive.google.com/file/d/1_fuIioQiRt0G9DYjkHfzLW1Soy3fDCdF",
+                    "file_url": "https://drive.google.com/file/d/1_fuIioQiRt0G9DYjkHfzLW1Soy3fDCdF"
+                  },
+                  {
+                    "id": "176889666476009247619248276528",
+                    "name": "NGUYEN VAN DIEU",
+                    "summary": "• Kinh nghiệm: 5 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 5,
+                    "skills_found": [],
+                    "email": "vandieupr@gmail.com",
+                    "phone": "(+84) 348.285.185",
+                    "link_cv": "https://drive.google.com/file/d/1XEgNksYeDMCQYjkiypakEgE0_wLLNYU9",
+                    "file_url": "https://drive.google.com/file/d/1XEgNksYeDMCQYjkiypakEgE0_wLLNYU9"
+                  },
+                  {
+                    "id": "17688966647608550872910705282",
+                    "name": "TRUONG QUANG LONG",
+                    "summary": "• Kinh nghiệm: 4 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "quanglongtruong20@gmail.com",
+                    "phone": "+84 86 881 5402",
+                    "link_cv": "https://drive.google.com/file/d/1yNG3td4CzImcCTSmRLU7uuYyc4hhd1Q-",
+                    "file_url": "https://drive.google.com/file/d/1yNG3td4CzImcCTSmRLU7uuYyc4hhd1Q-"
+                  },
+                  {
+                    "id": "1768896664760254622635423568",
+                    "name": "TRUONG ANH THU",
+                    "summary": "• Kinh nghiệm: 4 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "youthutruong322000@gmail.com",
+                    "phone": "0377553765",
+                    "link_cv": "https://drive.google.com/file/d/1-cLvjrc6EHk1bH2OnCtO5SrupeNKPZdQ",
+                    "file_url": "https://drive.google.com/file/d/1-cLvjrc6EHk1bH2OnCtO5SrupeNKPZdQ"
+                  },
+                  {
+                    "id": "176889666476040776025964250695",
+                    "name": "VO MINH TAN",
+                    "summary": "• Kinh nghiệm: 4 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "vominhtan3105@gmail.com",
+                    "phone": "0339016535",
+                    "link_cv": "https://drive.google.com/file/d/1DA8rjcxIdtP6YtkmCc4IQT7Cx1QgED3m",
+                    "file_url": "https://drive.google.com/file/d/1DA8rjcxIdtP6YtkmCc4IQT7Cx1QgED3m"
+                  },
+                  {
+                    "id": "17688966647607340620051702325",
+                    "name": "NGUYEN THI THUY TRANG",
+                    "summary": "• Kinh nghiệm: 3 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 3,
+                    "skills_found": [],
+                    "email": "ntthuytrang247@gmail.com",
+                    "phone": "0338121441",
+                    "link_cv": "https://drive.google.com/file/d/11s6Pzg4ASVvhOkgyTLWt4U7bvIDB4ffS",
+                    "file_url": "https://drive.google.com/file/d/11s6Pzg4ASVvhOkgyTLWt4U7bvIDB4ffS"
+                  },
+                  {
+                    "id": "17688966647608819100303748927",
+                    "name": "PHAM ANH TUAN",
+                    "summary": "• Kinh nghiệm: 5 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 5,
+                    "skills_found": [],
+                    "email": "phamtuanhp1994@gmail.com",
+                    "phone": "+84 816 501 816",
+                    "link_cv": "https://drive.google.com/file/d/1ZUpeTS4yjYOkSy6NiY9lHOLyPPzhjnNq",
+                    "file_url": "https://drive.google.com/file/d/1ZUpeTS4yjYOkSy6NiY9lHOLyPPzhjnNq"
+                  },
+                  {
+                    "id": "17688966647605037832413213996",
+                    "name": "TUAN LE MINH NGUYEN",
+                    "summary": "• Kinh nghiệm: 13 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 13,
+                    "skills_found": [],
+                    "email": "tuannguyen.2609@gmail.com",
+                    "phone": "(84) 767562678",
+                    "link_cv": "https://drive.google.com/file/d/1AGWufeLvDRmfp9vNnKCeRmAH0okOPADY",
+                    "file_url": "https://drive.google.com/file/d/1AGWufeLvDRmfp9vNnKCeRmAH0okOPADY"
+                  },
+                  {
+                    "id": "17688966647606650088964474992",
+                    "name": "DO HOANG LOC",
+                    "summary": "• Kinh nghiệm: 14 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 14,
+                    "skills_found": [],
+                    "email": "loc.dohoang@gmail.com",
+                    "phone": "+84 909 735 666",
+                    "link_cv": "https://drive.google.com/file/d/1-kxaiokO9heO4Me4HwsA5unPETgeK8bi",
+                    "file_url": "https://drive.google.com/file/d/1-kxaiokO9heO4Me4HwsA5unPETgeK8bi"
+                  },
+                  {
+                    "id": "1768896664760048835041105917854",
+                    "name": "NGUYEN HUU THIEN",
+                    "summary": "• Kinh nghiệm: 4 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "thiennh.me@gmail.com",
+                    "phone": "+84355127042",
+                    "link_cv": "https://drive.google.com/file/d/11_ZdO9FNmxeEPPZ_xZO_KW7NjiODgNNh",
+                    "file_url": "https://drive.google.com/file/d/11_ZdO9FNmxeEPPZ_xZO_KW7NjiODgNNh"
+                  },
+                  {
+                    "id": "17688966647605606535769662536",
+                    "name": "NGUYEN THANH DAT",
+                    "summary": "• Kinh nghiệm: 3 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 3,
+                    "skills_found": [],
+                    "email": "catluong801@gmail.com",
+                    "phone": "0374047776",
+                    "link_cv": "https://drive.google.com/file/d/1li5JbQHERZn6Bkywk-QrOuxOx_TXrtGx",
+                    "file_url": "https://drive.google.com/file/d/1li5JbQHERZn6Bkywk-QrOuxOx_TXrtGx"
+                  },
+                  {
+                    "id": "176889666476024636240485266814",
+                    "name": "TRUONG MINH TIEN",
+                    "summary": "• Kinh nghiệm: 4 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "tmtien3007@gmail.com",
+                    "phone": "0919 966 456",
+                    "link_cv": "https://drive.google.com/file/d/1yYhw0m4Jhb_gXgEvIFuBGZ55tGd25ZqU",
+                    "file_url": "https://drive.google.com/file/d/1yYhw0m4Jhb_gXgEvIFuBGZ55tGd25ZqU"
+                  },
+                  {
+                    "id": "17688966647606717319476669319",
+                    "name": "NGUYEN TRUNG HIEU",
+                    "summary": "• Kinh nghiệm: 5 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 5,
+                    "skills_found": [],
+                    "email": "hieunt07101999@gmail.com",
+                    "phone": "0942002794",
+                    "link_cv": "https://drive.google.com/file/d/1zplqc2Hr8vk-8Bhpz6jSdA6sU0hUFoy1",
+                    "file_url": "https://drive.google.com/file/d/1zplqc2Hr8vk-8Bhpz6jSdA6sU0hUFoy1"
+                  },
+                  {
+                    "id": "176889666476037553036812023066",
+                    "name": "KHANG TRUONG HUU",
+                    "summary": "• Kinh nghiệm: 7 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 7,
+                    "skills_found": [],
+                    "email": "khang.truong128000@gmail.com",
+                    "phone": "0888 077 924",
+                    "link_cv": "https://drive.google.com/file/d/1YQhHqYsqIr5pnQ89bnM9ns2uUOVazucm",
+                    "file_url": "https://drive.google.com/file/d/1YQhHqYsqIr5pnQ89bnM9ns2uUOVazucm"
+                  },
+                  {
+                    "id": "17688966647601161361143298949",
+                    "name": "VO HOANG NHAN",
+                    "summary": "• Kinh nghiệm: 10 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 10,
+                    "skills_found": [],
+                    "email": "chrisvo.hoang@gmail.com",
+                    "phone": "+84 97 292 9219",
+                    "link_cv": "https://drive.google.com/file/d/1btW-4DoceMSk0KmbkZbVCskcbMPtqDji",
+                    "file_url": "https://drive.google.com/file/d/1btW-4DoceMSk0KmbkZbVCskcbMPtqDji"
+                  },
+                  {
+                    "id": "17688966647604007144705483383",
+                    "name": "NGUYEN THI ANH DAO",
+                    "summary": "• Kinh nghiệm: 3 năm",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 3,
+                    "skills_found": [],
+                    "email": "daohtttql@gmail.com",
+                    "phone": "0528871169",
+                    "link_cv": "https://drive.google.com/file/d/14shkVGiNY8o-6XTKnZ-XLmG4_HGpx_-m",
+                    "file_url": "https://drive.google.com/file/d/14shkVGiNY8o-6XTKnZ-XLmG4_HGpx_-m"
+                  }
+                ],
+                "technical_questions": [],
+                "soft_skill_questions": [
+                  "cho tôi các ứng viên trên 3 năm kinh nghiệm"
+                ]
+              },
+              {
+                "id": "1769073623984",
+                "role": "user",
+                "content": "ai có kĩ năng b2b",
+                "timestamp": 1769073623984
+              },
+              {
+                "id": "1769073638892",
+                "role": "assistant",
+                "content": "Tìm thấy 3 ứng viên phù hợp.\n\nTRAN QUOC KIET – [Link CV](https://drive.google.com/file/d/1HDZckkc3fiyJUtdD7GfEu0s_gH3fAmnJ)\n- Email: kiettran27101999@gmail.com | Phone: 0903854218\n- Kinh nghiệm: 5 năm, IT Business Analyst specialist - Wholesale Digital Business Solutions (B2B) tại VIB - VIETNAM INTERNATIONAL BANK.\nLY THANH AN – [Link CV](https://drive.google.com/file/d/1cKM88FTPeqggqGaKeAJBD07rPFBKHLdY)\n- Email: anlythanh.se@gmail.com | Phone: 0929347523\n- Kinh nghiệm: 1 năm, Product Operations Intern tại PHYGITAL LABS, có kinh nghiệm phối hợp phát triển dự án cho khách hàng B2B.\nNGUYEN CHAU GIANG – [Link CV](https://drive.google.com/file/d/1MfTUV1ztDISHl-R6AEdexItP5qZiaKLB)\n- Email: nguyenchaugiang5211@gmail.com | Phone: (+84) 0373 075 225\n- Kinh nghiệm: 4 năm, Product Owner tại Tesosoft, dẫn dắt nhiều dòng sản phẩm B2B và sản phẩm thuê ngoài.",
+                "timestamp": 1769073638892,
+                "candidates": [
+                  {
+                    "id": "17690736388906374613457264772",
+                    "name": "TRAN QUOC KIET",
+                    "summary": "• Kinh nghiệm: 5 năm, IT Business Analyst specialist - Wholesale Digital Business Solutions (B2B) tại VIB - VIETNAM INTERNATIONAL BANK.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 5,
+                    "skills_found": [],
+                    "email": "kiettran27101999@gmail.com",
+                    "phone": "0903854218",
+                    "link_cv": "https://drive.google.com/file/d/1HDZckkc3fiyJUtdD7GfEu0s_gH3fAmnJ",
+                    "file_url": "https://drive.google.com/file/d/1HDZckkc3fiyJUtdD7GfEu0s_gH3fAmnJ"
+                  },
+                  {
+                    "id": "1769073638891811808688450632",
+                    "name": "LY THANH AN",
+                    "summary": "• Kinh nghiệm: 1 năm, Product Operations Intern tại PHYGITAL LABS, có kinh nghiệm phối hợp phát triển dự án cho khách hàng B2B.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 1,
+                    "skills_found": [],
+                    "email": "anlythanh.se@gmail.com",
+                    "phone": "0929347523",
+                    "link_cv": "https://drive.google.com/file/d/1cKM88FTPeqggqGaKeAJBD07rPFBKHLdY",
+                    "file_url": "https://drive.google.com/file/d/1cKM88FTPeqggqGaKeAJBD07rPFBKHLdY"
+                  },
+                  {
+                    "id": "176907363889127633202373043675",
+                    "name": "NGUYEN CHAU GIANG",
+                    "summary": "• Kinh nghiệm: 4 năm, Product Owner tại Tesosoft, dẫn dắt nhiều dòng sản phẩm B2B và sản phẩm thuê ngoài.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "nguyenchaugiang5211@gmail.com",
+                    "phone": "(+84) 0373 075 225",
+                    "link_cv": "https://drive.google.com/file/d/1MfTUV1ztDISHl-R6AEdexItP5qZiaKLB",
+                    "file_url": "https://drive.google.com/file/d/1MfTUV1ztDISHl-R6AEdexItP5qZiaKLB"
+                  }
+                ],
+                "technical_questions": [],
+                "soft_skill_questions": [
+                  "ai có kĩ năng b2b"
+                ]
+              },
+              {
+                "id": "1769073720081",
+                "role": "user",
+                "content": "ai có kinh nghiệm b2b",
+                "timestamp": 1769073720081
+              },
+              {
+                "id": "1769073732121",
+                "role": "assistant",
+                "content": "Tìm thấy 3 ứng viên phù hợp.\n\nTRAN QUOC KIET – [Link CV](https://drive.google.com/file/d/1HDZckkc3fiyJUtdD7GfEu0s_gH3fAmnJ)\n- Email: kiettran27101999@gmail.com | Phone: 0903854218\n- Kinh nghiệm: 5 năm, chuyên viên IT Business Analyst cho giải pháp kinh doanh số B2B tại VIB - VIETNAM INTERNATIONAL BANK.\nLY THANH AN – [Link CV](https://drive.google.com/file/d/1cKM88FTPeqggqGaKeAJBD07rPFBKHLdY)\n- Email: anlythanh.se@gmail.com | Phone: 0929347523\n- Kinh nghiệm: 1 năm, thực tập sinh Product Operations phối hợp phát triển dự án cho khách hàng B2B và B2C tại PHYGITAL LABS.\nNGUYEN CHAU GIANG – [Link CV](https://drive.google.com/file/d/1MfTUV1ztDISHl-R6AEdexItP5qZiaKLB)\n- Email: nguyenchaugiang5211@gmail.com | Phone: (+84) 0373 075 225\n- Kinh nghiệm: 4 năm, Product Owner dẫn dắt nhiều dòng sản phẩm B2B và sản phẩm thuê ngoài tại Tesosoft.",
+                "timestamp": 1769073732121,
+                "candidates": [
+                  {
+                    "id": "17690737321206355983343293607",
+                    "name": "TRAN QUOC KIET",
+                    "summary": "• Kinh nghiệm: 5 năm, chuyên viên IT Business Analyst cho giải pháp kinh doanh số B2B tại VIB - VIETNAM INTERNATIONAL BANK.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 5,
+                    "skills_found": [],
+                    "email": "kiettran27101999@gmail.com",
+                    "phone": "0903854218",
+                    "link_cv": "https://drive.google.com/file/d/1HDZckkc3fiyJUtdD7GfEu0s_gH3fAmnJ",
+                    "file_url": "https://drive.google.com/file/d/1HDZckkc3fiyJUtdD7GfEu0s_gH3fAmnJ"
+                  },
+                  {
+                    "id": "17690737321217224787915935159",
+                    "name": "LY THANH AN",
+                    "summary": "• Kinh nghiệm: 1 năm, thực tập sinh Product Operations phối hợp phát triển dự án cho khách hàng B2B và B2C tại PHYGITAL LABS.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 1,
+                    "skills_found": [],
+                    "email": "anlythanh.se@gmail.com",
+                    "phone": "0929347523",
+                    "link_cv": "https://drive.google.com/file/d/1cKM88FTPeqggqGaKeAJBD07rPFBKHLdY",
+                    "file_url": "https://drive.google.com/file/d/1cKM88FTPeqggqGaKeAJBD07rPFBKHLdY"
+                  },
+                  {
+                    "id": "176907373212148159833481582315",
+                    "name": "NGUYEN CHAU GIANG",
+                    "summary": "• Kinh nghiệm: 4 năm, Product Owner dẫn dắt nhiều dòng sản phẩm B2B và sản phẩm thuê ngoài tại Tesosoft.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "nguyenchaugiang5211@gmail.com",
+                    "phone": "(+84) 0373 075 225",
+                    "link_cv": "https://drive.google.com/file/d/1MfTUV1ztDISHl-R6AEdexItP5qZiaKLB",
+                    "file_url": "https://drive.google.com/file/d/1MfTUV1ztDISHl-R6AEdexItP5qZiaKLB"
+                  }
+                ],
+                "technical_questions": [],
+                "soft_skill_questions": [
+                  "ai có kinh nghiệm b2b"
+                ]
+              },
+              {
+                "id": "1769075582390",
+                "role": "user",
+                "content": "ai có kinh nghiệm b2b",
+                "timestamp": 1769075582390
+              },
+              {
+                "id": "1769075603775",
+                "role": "assistant",
+                "content": "Tìm thấy 2 ứng viên phù hợp.\n\nTRAN QUOC KIET – [Link CV](https://drive.google.com/file/d/1COIR4Fqs-ymxRfSP0-8xr-nQ_Yt-LH-Y/view?usp=drivesdk)\n- Email: kiettran27101999@gmail.com | Phone: 0903854218\n- Kinh nghiệm: 5 năm IT Business Analyst chuyên về Wholesale Digital Business Solutions (B2B) tại VIB - Vietnam International Bank. Có kinh nghiệm truy vấn và kiểm tra cơ sở dữ liệu, API; mô hình hóa quy trình kinh doanh; phân tích tác động kinh doanh; đào tạo người dùng cuối; liên lạc với đối tác phát triển phần mềm; hỗ trợ kiểm thử UAT.\nNGUYEN CHAU GIANG – [Link CV](https://drive.google.com/file/d/1MfTUV1ztDISHl-R6AEdexItP5qZiaKLB)\n- Email: nguyenchaugiang5211@gmail.com | Phone: (+84) 0373 075 225\n- Kinh nghiệm: 4 năm Product Owner tại Tesosoft, dẫn dắt nhiều dòng sản phẩm B2B và sản phẩm thuê ngoài, tổ chức workshop xác định MVP và phân tích yêu cầu.",
+                "timestamp": 1769075603775,
+                "candidates": [
+                  {
+                    "id": "176907560377319753609428717378",
+                    "name": "TRAN QUOC KIET",
+                    "summary": "• Kinh nghiệm: 5 năm IT Business Analyst chuyên về Wholesale Digital Business Solutions (B2B) tại VIB - Vietnam International Bank. Có kinh nghiệm truy vấn và kiểm tra cơ sở dữ liệu, API; mô hình hóa quy trình kinh doanh; phân tích tác động kinh doanh; đào tạo người dùng cuối; liên lạc với đối tác phát triển phần mềm; hỗ trợ kiểm thử UAT.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 5,
+                    "skills_found": [],
+                    "email": "kiettran27101999@gmail.com",
+                    "phone": "0903854218",
+                    "link_cv": "https://drive.google.com/file/d/1COIR4Fqs-ymxRfSP0-8xr-nQ_Yt-LH-Y/view?usp=drivesdk",
+                    "file_url": "https://drive.google.com/file/d/1COIR4Fqs-ymxRfSP0-8xr-nQ_Yt-LH-Y/view?usp=drivesdk"
+                  },
+                  {
+                    "id": "17690756037743184471868861075",
+                    "name": "NGUYEN CHAU GIANG",
+                    "summary": "• Kinh nghiệm: 4 năm Product Owner tại Tesosoft, dẫn dắt nhiều dòng sản phẩm B2B và sản phẩm thuê ngoài, tổ chức workshop xác định MVP và phân tích yêu cầu.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "nguyenchaugiang5211@gmail.com",
+                    "phone": "(+84) 0373 075 225",
+                    "link_cv": "https://drive.google.com/file/d/1MfTUV1ztDISHl-R6AEdexItP5qZiaKLB",
+                    "file_url": "https://drive.google.com/file/d/1MfTUV1ztDISHl-R6AEdexItP5qZiaKLB"
+                  }
+                ],
+                "technical_questions": [],
+                "soft_skill_questions": [
+                  "ai có kinh nghiệm b2b"
+                ]
+              },
+              {
+                "id": "1769075705133",
+                "role": "user",
+                "content": "ai có kinh nghiệm B2B",
+                "timestamp": 1769075705133
+              },
+              {
+                "id": "1769075718389",
+                "role": "assistant",
+                "content": "Tìm thấy 2 ứng viên phù hợp.\n\nTRAN QUOC KIET – [Link CV](https://drive.google.com/file/d/1COIR4Fqs-ymxRfSP0-8xr-nQ_Yt-LH-Y/view?usp=drivesdk)\n- Email: kiettran27101999@gmail.com | Phone: 0903854218\n- Kinh nghiệm: 5 năm, chuyên viên Phân tích Kinh doanh CNTT chuyên về Giải pháp Kinh doanh kỹ thuật số bán buôn (B2B) tại VIB - Vietnam International Bank. Có kinh nghiệm truy vấn và kiểm tra cơ sở dữ liệu, API, mô hình hóa quy trình kinh doanh, phân tích tác động kinh doanh, đào tạo người dùng cuối và hỗ trợ kiểm thử UAT.\nNGUYEN CHAU GIANG – [Link CV](https://drive.google.com/file/d/1MfTUV1ztDISHl-R6AEdexItP5qZiaKLB)\n- Email: nguyenchaugiang5211@gmail.com | Phone: (+84) 0373 075 225\n- Kinh nghiệm: 4 năm, Product Owner tại Tesosoft, dẫn dắt nhiều dòng sản phẩm B2B và sản phẩm thuê ngoài, tổ chức workshop xác định MVP và phân tích yêu cầu.",
+                "timestamp": 1769075718389,
+                "candidates": [
+                  {
+                    "id": "17690757183882629344494132182",
+                    "name": "TRAN QUOC KIET",
+                    "summary": "• Kinh nghiệm: 5 năm, chuyên viên Phân tích Kinh doanh CNTT chuyên về Giải pháp Kinh doanh kỹ thuật số bán buôn (B2B) tại VIB - Vietnam International Bank. Có kinh nghiệm truy vấn và kiểm tra cơ sở dữ liệu, API, mô hình hóa quy trình kinh doanh, phân tích tác động kinh doanh, đào tạo người dùng cuối và hỗ trợ kiểm thử UAT.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 5,
+                    "skills_found": [],
+                    "email": "kiettran27101999@gmail.com",
+                    "phone": "0903854218",
+                    "link_cv": "https://drive.google.com/file/d/1COIR4Fqs-ymxRfSP0-8xr-nQ_Yt-LH-Y/view?usp=drivesdk",
+                    "file_url": "https://drive.google.com/file/d/1COIR4Fqs-ymxRfSP0-8xr-nQ_Yt-LH-Y/view?usp=drivesdk"
+                  },
+                  {
+                    "id": "17690757183888751327927478632",
+                    "name": "NGUYEN CHAU GIANG",
+                    "summary": "• Kinh nghiệm: 4 năm, Product Owner tại Tesosoft, dẫn dắt nhiều dòng sản phẩm B2B và sản phẩm thuê ngoài, tổ chức workshop xác định MVP và phân tích yêu cầu.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "nguyenchaugiang5211@gmail.com",
+                    "phone": "(+84) 0373 075 225",
+                    "link_cv": "https://drive.google.com/file/d/1MfTUV1ztDISHl-R6AEdexItP5qZiaKLB",
+                    "file_url": "https://drive.google.com/file/d/1MfTUV1ztDISHl-R6AEdexItP5qZiaKLB"
+                  }
+                ],
+                "technical_questions": [],
+                "soft_skill_questions": [
+                  "ai có kinh nghiệm B2B"
+                ]
+              },
+              {
+                "id": "1769133253472",
+                "role": "user",
+                "content": "ung vien ten Phong",
+                "timestamp": 1769133253472
+              },
+              {
+                "id": "1769133280859",
+                "role": "assistant",
+                "content": "Tìm thấy 12 ứng viên phù hợp.\n\nVAN PHONG BUI – [Link CV](https://drive.google.com/file/d/1ynUMDTEw7ooD13vxVLGsDJ4z28nA9lZg)\n- Email: phongbv.j4s@gmail.com\n- SĐT: +84389813641\n- Kinh nghiệm: 14 năm, Business Analyst (CMS, Public Sector) tại Teccapro.\nLEQUANGHAIDANG – [Link CV](https://drive.google.com/file/d/16sifBCNf-h7T0XpSRrfSljtuTM-lHlwP)\n- Email: lequanghaidang2502@gmail.com\n- SĐT: +84708520743\n- Kinh nghiệm: 2 năm, Data Engineer tại Orthian, Ho Chi Minh City.\nPHU NGUYEN – [Link CV](https://drive.google.com/file/d/1AmC4nFauqT3WKFYLHhkicYGEe_FFOYCL)\n- Email: nhdphu2@gmail.com\n- SĐT: +84352202547\n- Kinh nghiệm: 4 năm, Ad Monetization Specialist tại Vulcan Labs.\nNGUYEN KHOA THIEN LONG – [Link CV](https://drive.google.com/file/d/1ICS2H_jGxZuJj4eMIdwX2fTer-Q1pnn5)\n- Email: nguyenkhoathienlong313@gmail.com\n- SĐT: (+84) 967291546\n- Kinh nghiệm: 3 năm, IT Business Analyst (HRM Product) tại ECOM365 CO., LTD.\nNGUYEN DANG KHOA – [Link CV](https://drive.google.com/file/d/1YXz3mvO1Qlcg-lHhYgN8VbmYC1aEqAlZ)\n- Email: ngdkhoa3979@gmail.com\n- SĐT: +84 979 398 692\n- Kinh nghiệm: 6 năm, Business Data Analyst tại Prudential Vietnam Assurance Private Ltd.\nNGUYEN DANG KHOA – [Link CV](https://drive.google.com/file/d/1-C90djoAoa20L_XP0mfucm7EXC5sXZQ5)\n- Email: dangkhoa4466@gmail.com\n- SĐT: 0369 144 041\n- Kinh nghiệm: 5 năm, Trading Partner Analyst - Implementer tại TrueCommerce.\nPHAM DO KHOA – [Link CV](https://drive.google.com/file/d/1HfKf07C2guUpG5sORGuSVg83e0Ez1_IA)\n- Email: dokhoapham@gmail.com\n- SĐT: 0346 73 23 80\n- Kinh nghiệm: 4 năm, IT Business Analyst tại HRS Company.\nVO QUOC THANG – [Link CV](https://drive.google.com/file/d/1_fuIioQiRt0G9DYjkHfzLW1Soy3fDCdF)\n- Email: thangvoquoc2810@gmail.com\n- SĐT: 0927170723\n- Kinh nghiệm: 4 năm, tốt nghiệp Public Economics and Management tại UNIVERSITY OF ECONOMICS AND LAW.\nTRAN QUOC CUONG – [Link CV](https://drive.google.com/file/d/112i55cdKEZAbkH8zQAi1oi_8fMCybOxl)\n- Email: cuongtran090301@gmail.com\n- SĐT: 0937511804\n- Kinh nghiệm: 2 năm, BUSINESS ANALYST tại SHINHANLIFE VIETNAM.\nTRAN VAN DUC – [Link CV](https://drive.google.com/file/d/1hqU14I3c06ZaH1XaL8A5fAUWcbdSKF8t)\n- Email: ducforwork@gmail.com\n- SĐT: +84 905 955 256\n- Kinh nghiệm: 4 năm, Business Analyst tại Chative.IO - SaaS Company.\nTRAN VAN DUC – [Link CV](https://drive.google.com/file/d/1_1z2TWNCKsoDzSn3_Y4jsrREJwLSIGeU)\n- Email: ducforwork@gmail.com\n- SĐT: +84 905 955 256\n- Kinh nghiệm: 4 năm, Business Analyst tại Chative.IO - SaaS Company (hỗ trợ đào tạo và kiểm thử chatbot AI).\nVO MINH TAN – [Link CV](https://drive.google.com/file/d/1DA8rjcxIdtP6YtkmCc4IQT7Cx1QgED3m)\n- Email: vominhtan3105@gmail.com\n- SĐT: 0339016535\n- Kinh nghiệm: 4 năm, Project Manager tại NEURONS AI COMPANY LIMITED và Business Analyst tại SOLAZU COMPANY LIMITED.\nVAN PHONG BUI là ứng viên duy nhất có tên \"Phong\" rõ ràng trong danh sách, ngoài ra có các ứng viên tên Phu, Khoa, Quoc, Quang, Tan, Duc, Thang, Cuong, Tuan, Anh, Nhat, Quan, Thanh, Long, Tien, Hung, Nhan, Giang, An, Do, Dang, Trang, Oanh, Van, Hai Dang, Thuy Trang, Hoang Van, Thu, Minh Nhat, Hoang An, Chau Giang, Hoang Phuong Thanh, Hoang Thanh, Doan, Minh Nhat, Trac Quoc Viet, Khoa Thien Long, Duc Nhan, and others.\nThông tin liên hệ và link CV đã được cung cấp đầy đủ cho các ứng viên có tên liên quan đến \"Phong\" hoặc biến thể tương tự.",
+                "timestamp": 1769133280859,
+                "candidates": [
+                  {
+                    "id": "17691332808578278307313705013",
+                    "name": "VAN PHONG BUI",
+                    "summary": "• Kinh nghiệm: 14 năm, Business Analyst (CMS, Public Sector) tại Teccapro.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 14,
+                    "skills_found": [],
+                    "email": "phongbv.j4s@gmail.com",
+                    "phone": "+84389813641",
+                    "link_cv": "https://drive.google.com/file/d/1ynUMDTEw7ooD13vxVLGsDJ4z28nA9lZg",
+                    "file_url": "https://drive.google.com/file/d/1ynUMDTEw7ooD13vxVLGsDJ4z28nA9lZg"
+                  },
+                  {
+                    "id": "176913328085806308439463466975",
+                    "name": "LEQUANGHAIDANG",
+                    "summary": "• Kinh nghiệm: 2 năm, Data Engineer tại Orthian, Ho Chi Minh City.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 2,
+                    "skills_found": [],
+                    "email": "lequanghaidang2502@gmail.com",
+                    "phone": "+84708520743",
+                    "link_cv": "https://drive.google.com/file/d/16sifBCNf-h7T0XpSRrfSljtuTM-lHlwP",
+                    "file_url": "https://drive.google.com/file/d/16sifBCNf-h7T0XpSRrfSljtuTM-lHlwP"
+                  },
+                  {
+                    "id": "17691332808587606930255445928",
+                    "name": "PHU NGUYEN",
+                    "summary": "• Kinh nghiệm: 4 năm, Ad Monetization Specialist tại Vulcan Labs.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "nhdphu2@gmail.com",
+                    "phone": "+84352202547",
+                    "link_cv": "https://drive.google.com/file/d/1AmC4nFauqT3WKFYLHhkicYGEe_FFOYCL",
+                    "file_url": "https://drive.google.com/file/d/1AmC4nFauqT3WKFYLHhkicYGEe_FFOYCL"
+                  },
+                  {
+                    "id": "17691332808584820873475173325",
+                    "name": "NGUYEN KHOA THIEN LONG",
+                    "summary": "• Kinh nghiệm: 3 năm, IT Business Analyst (HRM Product) tại ECOM365 CO., LTD.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 3,
+                    "skills_found": [],
+                    "email": "nguyenkhoathienlong313@gmail.com",
+                    "phone": "(+84) 967291546",
+                    "link_cv": "https://drive.google.com/file/d/1ICS2H_jGxZuJj4eMIdwX2fTer-Q1pnn5",
+                    "file_url": "https://drive.google.com/file/d/1ICS2H_jGxZuJj4eMIdwX2fTer-Q1pnn5"
+                  },
+                  {
+                    "id": "1769133280858851981499083206",
+                    "name": "NGUYEN DANG KHOA",
+                    "summary": "• Kinh nghiệm: 6 năm, Business Data Analyst tại Prudential Vietnam Assurance Private Ltd.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 6,
+                    "skills_found": [],
+                    "email": "ngdkhoa3979@gmail.com",
+                    "phone": "+84 979 398 692",
+                    "link_cv": "https://drive.google.com/file/d/1YXz3mvO1Qlcg-lHhYgN8VbmYC1aEqAlZ",
+                    "file_url": "https://drive.google.com/file/d/1YXz3mvO1Qlcg-lHhYgN8VbmYC1aEqAlZ"
+                  },
+                  {
+                    "id": "17691332808581121772218791981",
+                    "name": "NGUYEN DANG KHOA",
+                    "summary": "• Kinh nghiệm: 5 năm, Trading Partner Analyst - Implementer tại TrueCommerce.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 5,
+                    "skills_found": [],
+                    "email": "dangkhoa4466@gmail.com",
+                    "phone": "0369 144 041",
+                    "link_cv": "https://drive.google.com/file/d/1-C90djoAoa20L_XP0mfucm7EXC5sXZQ5",
+                    "file_url": "https://drive.google.com/file/d/1-C90djoAoa20L_XP0mfucm7EXC5sXZQ5"
+                  },
+                  {
+                    "id": "17691332808588342743716039321",
+                    "name": "PHAM DO KHOA",
+                    "summary": "• Kinh nghiệm: 4 năm, IT Business Analyst tại HRS Company.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "dokhoapham@gmail.com",
+                    "phone": "0346 73 23 80",
+                    "link_cv": "https://drive.google.com/file/d/1HfKf07C2guUpG5sORGuSVg83e0Ez1_IA",
+                    "file_url": "https://drive.google.com/file/d/1HfKf07C2guUpG5sORGuSVg83e0Ez1_IA"
+                  },
+                  {
+                    "id": "17691332808587627443174279954",
+                    "name": "VO QUOC THANG",
+                    "summary": "• Kinh nghiệm: 4 năm, tốt nghiệp Public Economics and Management tại UNIVERSITY OF ECONOMICS AND LAW.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "thangvoquoc2810@gmail.com",
+                    "phone": "0927170723",
+                    "link_cv": "https://drive.google.com/file/d/1_fuIioQiRt0G9DYjkHfzLW1Soy3fDCdF",
+                    "file_url": "https://drive.google.com/file/d/1_fuIioQiRt0G9DYjkHfzLW1Soy3fDCdF"
+                  },
+                  {
+                    "id": "1769133280858510668692784956",
+                    "name": "TRAN QUOC CUONG",
+                    "summary": "• Kinh nghiệm: 2 năm, BUSINESS ANALYST tại SHINHANLIFE VIETNAM.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 2,
+                    "skills_found": [],
+                    "email": "cuongtran090301@gmail.com",
+                    "phone": "0937511804",
+                    "link_cv": "https://drive.google.com/file/d/112i55cdKEZAbkH8zQAi1oi_8fMCybOxl",
+                    "file_url": "https://drive.google.com/file/d/112i55cdKEZAbkH8zQAi1oi_8fMCybOxl"
+                  },
+                  {
+                    "id": "17691332808595852605382023298",
+                    "name": "TRAN VAN DUC",
+                    "summary": "• Kinh nghiệm: 4 năm, Business Analyst tại Chative.IO - SaaS Company.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "ducforwork@gmail.com",
+                    "phone": "+84 905 955 256",
+                    "link_cv": "https://drive.google.com/file/d/1hqU14I3c06ZaH1XaL8A5fAUWcbdSKF8t",
+                    "file_url": "https://drive.google.com/file/d/1hqU14I3c06ZaH1XaL8A5fAUWcbdSKF8t"
+                  },
+                  {
+                    "id": "17691332808599023058844797271",
+                    "name": "TRAN VAN DUC",
+                    "summary": "• Kinh nghiệm: 4 năm, Business Analyst tại Chative.IO - SaaS Company (hỗ trợ đào tạo và kiểm thử chatbot AI).",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "ducforwork@gmail.com",
+                    "phone": "+84 905 955 256",
+                    "link_cv": "https://drive.google.com/file/d/1_1z2TWNCKsoDzSn3_Y4jsrREJwLSIGeU",
+                    "file_url": "https://drive.google.com/file/d/1_1z2TWNCKsoDzSn3_Y4jsrREJwLSIGeU"
+                  },
+                  {
+                    "id": "176913328085912211786858518581",
+                    "name": "VO MINH TAN",
+                    "summary": "• Kinh nghiệm: 4 năm, Project Manager tại NEURONS AI COMPANY LIMITED và Business Analyst tại SOLAZU COMPANY LIMITED. VAN PHONG BUI là ứng viên duy nhất có tên \"Phong\" rõ ràng trong danh sách, ngoài ra có các ứng viên tên Phu, Khoa, Quoc, Quang, Tan, Duc, Thang, Cuong, Tuan, Anh, Nhat, Quan, Thanh, Long, Tien, Hung, Nhan, Giang, An, Do, Dang, Trang, Oanh, Van, Hai Dang, Thuy Trang, Hoang Van, Thu, Minh Nhat, Hoang An, Chau Giang, Hoang Phuong Thanh, Hoang Thanh, Doan, Minh Nhat, Trac Quoc Viet, Khoa Thien Long, Duc Nhan, and others. Thông tin liên hệ và link CV đã được cung cấp đầy đủ cho các ứng viên có tên liên quan đến \"Phong\" hoặc biến thể tương tự.",
+                    "strengths": [],
+                    "score": 0.85,
+                    "experience_years": 4,
+                    "skills_found": [],
+                    "email": "vominhtan3105@gmail.com",
+                    "phone": "0339016535",
+                    "link_cv": "https://drive.google.com/file/d/1DA8rjcxIdtP6YtkmCc4IQT7Cx1QgED3m",
+                    "file_url": "https://drive.google.com/file/d/1DA8rjcxIdtP6YtkmCc4IQT7Cx1QgED3m"
+                  }
+                ],
+                "technical_questions": [],
+                "soft_skill_questions": [
+                  "ung vien ten Phong"
+                ]
+              },
+              {
+                "id": "1769133320259",
+                "role": "user",
+                "content": "cho tôi các ứng viên tên phong",
+                "timestamp": 1769133320259
+              }
+            ]
+          },
+          "webhookUrl": "https://n8ndev.ndsvn.vn/webhook/chatbot_web",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "ResponeFormat": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ResponeFormat1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "parsed_json": {
+      "main": [
+        [
+          {
+            "node": "ResponeFormat1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "parsed_json",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Context": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "unanswerformat": {
+      "main": [
+        [
+          {
+            "node": "ResponeFormat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "unanswerformat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "resultcount": {
+      "main": [
+        [
+          {
+            "node": "Merge Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "format output": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Context-Merger": {
+      "main": [
+        [
+          {
+            "node": "message refined",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat refined": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "message refined",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "message refined": {
+      "main": [
+        [
+          {
+            "node": "format output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "add score_threshold": {
+      "main": [
+        [
+          {
+            "node": "QdrantSearch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "QdrantSearch": {
+      "main": [
+        [
+          {
+            "node": "resultcount",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EmbbedingVector": {
+      "main": [
+        [
+          {
+            "node": "add score_threshold",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Context-Merger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "EmbbedingVector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b2560f83-2acf-4f02-974d-1478db3cf248",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "df174d571e95541c805919aa88d99c6ff9e79e2c1ffc42837bb92614d24bb4eb"
+  },
+  "id": "uHdBAT2wuV58AWkJ",
+  "tags": []
+}

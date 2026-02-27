@@ -5,8 +5,8 @@ import { AnalysisResult, ChatMessage, Candidate, JDAnalysisResult } from '@/type
 
 // Helper to extract questions recursively (Shared)
 function extractQuestions(data: any) {
-    let technical: string[] = [];
-    let soft: string[] = [];
+    const technical: string[] = [];
+    const soft: string[] = [];
 
     const add = (target: string[], source: any) => {
         if (!source) return;
@@ -214,7 +214,7 @@ function parseCandidates(data: any): AnalysisResult {
 
             // Parse Skills (Direct Array or parsing)
             const skillsList = Array.isArray(raw['Danh sách kỹ năng']) ? raw['Danh sách kỹ năng'] : (Array.isArray(raw['skills_found']) ? raw['skills_found'] : []);
-            let parsedSkills: string[] = skillsList.map(String);
+            const parsedSkills: string[] = skillsList.map(String);
 
             // Local extraction for this specific item (search the WHOLE item, not just unwrapped raw)
             // This ensures we catch sibling keys like 'technical_questions' alongside 'output'
@@ -250,6 +250,7 @@ function parseCandidates(data: any): AnalysisResult {
                 name: getStr('Họ tên ứng viên') || 'Unknown Candidate',
                 email: getStr('Email') || getStr('email ứng viên') || 'No email',
                 phone: getStr('SĐT') || getStr('số điện thoại ứng viên'),
+                applied_role: getStr('Vị trí công việc') || getStr('Tên vị trí') || getStr('Job Title'),
                 // Keep 0-10 score as requested
                 score: Number(raw['Điểm tổng']) || 0,
                 status: 'analyzed',
@@ -363,7 +364,7 @@ export async function sendChatMessage(message: string, history: ChatMessage[] = 
 
             // Call HR-CV Workflow (score-cv) with resume_content
             const formData = new FormData();
-            formData.append('jd', "Yêu cầu công việc Business Analyst");
+            formData.append('jd', `Yêu cầu công việc ${activeCandidate.applied_role || "Business Analyst"}`);
             formData.append('resume_content', activeCandidate.resume_content);
 
             const res = await fetch('/api/n8n/score', {
@@ -727,7 +728,8 @@ export async function sendChatMessage(message: string, history: ChatMessage[] = 
 
 
 
-export async function getInterviewQuestions(candidate: Candidate, jd: string = "Yêu cầu công việc Business Analyst"): Promise<{ technical: string[], soft: string[] }> {
+export async function getInterviewQuestions(candidate: Candidate, jd?: string): Promise<{ technical: string[], soft: string[] }> {
+    const finalJd = jd || `Yêu cầu công việc ${candidate.applied_role || "Business Analyst"}`;
     if (APP_CONFIG.useMockData) {
         return new Promise(resolve => setTimeout(() => resolve({
             technical: [
@@ -744,7 +746,7 @@ export async function getInterviewQuestions(candidate: Candidate, jd: string = "
     try {
         // Call HR-CV Workflow (score-cv) with resume_content
         const formData = new FormData();
-        formData.append('jd', jd);
+        formData.append('jd', finalJd);
         // Ensure we send content. Check resume_content first, then summary.
         formData.append('resume_content', candidate.resume_content || candidate.summary || "");
 
@@ -798,22 +800,118 @@ ${jdText}
 
         if (!res.ok) {
             const errorText = await res.text();
-            console.error('[JD Extraction] Failed:', errorText);
             throw new Error(`Failed to extract JD requirements: ${errorText}`);
         }
 
         const data = await res.json();
-        const content = data.output || data.message || data.text || (data[0] && data[0].output);
 
-        if (!content) {
-            throw new Error("No content received from AI agent");
+        const itemRaw = Array.isArray(data) ? data[0] : data;
+
+        if (!itemRaw) {
+            throw new Error("No data received from AI agent");
         }
 
-        return { summary: content };
+        // Unwrap 'json', 'data', or 'output' if nested, similar to parseCandidates logic
+        const item = itemRaw.json || itemRaw.output || itemRaw.data || itemRaw;
 
-    } catch (error) {
+        // --- PRIORITY 1: STRUCTURED DATA EXTRACTION ---
+        // Try to normalize keys if they are in Vietnamese or different format
+        const normalized: any = { ...item };
+
+        // 0. Map Job Position
+        if (!normalized.job_position) {
+            const jpRaw = item['Tên vị trí'] || item['Vị trí công việc'] || item['job_position'] || item['job_positions'] || item['Job Title'] || item['job_title'];
+            if (jpRaw) {
+                normalized.job_position = Array.isArray(jpRaw) ? jpRaw.join(', ') : String(jpRaw);
+            }
+        }
+
+        // 1. Map Technical Skills
+        if (!normalized.technical_skills) {
+            normalized.technical_skills = item['Kỹ năng chuyên môn'] || item['hard_skills'] || item['technical_skills'] || [];
+        }
+
+        // 2. Map Soft Skills
+        if (!normalized.soft_skills) {
+            normalized.soft_skills = item['Kỹ năng mềm'] || item['soft_skills'] || [];
+        }
+
+
+        // 3. Map Experience (Kinh nghiệm)
+        if (!normalized.years_of_experience) {
+            const expRaw = item['Kinh nghiệm'] || item['years_of_experience'];
+            if (expRaw) {
+                if (typeof expRaw === 'string' || Array.isArray(expRaw)) {
+                    normalized.years_of_experience = {
+                        min_years: 0,
+                        description: Array.isArray(expRaw) ? expRaw.join('\n') : expRaw
+                    };
+                } else {
+                    normalized.years_of_experience = expRaw;
+                }
+            }
+        }
+        // SAFETY: Ensure years_of_experience has description
+        if (normalized.years_of_experience && typeof normalized.years_of_experience.description !== 'string') {
+            normalized.years_of_experience.description = "";
+        }
+
+
+        // 4. Map Education (Học vấn)
+        // Check if education needs normalization (is it an array/string instead of proper object?)
+        const needsEduNormalization = !normalized.education ||
+            Array.isArray(normalized.education) ||
+            typeof normalized.education === 'string' ||
+            (typeof normalized.education === 'object' && !normalized.education.major); // Missing required field
+
+        if (needsEduNormalization) {
+            const eduRaw = item['Học vấn'] || item['education'];
+            if (eduRaw) {
+                if (typeof eduRaw === 'string' || Array.isArray(eduRaw)) {
+                    normalized.education = {
+                        degree_level: '',
+                        major: Array.isArray(eduRaw) ? eduRaw.join('\n') : eduRaw,
+                        certifications: []
+                    };
+                } else {
+                    normalized.education = eduRaw;
+                }
+            }
+        }
+        // SAFETY: Ensure education has major and degree_level
+        if (normalized.education) {
+            if (typeof normalized.education.major !== 'string') normalized.education.major = "";
+            if (typeof normalized.education.degree_level !== 'string') normalized.education.degree_level = "";
+            if (!Array.isArray(normalized.education.certifications)) normalized.education.certifications = [];
+        }
+
+        // Check availability of structured data
+        if (normalized && (normalized.job_position || normalized.technical_skills?.length > 0 || normalized.soft_skills?.length > 0 || normalized.years_of_experience || normalized.education)) {
+            return {
+                job_requirements: normalized,
+                raw_text: JSON.stringify(normalized, null, 2)
+            };
+        }
+
+        // --- PRIORITY 2: TEXT SUMMARY FALLBACK ---
+        let content = '';
+        content = item.answer_message || item.output || item.text || item.message || '';
+        // If separate short_message exists, prepend it
+        if (item.short_message) {
+            content = item.short_message + '\n\n' + content;
+        }
+
+        if (content) {
+            console.log('[JD Extraction] Success (Text Summary)');
+            return { summary: content };
+        }
+
+        console.error('[JD Extraction] Empty/Unknown content structure. Unwrapped:', item);
+        throw new Error(`No recognized content. Keys found: ${Object.keys(item).join(', ')}`);
+
+    } catch (error: any) {
         console.error('Error extracting requirements:', error);
-        return { summary: "Could not extract requirements. Please verify manual input." };
+        return { summary: `Extraction Failed: ${error.message}` };
     }
 }
 
