@@ -9,10 +9,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        720,
-        0
+        1904,
+        16
       ],
-      "id": "e9a10b6d-3505-424b-89a8-4ad7fafae040",
+      "id": "a034bdad-e78f-493e-a31f-2be43eb805ac",
       "name": "Respond to Webhook2"
     },
     {
@@ -22,10 +22,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        720,
+        1904,
         -288
       ],
-      "id": "3325b290-965a-475b-9c0c-d4299d2f4cf8",
+      "id": "46f94b00-e02d-4265-a4ac-b714194491ce",
       "name": "ResponeFormat1"
     },
     {
@@ -35,10 +35,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        496,
-        0
+        1680,
+        16
       ],
-      "id": "7ffd97b6-1e6c-4b08-8801-5947e36cc501",
+      "id": "baec165c-fe4f-473d-b1d1-14ad3b8eeb87",
       "name": "ResponeFormat",
       "alwaysOutputData": false
     },
@@ -49,10 +49,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        944,
+        2128,
         -288
       ],
-      "id": "5112edc6-d286-4288-a663-9fca6e1e1a8d",
+      "id": "8f9656d0-70b9-4d82-91dd-1736dd8a23c9",
       "name": "Respond to Webhook"
     },
     {
@@ -62,10 +62,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        496,
+        1680,
         -288
       ],
-      "id": "e67107f6-3114-44b4-bf4a-50bcf8a8b250",
+      "id": "b83c7bfb-00a0-4425-a8b7-4b7a850cbde3",
       "name": "parsed_json"
     },
     {
@@ -83,15 +83,15 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
-        208,
+        1392,
         -176
       ],
-      "id": "49a932f3-36d1-40a3-858b-6e9a229a4686",
+      "id": "2d62a016-64d7-4095-853a-01bf052f9eb1",
       "name": "OpenAI Chat Model2",
       "credentials": {
         "openAiApi": {
-          "id": "xH06mHp5QmirxiW0",
-          "name": "OpenAi account 6"
+          "id": "iCiSJp2rt9yhPy3g",
+          "name": "OpenAi account 3"
         }
       }
     },
@@ -106,10 +106,10 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 2.2,
       "position": [
-        144,
+        1328,
         -400
       ],
-      "id": "3fb54db9-d2c6-49f8-96c0-cb21ab8720ca",
+      "id": "6160408c-92ed-460c-9e2f-82704aa73d1e",
       "name": "AI Agent1"
     },
     {
@@ -119,10 +119,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -144,
+        1040,
         -288
       ],
-      "id": "dbbbd55c-d0b0-4766-bcb2-93fc682adb34",
+      "id": "8f232b59-85b3-4216-b61f-a426f04f2d79",
       "name": "Merge Context"
     },
     {
@@ -132,10 +132,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        208,
-        0
+        1392,
+        16
       ],
-      "id": "c478ad57-d87c-4eec-b073-74518550a985",
+      "id": "d959863d-4f19-4c1b-a8d0-c4bd1e55977f",
       "name": "unanswerformat"
     },
     {
@@ -153,15 +153,15 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
-        -144,
-        224
+        1040,
+        240
       ],
-      "id": "11f70e60-4794-4f51-9d12-906eafe3fc6d",
+      "id": "63180716-aab9-41a8-af2b-b3ba0d5c1452",
       "name": "OpenAI Chat Model1",
       "credentials": {
         "openAiApi": {
-          "id": "xH06mHp5QmirxiW0",
-          "name": "OpenAi account 6"
+          "id": "iCiSJp2rt9yhPy3g",
+          "name": "OpenAi account 3"
         }
       }
     },
@@ -176,10 +176,10 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 2.2,
       "position": [
-        -208,
-        0
+        976,
+        16
       ],
-      "id": "f96ac925-f1d8-4b09-a15a-9db883bffa55",
+      "id": "95094922-a27a-4362-9fd4-d616c7f82bb9",
       "name": "AI Agent"
     },
     {
@@ -209,10 +209,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -384,
+        800,
         -208
       ],
-      "id": "cc46f763-08bf-42ab-b9bf-805747e6627e",
+      "id": "91cfe618-bf18-474d-b217-fcd7891a8a74",
       "name": "resultcount"
     },
     {
@@ -222,10 +222,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1520,
+        -336,
         -144
       ],
-      "id": "27f15307-fbbc-40a9-99d2-91fefe53350f",
+      "id": "c5aa84a4-ae0d-439c-9f4f-eb60411a7e7c",
       "name": "format output"
     },
     {
@@ -235,10 +235,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2112,
+        -928,
         -144
       ],
-      "id": "b3937372-7c91-44f3-98b3-057a07e5bf43",
+      "id": "be769aa7-0e2e-417c-a6dd-353e3742a651",
       "name": "Context-Merger",
       "alwaysOutputData": true
     },
@@ -257,15 +257,15 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
-        -1824,
-        80
+        -640,
+        96
       ],
-      "id": "ef2f7e1c-e94c-4805-8de1-c1e9779d527e",
+      "id": "35c4c09a-6ed5-4cfb-82ec-e505524f77d4",
       "name": "OpenAI Chat refined",
       "credentials": {
         "openAiApi": {
-          "id": "xH06mHp5QmirxiW0",
-          "name": "OpenAi account 6"
+          "id": "iCiSJp2rt9yhPy3g",
+          "name": "OpenAi account 3"
         }
       }
     },
@@ -280,10 +280,10 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 2.2,
       "position": [
-        -1888,
+        -704,
         -144
       ],
-      "id": "ea0ac74c-326d-4ee1-9379-aa3d396fd142",
+      "id": "21028e1e-cf30-422e-a893-e497b8346747",
       "name": "message refined",
       "onError": "continueRegularOutput"
     },
@@ -322,10 +322,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -816,
+        368,
         -128
       ],
-      "id": "1442b8e3-7d6b-4555-b539-f0243c2027ec",
+      "id": "2c79d488-797e-4f92-8c54-94e6ae96b84e",
       "name": "add score_threshold"
     },
     {
@@ -340,10 +340,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -608,
+        576,
         -128
       ],
-      "id": "0a69d736-8db4-4772-b807-5022d22763b2",
+      "id": "89798080-91f0-4aeb-b188-d5a5d48f3948",
       "name": "QdrantSearch",
       "alwaysOutputData": true
     },
@@ -362,26 +362,26 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -992,
+        192,
         -128
       ],
-      "id": "46612366-f4dd-4d29-b627-70876502f346",
+      "id": "62c902eb-1ca8-47b7-a916-0607a943c037",
       "name": "EmbbedingVector"
     },
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "chatbot_web",
+        "path": "chatwebnds",
         "responseMode": "responseNode",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -2336,
+        -1152,
         -144
       ],
-      "id": "da21a4e0-c52f-41a9-865c-6205d466e7ba",
+      "id": "7c82be29-df69-4534-94c8-d631458313c4",
       "name": "Webhook",
       "webhookId": "8a33f409-00d9-4293-b578-f925198ea31e"
     },
@@ -413,10 +413,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -1328,
+        -144,
         -144
       ],
-      "id": "9c40504c-a0ae-4ebb-9907-65b69bf761cc",
+      "id": "e0facbeb-93f4-461e-922e-05a57a8d181a",
       "name": "If"
     },
     {
@@ -427,10 +427,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        -512,
+        672,
         -544
       ],
-      "id": "ec31f38d-1168-46e8-9881-9485441cbc21",
+      "id": "ed0e85b1-1e11-444d-97f6-f105a95da9ff",
       "name": "Respond to Webhook1"
     },
     {
@@ -440,10 +440,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -928,
+        256,
         -384
       ],
-      "id": "f83321ec-6753-4a20-a16b-b851760309e1",
+      "id": "0f6f1b03-258c-4c4d-b23d-19c8d96c5406",
       "name": "Code in JavaScript"
     }
   ],
@@ -453,7 +453,7 @@
         "json": {
           "headers": {
             "connection": "upgrade",
-            "host": "n8ndev.your-company.com",
+            "host": "n8ndev.ndsvn.vn",
             "x-real-ip": "10.86.101.254",
             "x-forwarded-for": "2a09:bac1:7ac0:10::3c1:28, 10.86.101.254",
             "x-forwarded-proto": "https",
@@ -1674,7 +1674,7 @@
               }
             ]
           },
-          "webhookUrl": "https://n8ndev.your-company.com/webhook/chatbot_web",
+          "webhookUrl": "https://n8ndev.ndsvn.vn/webhook/chatbot_web",
           "executionMode": "production"
         }
       }
@@ -1916,15 +1916,15 @@
       ]
     }
   },
-  "active": true,
+  "active": false,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "b2560f83-2acf-4f02-974d-1478db3cf248",
+  "versionId": "5d35183a-b73a-48e4-95d8-1f650dce7e3b",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "df174d571e95541c805919aa88d99c6ff9e79e2c1ffc42837bb92614d24bb4eb"
   },
-  "id": "uHdBAT2wuV58AWkJ",
+  "id": "jhC2y4uOOiWfUWVx",
   "tags": []
 }

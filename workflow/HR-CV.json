@@ -3,12 +3,12 @@
   "nodes": [
     {
       "parameters": {
-        "fromEmail": "nhansu@your-company.com",
+        "fromEmail": "nhansu@ndsvn.vn",
         "toEmail": "={{ $json.output.Email }}",
-        "subject": "=[Your Company] Thank You for Your Application",
+        "subject": "=[NDS VIETNAM] Thank You for Your Application",
         "emailFormat": "both",
-        "text": "=Dear {{ $json.output['Họ tên ứng viên']}},\nThank you very much for your interest in the {{ $json.output['Vị trí công việc'] }} position at Your Company and for taking the time to submit your application. We truly appreciate the opportunity to review your profile.\n\nOur team will carefully review your CV and qualifications. Should your experience align with our current requirements, we will reach out to you within the next two weeks to discuss the next steps.\n\nIn the meantime, you are welcome to learn more about Your Company and our mission to empower small businesses through technology by visiting our Website. You may also explore other career opportunities with us via our LinkedIn page\n\nThank you again for considering Your Company as part of your career journey. We sincerely appreciate your interest and look forward to staying connected.\n\nBest regards, \nHR Department - Your Company.",
-        "html": "=Dear {{ $json.output['Họ tên ứng viên'] }},<br><br>\nThank you very much for your interest in the {{ $json.output['Vị trí công việc'] }} position at Your Company and for taking the time to submit your application. We truly appreciate the opportunity to review your profile.<br><br>\n\nOur team will carefully review your CV and qualifications. Should your experience align with our current requirements, we will reach out to you within the next two weeks to discuss the next steps.<br><br>\n\nIn the meantime, you are welcome to learn more about Your Company and our mission to empower small businesses through technology by visiting our <a href=\"https://your-company.com/\">Website</a>. You may also explore other career opportunities with us via our <a href=\"https://www.linkedin.com/company/nds-vietnam-jsc/jobs/\">LinkedIn page</a>.<br><br>\n\nThank you again for considering Your Company as part of your career journey. We sincerely appreciate your interest and look forward to staying connected.<br><br>\n\nBest regards,<br>\n<b>HR Department - Your Company.</b>",
+        "text": "=Dear {{ $json.output['Họ tên ứng viên']}},\nThank you very much for your interest in the {{ $json.output['Vị trí công việc'] }} position at NDS VIETNAM and for taking the time to submit your application. We truly appreciate the opportunity to review your profile.\n\nOur team will carefully review your CV and qualifications. Should your experience align with our current requirements, we will reach out to you within the next two weeks to discuss the next steps.\n\nIn the meantime, you are welcome to learn more about NDS VIETNAM and our mission to empower small businesses through technology by visiting our Website. You may also explore other career opportunities with us via our LinkedIn page\n\nThank you again for considering NDS VIETNAM as part of your career journey. We sincerely appreciate your interest and look forward to staying connected.\n\nBest regards, \nHR Department - NDS VIETNAM.",
+        "html": "=Dear {{ $json.output['Họ tên ứng viên'] }},<br><br>\nThank you very much for your interest in the {{ $json.output['Vị trí công việc'] }} position at NDS VIETNAM and for taking the time to submit your application. We truly appreciate the opportunity to review your profile.<br><br>\n\nOur team will carefully review your CV and qualifications. Should your experience align with our current requirements, we will reach out to you within the next two weeks to discuss the next steps.<br><br>\n\nIn the meantime, you are welcome to learn more about NDS VIETNAM and our mission to empower small businesses through technology by visiting our <a href=\"https://ndsvn.vn/\">Website</a>. You may also explore other career opportunities with us via our <a href=\"https://www.linkedin.com/company/nds-vietnam-jsc/jobs/\">LinkedIn page</a>.<br><br>\n\nThank you again for considering NDS VIETNAM as part of your career journey. We sincerely appreciate your interest and look forward to staying connected.<br><br>\n\nBest regards,<br>\n<b>HR Department - NDS VIETNAM.</b>",
         "options": {
           "appendAttribution": false
         }
@@ -16,10 +16,10 @@
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
-        976,
-        1056
+        1120,
+        32
       ],
-      "id": "44a3eeda-6f50-4e37-ab6a-8038b782735d",
+      "id": "ac1cbab9-59f0-41da-b4da-c51e008e6a5b",
       "name": "Send email",
       "webhookId": "4bdd4260-2ed4-4223-b191-b2dba9c45132",
       "credentials": {
@@ -39,10 +39,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        528,
-        1056
+        672,
+        32
       ],
-      "id": "1ecd3d20-2ada-43e6-8f65-64eac740cb25",
+      "id": "c43e7bec-0fc4-48bf-8af6-dc76cbc572fb",
       "name": "Final Merge",
       "alwaysOutputData": true
     },
@@ -53,10 +53,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        16,
-        1248
+        160,
+        224
       ],
-      "id": "7f5708be-605c-4db4-ae42-1962ba7e629a",
+      "id": "a04f6e0d-7f08-4477-8ee8-a375e1fd03a5",
       "name": "Restore Binary"
     },
     {
@@ -89,10 +89,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -336,
-        1168
+        -192,
+        144
       ],
-      "id": "90981fa6-27a0-45b5-aa00-7cd65b58cc42",
+      "id": "ed56938a-996b-45ec-a890-2a28c596515a",
       "name": "If",
       "alwaysOutputData": false
     },
@@ -117,10 +117,10 @@
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
       "position": [
-        304,
-        1248
+        448,
+        224
       ],
-      "id": "35a63b5e-52f4-4864-bb16-10a9fe21316f",
+      "id": "ac9e5eca-4976-40bd-a8de-70a414d64276",
       "name": "Upload file",
       "credentials": {
         "googleDriveOAuth2Api": {
@@ -148,10 +148,10 @@
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
       "position": [
-        -624,
-        1168
+        -480,
+        144
       ],
-      "id": "325da2e8-c22f-43de-9b52-2f2f02b7dfde",
+      "id": "90bfc505-4002-4b12-aba4-2861b752aa1c",
       "name": "Search files and folders",
       "alwaysOutputData": true,
       "credentials": {
@@ -177,10 +177,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
-        -336,
-        928
+        -192,
+        -96
       ],
-      "id": "682d7daa-81cc-4584-8ee0-abf53c531337",
+      "id": "ea87e965-7018-4ecd-939a-73b7b393a380",
       "name": "OpenAI Chat Model4",
       "credentials": {
         "openAiApi": {
@@ -196,10 +196,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        16,
-        704
+        160,
+        -320
       ],
-      "id": "74c8fe53-654c-472b-b3a5-8e64c602c612",
+      "id": "0a10ef71-9bc1-405c-a295-013a303b2b40",
       "name": "Code in JavaScript"
     },
     {
@@ -211,10 +211,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        304,
-        512
+        448,
+        -512
       ],
-      "id": "a4c0e934-8623-44f2-9bb2-94768c435829",
+      "id": "43964636-a53d-4826-b6b9-811a2cf2872d",
       "name": "Merge1"
     },
     {
@@ -228,10 +228,10 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 2.2,
       "position": [
-        -400,
-        704
+        -256,
+        -320
       ],
-      "id": "a66ff38c-5fdd-4cea-8470-a35822393278",
+      "id": "f67007df-bc46-4239-bc3c-1d9f49cdb29a",
       "name": "AI Question",
       "retryOnFail": true
     },
@@ -251,10 +251,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
-        -48,
-        528
+        112,
+        -496
       ],
-      "id": "020f0fb0-d292-4a04-b0df-5ccac14054d6",
+      "id": "d332d7f2-71bf-4306-acbc-6798f4743a97",
       "name": "OpenAI Chat Model",
       "credentials": {
         "openAiApi": {
@@ -270,10 +270,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        96,
-        528
+        240,
+        -496
       ],
-      "id": "c8935e65-e650-4620-aefe-005bfaca79a2",
+      "id": "b0e5bebb-8069-44a7-9d02-46be60df2b48",
       "name": "Structured Output Parser"
     },
     {
@@ -304,10 +304,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -848,
-        512
+        -704,
+        -512
       ],
-      "id": "a370460d-ba83-44de-abce-e8e0af4226c8",
+      "id": "d7d1822c-540f-40e4-8414-985a97a5d966",
       "name": "Check null",
       "onError": "continueRegularOutput"
     },
@@ -319,10 +319,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [
-        752,
-        1056
+        896,
+        32
       ],
-      "id": "35de1734-e1c3-444a-b0f8-48186a05b1a9",
+      "id": "28ccb1fb-0016-48b6-88cc-ab0b8b23f4e2",
       "name": "Respond to Webhook"
     },
     {
@@ -337,10 +337,10 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 2.2,
       "position": [
-        -48,
-        304
+        96,
+        -720
       ],
-      "id": "8e0c7d6b-5540-42c1-aebe-1a9fe04d6322",
+      "id": "3c238a10-ce40-4666-a9a1-61705fa5b5f0",
       "name": "AI Agent",
       "retryOnFail": true
     },
@@ -361,10 +361,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -624,
-        512
+        -480,
+        -512
       ],
-      "id": "29f3ebf6-e279-473d-8fc9-7a8c4c5bcee5",
+      "id": "45813835-6d79-4673-a3fd-5b1f37d1e470",
       "name": "candidate CV"
     },
     {
@@ -384,10 +384,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -1072,
-        640
+        -928,
+        -400
       ],
-      "id": "1acafe61-1757-4a7f-9632-d8917e8aff6f",
+      "id": "694aaa67-0dac-4375-bddb-be4dc195e6bd",
       "name": "Edit Fields"
     },
     {
@@ -399,10 +399,10 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
       "position": [
-        -1296,
-        640
+        -1152,
+        -400
       ],
-      "id": "e755c430-3d10-4832-8987-2b7b39d8fd3b",
+      "id": "a5198d81-26c3-48c6-9971-831a51771da2",
       "name": "Lấy thông tin CV"
     },
     {
@@ -415,10 +415,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -1520,
-        832
+        -1376,
+        -208
       ],
-      "id": "5d39bf33-3db0-45a0-ad2d-bf9ad93fd59b",
+      "id": "2e898a5e-53a1-4b09-837f-25ad77581785",
       "name": "Webhook",
       "webhookId": "0949afcd-d432-47a0-b0e8-aab90ac6bd4f"
     },
@@ -431,10 +431,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        528,
-        1248
+        672,
+        224
       ],
-      "id": "5d2ad543-8f0c-495b-baeb-e90163055092",
+      "id": "40220407-e202-42e2-a738-ea9b544f18b5",
       "name": "Merge"
     },
     {
@@ -459,10 +459,10 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
       "position": [
-        752,
-        1248
+        896,
+        224
       ],
-      "id": "4cf90d18-2acf-4e66-9e0d-84e1a5665ec8",
+      "id": "638a8c79-d241-4c48-b740-06f3f5b9eedf",
       "name": "Call 'CV Processing LLM Pipeline (Final)'"
     }
   ],
@@ -710,11 +710,18 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "dd9215ac-28e0-47b1-b56b-8a9496d20ae7",
+  "versionId": "304f7eba-88e9-457d-a017-b83e498ab702",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "df174d571e95541c805919aa88d99c6ff9e79e2c1ffc42837bb92614d24bb4eb"
   },
   "id": "oQbvmXieQU8LvZLG",
-  "tags": []
+  "tags": [
+    {
+      "createdAt": "2026-03-09T08:10:39.752Z",
+      "updatedAt": "2026-03-09T08:10:39.752Z",
+      "id": "Otlu1NsAy9qc0Flw",
+      "name": "hr-cv"
+    }
+  ]
 }

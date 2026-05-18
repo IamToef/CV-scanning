@@ -183,7 +183,7 @@
         "url": "=https://idiochromatic-cody-uninspiringly.ngrok-free.dev/collections/RAG_FOR_CV/points/scroll",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"filter\": {\n    \"must\": [\n      {\n        \"key\": \"candidate_email\",\n        \"match\": {\n          \"value\": \"{{ $json.points[25].payload.candidate_email }}\"\n        }\n      }\n    ]\n  },\n  \"limit\": 1,\n  \"with_payload\": true\n}",
+        "jsonBody": "={\n  \"filter\": {\n    \"must\": [\n      {\n        \"key\": \"candidate_email\",\n        \"match\": {\n          \"value\": \"{{ $json.points[0].payload.candidate_email }}\"\n        }\n      }\n    ]\n  },\n  \"limit\": 1,\n  \"with_payload\": true\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -202,10 +202,138 @@
     "When Executed by Another Workflow": [
       {
         "json": {
-          "text": "TRAN QUOC KIET\nIT BUSINESS ANALYST\n kiettran27101999@gmail.com  0903854218  District 4, HCM city\nOBJECTIVE\nTeam-oriented critical thinker with communication, and analysis skills. Motivated to join a group of cross-functional\nteammates to improve the workflows, development process, and quality of products to reach the stakeholder goals.. •\nDomain: Information Technology, Banking, Finance, Insurance, Healthcare, etc\n• Languages: English (760 TOEIC)\n• Methodology: Agile, Waterfall.\n• Modeling: Unified modeling language, Flow chart technique, Data flow diagrams.\n• Documentation Tool: Word, Excel, PowerPoint, Google Sheet, Jira, Confluence, Trello\n• Design Tool: Figma, Axure.\n• Database: SQL Server, My SQL.\n• API Tool: Postman\n• Data Visualization: Microsoft Power BI.I have enjoyed working with my colleagues and they have taught me the\nfollowing about myself:\n- I have served as a team contributor, so I'm extremely comfortable working in a team environment\n- I try to take advantage of every opportunity that comes my way.\n- I always look at this matter from a different point of view.\nRESPONSIBILITIES\nI’m a Technical Business Analyst with 5+ years of experience bridging business needs with system logic.\nI specialize in stakeholder engagement, process optimization, and system integration.\nKnown for quickly understanding business viewpoints and aligning with technical teams.\nI'm passionate about delivering high-impact solutions that improve efficiency, accuracy, and transparency across\norganizations.\nGKIM Digital\nFebruary 2024 - Present\nIT Business Analyst - Healthcare\n- Leveraged A.I to streamline tasks like research, flowcharts, mockups, test\ncase generation.\n- Collaborated with Technical and Database Managers to deliver scalable,\nefficient solutions that met evolving client requirements and minimized\nmigration risks.\n- Documented and coordinated external API specifications, ensuring\nconsistency, security, and usability for third-party integration.\n- Established Jira ticket standards, ensuring all functional and non-functional\nrequirements are well-documented and traceable throughout the project\nlifecycle.\n- Directed integration testing efforts in collaboration with stakeholders and\ncoordinated teams, validating API performance and data consistency.\n- Supported QA and development teams by validating complex business logic\nand data flows via MS SQL Server, promoting a data-driven approach.\n- Mentored and trained interns and junior BAs, promoting knowledge sharing\nand documentation best practices.\nWORK EXPERIENCE\n\nVIB - VIETNAM INTERNATIONAL\nBANK\nOct 2023 - March 2024\nIT Business Analyst specialist - Wholesale Digital Business Solutions (B2B)\nSystem enhancement: IBCorp (Website), IBAdmin, MyVIBCorp (Mobile),\nERP1.0, ERP 2.0, ERP RealtimeResponsibilities:\n- Responsible for communicating directly with Develop partner in the process of\nbuilding the system.\n- Modeling business processes and identifying process improvement\nopportunities.\n- Outlining business impacts and identifying issues, risks, and benefits of\nexisting and proposed solutions.\n- Support UAT testing and verify bug.\n- Ability to query and test database, API to make sure system run propriety.\n- Responsible for communicating and training directly with End users in the\nprocess of building the system and solving problems before and after Go-live\nthe system.\nPrudential Vietnam Assurance\nPrivate Ltd.\nAugust 2021 - September 2023\nIT Business Analyst - Insurance\n- System enhancement: PRUOnline (Website and Application),PRUDaily,\nPRUQuote, Pulse for OPs Responsibilities:\n- Working with Scrum master, QC, Dev to plan and report partner services\ndelivery and operations.\n- Analyzing data to create data models, reports, and optimize data flow.-\nDocumenting solutions (Acceptance Criteria, User Stories).Analyzing data in\norder to create reports, data models, and optimize data flow, such as master\ndata, transaction data, and so on.\n- Use Jira, Confluence to manage task and project.\n- Advice and align services delivery and operations excellence along the way.-\nAssisting with business transition and change implementation.\n- Design UX, wireframe, interview and training new partner, manage project\noverall.\nNICHIETSU SYSTEM\nDEVELOPMENT\nJanuary 2019 - July 2021\nIT Business Analyst - Outsourcing\nProjects handle: Property auction, Football and students management, Electricity\nmanagement, Human resource management system, Area management, Parking\nmanagement, Real estate retail, Smart lockers\nResponsibilities\n- Staying up-to-date on the latest process and advancements to automate and\nmodernize systems.\n- Documenting and communicating the results of your efforts.\n- Effectively communicating your insights and plans to cross-functional team\nmembers and management.\n- Gathering critical information from meetings with various stakeholders and\nproducing useful reports.\n- Providing leadership, training, coaching, and guidance to junior staff.\n- Ensuing solutions meet business needs and requirements.\n- Performing user acceptance testing\n- Managing projects, developing project plans, and monitoring performance.\nUpdating, implementing and maintaining procedures.\nACHIEVEMENTS\nVIB - VIETNAM INTERNATIONAL BANK\n- Go-live successfully ESB system, ERP 2.0, ERP Realtime, EVN Tool, Foreign currency trading, Guarantee online\nNICHIETSU SYSTEM DEVELOPMENT:\n- Gain Outstanding Employee 2022 of SoftVN Team prize\n- Successfully got acceptance of 4 project: Geniofut, YEV_MEAL TICKET, Chiyoda and PECC2\n- Deployed successfully system and device of YEV_MEAL TICKET project for over 2.000 employees\n- Received a lot of good feedback from customers using the system\n\n- All ongoing projects are on schedule and according to customers' requirements\n- Get many potential projects when working directly with customers\n- Successfully deployed and put into operation 50 smart lockers of RP project and 100 medical lockers of NUH project.\n- Successfully deployed Kiosk app and more than 150 smart locker using RFID bracelet at Nova world Ho Tram\nHo Chi Minh City University of\nForeign Languages and\nInformation Technology\n2017 - 2021\n- Degree Classification : Good\n- Information Systems\nBusiness Analysis Training\nCenter - BAC\nOctober 2021 - November 2021\nFUNDAMENTAL BUSINESS ANALYSIS\nImprove the knowledge of BA.\nBe a professional BA.\nBe oriented towards your BA occupation.\nBroaden your solid understanding of business analysis.\nIdentify your leverage points and BA experiences.\nBuild up your BA core skills.\nStart doing projects step by step as a Business Analyst.\nGet 36 hours of Professional Development (PD).\nTOEIC CERTIFICATE\n2020\nWITH SCORE 760 ISSUED\nBY IIG VIETNAM\nEDUCATION\n© topcv.vn",
-          "file_name": "BA_TranQuocKiet.pdf",
-          "id": "1wH6kXzs_qk8DbCyApRvhe6MNedpYjygX",
-          "name": "BA_TranQuocKiet.pdf"
+          "text": "VO QUOC HUY\nAI/ML Intern\nhuyvo8500@gmail.com – 0369459215 – Go Vap, Ho Chi Minh\nEDUCATION\n2020 - Present Industrial University of Ho Chi Minh City\nMajor: Data Science\nACTIVITIES\nApr 2023 – Aug 2023 Participated in the 5th Young Science Conference, Ho Chi Minh City University of Industry, YSC-\nIUH 2023 (pp 296-304).\n• FINDING THE OLD SMILE (Github): The research uses cGAN combined\nwith Hidden Affine Transform to create videos from input facial images. (Best\nPoster Award)\nMar 2024 – Present Participated in the 6th Young Science Conference, Ho Chi Minh City University of Industry.\n• AUTOMATIC CAPTION GENERATION FOR FASHION IMAGES\nUSING TRANSFORMER-BASED METHODS (Github): The research uses\nTransformers methods to create captions from fashion images. (Accepted)\nPROJECTS\nOct 2023 – Dec 2023 Deep Learning Project (Github – Report)\n• Topic detail: Using deep learning methods (VGG19, InceptionV3, Resnet50,\nDenseNet) to solve the problem “Predicting the severity of prostate cancer” from\nthe Kaggle competition Prostate Cancer Grade Assessment (Panda) Challenge.\nOct 2023 – Dec 2023 Natural Language Processing Project (Github – Report)\n• Topic detail: Using deep learning methods (GCN, GAT, GraphSAGE,\nSGConv, PNAConv) combined with OCR (VietOCR, PaddleOCR) to solve the\nproblem “Identifying Image Text Information Using Deep Learning Methods”.\nApr 2024 – May 2024 Computer Vision Project (Github – Report)\n• Topic detail: Using Transformers methods (BeiT + GPT2) to solve the problem\n“Automatic Caption Generation for Fashion Images Using Transformer-Based\nMethods”.\nSKILLS\nHard Skills:\n• Technical: Python, Java, C/C++\n• Deep Learning Framework: Tensorflow, Keras, Pytorch\n• Microsoft Office: Word, Excel, PowerPoint\nSoft Skills:\n• Problem solving and teamwork\n• Planning and time management",
+          "kind": "drive#file",
+          "id": "1xBP_Q5-A-loeti2ZdDimoUFi3hyuc891",
+          "name": "CV_VoQuocHuy.pdf",
+          "mimeType": "application/pdf",
+          "starred": false,
+          "trashed": false,
+          "explicitlyTrashed": false,
+          "parents": [
+            "1-VbhdcV85fPQ0Q7veYapkYDHhcdIcN2K"
+          ],
+          "spaces": [
+            "drive"
+          ],
+          "version": "3",
+          "webContentLink": "https://drive.google.com/uc?id=1xBP_Q5-A-loeti2ZdDimoUFi3hyuc891&export=download",
+          "webViewLink": "https://drive.google.com/file/d/1xBP_Q5-A-loeti2ZdDimoUFi3hyuc891/view?usp=drivesdk",
+          "iconLink": "https://drive-thirdparty.googleusercontent.com/16/type/application/pdf",
+          "hasThumbnail": true,
+          "thumbnailLink": "https://lh3.googleusercontent.com/drive-storage/AJQWtBMAQ8zVYY1m21tNZxGc2vxl7xuaBQlkdOBP8ah4agjA2XQ3lwxK8i-3nJxGnnklh1XQYrBmeLemMfr8cTWu_YF04U0QiQIJKGgikrwasFxehV2U=s220",
+          "thumbnailVersion": "1",
+          "viewedByMe": false,
+          "createdTime": "2026-01-22T08:55:22.672Z",
+          "modifiedTime": "2026-01-22T08:55:24.150Z",
+          "modifiedByMeTime": "2026-01-22T08:55:24.150Z",
+          "modifiedByMe": true,
+          "owners": [
+            {
+              "kind": "drive#user",
+              "displayName": "Phong Tran",
+              "photoLink": "https://lh3.googleusercontent.com/a/ACg8ocJmh0BaPa9dfOUN8qOINdjAjE-BFNd88YTAlhUhtInTbn4XED1w=s64",
+              "me": true,
+              "permissionId": "14461883916907426107",
+              "emailAddress": "tranphong14204@gmail.com"
+            }
+          ],
+          "lastModifyingUser": {
+            "kind": "drive#user",
+            "displayName": "Phong Tran",
+            "photoLink": "https://lh3.googleusercontent.com/a/ACg8ocJmh0BaPa9dfOUN8qOINdjAjE-BFNd88YTAlhUhtInTbn4XED1w=s64",
+            "me": true,
+            "permissionId": "14461883916907426107",
+            "emailAddress": "tranphong14204@gmail.com"
+          },
+          "shared": true,
+          "ownedByMe": true,
+          "downloadRestrictions": {
+            "itemDownloadRestriction": {
+              "restrictedForReaders": false,
+              "restrictedForWriters": false
+            },
+            "effectiveDownloadRestrictionWithContext": {
+              "restrictedForReaders": false,
+              "restrictedForWriters": false
+            }
+          },
+          "capabilities": {
+            "canAcceptOwnership": false,
+            "canAddChildren": false,
+            "canAddMyDriveParent": false,
+            "canChangeCopyRequiresWriterPermission": true,
+            "canChangeItemDownloadRestriction": true,
+            "canChangeSecurityUpdateEnabled": false,
+            "canChangeViewersCanCopyContent": true,
+            "canComment": true,
+            "canCopy": true,
+            "canDelete": true,
+            "canDisableInheritedPermissions": false,
+            "canDownload": true,
+            "canEdit": true,
+            "canEnableInheritedPermissions": true,
+            "canListChildren": false,
+            "canModifyContent": true,
+            "canModifyContentRestriction": true,
+            "canModifyEditorContentRestriction": true,
+            "canModifyOwnerContentRestriction": true,
+            "canModifyLabels": false,
+            "canMoveChildrenWithinDrive": false,
+            "canMoveItemIntoTeamDrive": true,
+            "canMoveItemOutOfDrive": true,
+            "canMoveItemWithinDrive": true,
+            "canReadLabels": false,
+            "canReadRevisions": true,
+            "canRemoveChildren": false,
+            "canRemoveContentRestriction": false,
+            "canRemoveMyDriveParent": true,
+            "canRename": true,
+            "canShare": true,
+            "canTrash": true,
+            "canUntrash": true
+          },
+          "viewersCanCopyContent": true,
+          "copyRequiresWriterPermission": false,
+          "writersCanShare": true,
+          "permissions": [
+            {
+              "kind": "drive#permission",
+              "id": "anyoneWithLink",
+              "type": "anyone",
+              "role": "reader",
+              "allowFileDiscovery": false
+            },
+            {
+              "kind": "drive#permission",
+              "id": "14461883916907426107",
+              "type": "user",
+              "emailAddress": "Tranphong14204@gmail.com",
+              "role": "owner",
+              "displayName": "Tranphong14204",
+              "deleted": false,
+              "pendingOwner": false
+            }
+          ],
+          "permissionIds": [
+            "anyoneWithLink",
+            "14461883916907426107"
+          ],
+          "originalFilename": "CV_VoQuocHuy.pdf",
+          "fullFileExtension": "pdf",
+          "fileExtension": "pdf",
+          "md5Checksum": "555d377d2fb0cd7e515fa4a0adfb8995",
+          "sha1Checksum": "42fe1f57bb7b24ae516cbd53b49b7b30067db047",
+          "sha256Checksum": "4b40d838c111254304e67863c6babacf37ba6ed5c2aff73cbc6b7f75d1c10cd0",
+          "size": "190159",
+          "quotaBytesUsed": "190159",
+          "headRevisionId": "0B6CIb56svkwpeDl0RmNTVU85d1MycStsNllLVDRuVkZvU2ZFPQ",
+          "isAppAuthorized": true,
+          "linkShareMetadata": {
+            "securityUpdateEligible": false,
+            "securityUpdateEnabled": true
+          },
+          "inheritedPermissionsDisabled": false
         },
         "binary": {}
       }
@@ -311,11 +439,18 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "207cb517-8fa7-4418-8691-d61e0d817818",
+  "versionId": "9a186f0c-faaf-4d9b-a649-0283d1db55d6",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "df174d571e95541c805919aa88d99c6ff9e79e2c1ffc42837bb92614d24bb4eb"
   },
   "id": "M6MCspSjRG6YMg9X",
-  "tags": []
+  "tags": [
+    {
+      "createdAt": "2026-03-09T08:10:39.752Z",
+      "updatedAt": "2026-03-09T08:10:39.752Z",
+      "id": "Otlu1NsAy9qc0Flw",
+      "name": "hr-cv"
+    }
+  ]
 }

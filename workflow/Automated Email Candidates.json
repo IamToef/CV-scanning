@@ -1,0 +1,192 @@
+{
+  "name": "Automated Email Candidates",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "email",
+        "options": {}
+      },
+      "id": "7ee9b8c5-06a1-4426-a4de-1e98ca289629",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        96
+      ],
+      "webhookId": "candidate-status-webhook"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.status }}",
+                    "rightValue": "shortlisted",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "bfb0ca9e-651e-4180-9619-3f81c6999431"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Shortlisted"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.status }}",
+                    "rightValue": "rejected",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "d02248f8-9627-4fe7-81ab-fb1ba0e59283"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Rejected"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a064910a-0793-4b39-8b0c-04a2e4e4458c",
+      "name": "Switch Status",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        -256,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "nhansu@ndsvn.vn",
+        "toEmail": "={{ $json.body.email }}",
+        "subject": "=Thông báo kết quả hồ sơ - {{ $json.body.role }}",
+        "emailFormat": "text",
+        "text": "Rejected",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        -32,
+        192
+      ],
+      "id": "8302f472-b991-4b4e-b2b6-9b5d3d941e26",
+      "name": "Email Rejected",
+      "webhookId": "fe96a71a-c6d2-4783-a5bb-1ab6d54a2809",
+      "credentials": {
+        "smtp": {
+          "id": "YCqLHT8aOzZtR5VD",
+          "name": "SMTP account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "fromEmail": "nhansu@ndsvn.vn",
+        "toEmail": "={{ $json.body.email }}",
+        "subject": "=Thông báo kết quả hồ sơ - {{ $json.body.role }}",
+        "emailFormat": "text",
+        "text": "Shortlisted",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        -32,
+        0
+      ],
+      "id": "67036aba-cb24-43a2-afec-ce8caaf99d03",
+      "name": "Email Shortlisted",
+      "webhookId": "fe96a71a-c6d2-4783-a5bb-1ab6d54a2809",
+      "credentials": {
+        "smtp": {
+          "id": "YCqLHT8aOzZtR5VD",
+          "name": "SMTP account"
+        }
+      },
+      "disabled": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Switch Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Status": {
+      "main": [
+        [
+          {
+            "node": "Email Shortlisted",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "07c7bb7c-f61a-4886-97ef-4d4d313dfcf3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "df174d571e95541c805919aa88d99c6ff9e79e2c1ffc42837bb92614d24bb4eb"
+  },
+  "id": "UsA81YBU4jcAbaYo",
+  "tags": [
+    {
+      "createdAt": "2026-03-09T08:10:39.752Z",
+      "updatedAt": "2026-03-09T08:10:39.752Z",
+      "id": "Otlu1NsAy9qc0Flw",
+      "name": "hr-cv"
+    }
+  ]
+}

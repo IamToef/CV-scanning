@@ -1,0 +1,121 @@
+{
+  "name": "Send Email",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "send-email",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a9fdede6-5101-46a2-8806-b1072b60aedf",
+      "name": "Webhook",
+      "webhookId": "send-email-webhook-id"
+    },
+    {
+      "parameters": {
+        "fromEmail": "nhansu@ndsvn.vn",
+        "toEmail": "={{ $json.body.to }}",
+        "subject": "={{ $json.body.subject }}",
+        "emailFormat": "both",
+        "text": "={{ $json.body.text }}",
+        "html": "={{ $json.body.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        304,
+        0
+      ],
+      "id": "ef6ca317-fcb9-437a-942c-af984c157617",
+      "name": "Send Email",
+      "webhookId": "ca9500a7-b740-48ad-a51a-0d8926b1f209",
+      "credentials": {
+        "smtp": {
+          "id": "YCqLHT8aOzZtR5VD",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "result-field",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "result-message",
+              "name": "message",
+              "value": "Email sent successfully",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        608,
+        0
+      ],
+      "id": "e2644dd3-9b18-4d4b-a126-bc22cfb5ab1d",
+      "name": "Result"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email": {
+      "main": [
+        [
+          {
+            "node": "Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "86d080e9-7b47-4533-9633-b4359c5ab985",
+  "meta": {
+    "instanceId": "df174d571e95541c805919aa88d99c6ff9e79e2c1ffc42837bb92614d24bb4eb"
+  },
+  "id": "NAU0YbnNawrGTMLF",
+  "tags": [
+    {
+      "createdAt": "2026-03-09T08:10:39.752Z",
+      "updatedAt": "2026-03-09T08:10:39.752Z",
+      "id": "Otlu1NsAy9qc0Flw",
+      "name": "hr-cv"
+    }
+  ]
+}
