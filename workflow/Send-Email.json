@@ -20,7 +20,7 @@
         },
         {
             "parameters": {
-                "fromEmail": "nhansu@ndsvn.vn",
+                "fromEmail": "nhansu@your-company.com",
                 "toEmail": "={{ $json.body.to }}",
                 "subject": "={{ $json.body.subject }}",
                 "emailFormat": "both",

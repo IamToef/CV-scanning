@@ -141,7 +141,7 @@
         "json": {
           "headers": {
             "connection": "upgrade",
-            "host": "n8ndev.ndsvn.vn",
+            "host": "n8ndev.your-company.com",
             "x-real-ip": "10.86.101.254",
             "x-forwarded-for": "2a09:bac1:7ac0:10::17:1f3, 10.86.101.254",
             "x-forwarded-proto": "https",
@@ -166,7 +166,7 @@
             "status": "shortlisted",
             "role": "candidate"
           },
-          "webhookUrl": "https://n8ndev.ndsvn.vn/webhook/trigger-email",
+          "webhookUrl": "https://n8ndev.your-company.com/webhook/trigger-email",
           "executionMode": "production"
         }
       }

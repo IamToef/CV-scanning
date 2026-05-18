@@ -390,7 +390,7 @@
         "json": {
           "headers": {
             "connection": "upgrade",
-            "host": "n8ndev.ndsvn.vn",
+            "host": "n8ndev.your-company.com",
             "x-real-ip": "10.86.6.15",
             "x-forwarded-for": "10.86.6.15",
             "x-forwarded-proto": "https",
@@ -572,7 +572,7 @@
               }
             ]
           },
-          "webhookUrl": "https://n8ndev.ndsvn.vn/webhook/chatbot_web",
+          "webhookUrl": "https://n8ndev.your-company.com/webhook/chatbot_web",
           "executionMode": "production"
         }
       }

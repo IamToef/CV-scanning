@@ -39,32 +39,32 @@ function generateEmailForCandidate(candidate: Candidate, fallbackJobPosition?: s
     const position = candidate.applied_role || fallbackJobPosition || "vị trí tuyển dụng"
 
     const html = `Dear ${name},<br><br>
-Thank you very much for your interest in the <strong>${position}</strong> position at NDS VIETNAM and for taking the time to submit your application. We truly appreciate the opportunity to review your profile.<br><br>
+Thank you very much for your interest in the <strong>${position}</strong> position at [Company Name] and for taking the time to submit your application. We truly appreciate the opportunity to review your profile.<br><br>
 
 Our team will carefully review your CV and qualifications. Should your experience align with our current requirements, we will reach out to you within the next two weeks to discuss the next steps.<br><br>
 
-In the meantime, you are welcome to learn more about NDS VIETNAM and our mission to empower small businesses through technology by visiting our <a href="https://ndsvn.vn/" style="color: #2563eb; text-decoration: underline;">Website</a>. You may also explore other career opportunities with us via our <a href="https://www.linkedin.com/company/nds-vietnam-jsc/jobs/" style="color: #2563eb; text-decoration: underline;">LinkedIn page</a>.<br><br>
+In the meantime, you are welcome to learn more about [Company Name] and our mission by visiting our <a href="https://your-company.com/" style="color: #2563eb; text-decoration: underline;">Website</a>. You may also explore other career opportunities with us via our <a href="https://www.linkedin.com/company/your-company/jobs/" style="color: #2563eb; text-decoration: underline;">LinkedIn page</a>.<br><br>
 
-Thank you again for considering NDS VIETNAM as part of your career journey. We sincerely appreciate your interest and look forward to staying connected.<br><br>
+Thank you again for considering [Company Name] as part of your career journey. We sincerely appreciate your interest and look forward to staying connected.<br><br>
 
 Best regards,<br>
-<b>HR Department - NDS VIETNAM.</b>`
+<b>HR Department - [Company Name].</b>`
 
     const text = `Dear ${name},
-Thank you very much for your interest in the ${position} position at NDS VIETNAM and for taking the time to submit your application. We truly appreciate the opportunity to review your profile.
+Thank you very much for your interest in the ${position} position at [Company Name] and for taking the time to submit your application. We truly appreciate the opportunity to review your profile.
 
 Our team will carefully review your CV and qualifications. Should your experience align with our current requirements, we will reach out to you within the next two weeks to discuss the next steps.
 
-In the meantime, you are welcome to learn more about NDS VIETNAM and our mission to empower small businesses through technology by visiting our Website (https://ndsvn.vn/). You may also explore other career opportunities with us via our LinkedIn page (https://www.linkedin.com/company/nds-vietnam-jsc/jobs/).
+In the meantime, you are welcome to learn more about [Company Name] and our mission by visiting our Website (https://your-company.com/). You may also explore other career opportunities with us via our LinkedIn page (https://www.linkedin.com/company/your-company/jobs/).
 
-Thank you again for considering NDS VIETNAM as part of your career journey. We sincerely appreciate your interest and look forward to staying connected.
+Thank you again for considering [Company Name] as part of your career journey. We sincerely appreciate your interest and look forward to staying connected.
 
 Best regards,
-HR Department - NDS VIETNAM.`
+HR Department - [Company Name].`
 
     return {
         to: candidate.email || "",
-        subject: "[NDS VIETNAM] Thank You for Your Application",
+        subject: "[Company Name] Thank You for Your Application",
         html,
         text,
     }
@@ -224,7 +224,7 @@ export function BulkEmailModal({ candidates, jobPosition: propJobPosition, child
     const [sending, setSending] = useState(false)
     const [progress, setProgress] = useState({ sent: 0, failed: 0, total: 0 })
     const [done, setDone] = useState(false)
-    const [subject, setSubject] = useState("[NDS VIETNAM] Thank You for Your Application")
+    const [subject, setSubject] = useState("[Company Name] Thank You for Your Application")
     const [templateHtml, setTemplateHtml] = useState("")
     const [activeTab, setActiveTab] = useState<string>("edit")
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())

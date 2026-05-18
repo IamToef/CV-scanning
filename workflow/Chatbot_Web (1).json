@@ -369,7 +369,7 @@
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "chatwebnds",
+        "path": "chatweb",
         "responseMode": "responseNode",
         "options": {}
       },
