@@ -1,4 +1,0 @@
-KEY: N8N_EXTRACTJD_WEBHOOK_URL
-VAL_PREFIX: https://
-HAS_HTTP: true
-FULL_VAL: https://n8ndev.ndsvn.vn/webhook/jd-extraction1
