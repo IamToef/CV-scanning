@@ -1,4 +1,4 @@
-# AI CV Scanner & TalentIQ
+# recruitPRO
 
 A smart, AI-powered recruitment system built with Next.js and n8n workflows. This project automates the CV screening process, compares candidates against Job Descriptions (JD), and features an AI chatbot for HR professionals to query candidate data in real-time.
 
