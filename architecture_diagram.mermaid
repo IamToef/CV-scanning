@@ -26,13 +26,13 @@ graph TD
     Excel["📊 Excel Report"]:::client
 
     %% Data Flow
-    Recruiter -->|Upload CV & JD / Chat| App
-    App -->|API Request (Score & Chat)| n8n
+    Recruiter -->|"Upload CV & JD / Chat"| App
+    App -->|"API Request (Score & Chat)"| n8n
     
     %% n8n Orchestration
-    n8n <-->|JSON Parser & Embeddings| Gemini
-    n8n <-->|Semantic Vector Search| Qdrant
+    n8n <-->|"JSON Parser & Embeddings"| Gemini
+    n8n <-->|"Semantic Vector Search"| Qdrant
     
-    n8n -.->|Webhook Response| App
-    App -->|Export Data| Excel
+    n8n -.->|"Webhook Response"| App
+    App -->|"Export Data"| Excel
 
