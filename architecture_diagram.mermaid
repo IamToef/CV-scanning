@@ -1,28 +1,38 @@
 graph TD
-    %% Custom styles for the diagram
+    %% Custom Styles (sleek, professional color palette)
+    classDef user fill:#f8fafc,stroke:#64748b,stroke-width:2px,color:#334155;
+    classDef vercel fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px,color:#6d28d9;
+    classDef docker fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#b45309;
+    classDef qdrant fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#15803d;
+    classDef gemini fill:#fce7f3,stroke:#db2777,stroke-width:2px,color:#be185d;
     classDef client fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#0369a1;
-    classDef nextjs fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px,color:#6d28d9;
-    classDef n8n fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#b45309;
-    classDef db fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#15803d;
-    classDef llm fill:#fce7f3,stroke:#db2777,stroke-width:2px,color:#be185d;
 
     %% Components
-    Recruiter(["🧑‍💼 Recruiter / HR Manager"]) -->|1. Upload CV & JD / Ask Chatbot| App["💻 Next.js Frontend (Vercel)"]:::nextjs
-    
-    subgraph Backend_Infrastructure ["Docker Self-Hosted Server"]
-        %% CV Processing Flow
-        App -->|2. Proxy API: /api/n8n/score| N8N_Score["⚙️ n8n: CV Processing Workflow"]:::n8n
-        N8N_Score -->|3. Extract JSON & Score| Gemini_Score["🤖 Google Gemini API"]:::llm
-        N8N_Score -->|4. Generate Vector Embeddings| Gemini_Embed["🤖 Google Embedding API"]:::llm
-        N8N_Score -->|5. Store Candidate Vectors| Qdrant[("🗄️ Qdrant Vector DB")]:::db
+    Recruiter(["🧑‍💼 Recruiter / HR Manager"]):::user
 
-        %% Chatbot RAG Flow
-        App -->|6. Proxy API: /api/n8n/chat| N8N_Chat["⚙️ n8n: Chatbot Agent"]:::n8n
-        N8N_Chat -->|7. Semantic Query / Vector Match| Qdrant
-        N8N_Chat -->|8. Synthesize Answer| Gemini_Chat["🤖 Google Gemini API"]:::llm
+    subgraph Vercel_Cloud ["☁️ Vercel Cloud"]
+        App["💻 recruitPRO UI (Next.js)"]:::vercel
     end
 
-    %% Returns
-    N8N_Score -.->|9. Return Score Report| App
-    N8N_Chat -.->|10. Stream Chat Response| App
-    App -->|11. Export Excel Report| Excel["📊 Excel Report Export"]:::client
+    subgraph Docker_Host ["🐳 Docker Self-Hosted Server"]
+        n8n["⚙️ n8n Automation Engine"]:::docker
+        Qdrant[("🗄️ Qdrant Vector DB")]:::qdrant
+    end
+
+    subgraph External_APIs ["✨ External Cloud APIs"]
+        Gemini["🤖 Gemini API (LLM & Embeddings)"]:::gemini
+    end
+
+    Excel["📊 Excel Report"]:::client
+
+    %% Data Flow
+    Recruiter -->|Upload CV & JD / Chat| App
+    App -->|API Request (Score & Chat)| n8n
+    
+    %% n8n Orchestration
+    n8n <-->|JSON Parser & Embeddings| Gemini
+    n8n <-->|Semantic Vector Search| Qdrant
+    
+    n8n -.->|Webhook Response| App
+    App -->|Export Data| Excel
+
