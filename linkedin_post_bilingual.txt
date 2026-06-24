@@ -1,37 +1,35 @@
-🚀 How I Automated CV Screening using an AI Agent & RAG Architecture (Next.js + n8n + Qdrant + Gemini)
+🚀 How I Automated CV Screening using an AI Agent & RAG (Next.js + n8n + Qdrant + Gemini)
 
-Recruiters spend hours manually screening CVs, match-making with JDs, and searching candidate databases. To solve this, I built recruitPRO — an open-source, AI-driven recruitment system that automates the entire resume scanning, scoring, and semantic search workflow.
+Recruiters spend hours manually screening CVs. To solve this, I built recruitPRO — an open-source, AI-driven recruitment system that automates resume scanning, scoring, and semantic search.
 
-How the architecture works:
-1️⃣ Next.js App Router (Frontend): Modern UI for recruiters to upload CVs and JDs, view analysis reports, and chat.
-2️⃣ n8n Workflow Engine (Orchestrator): The "brain" of the application. It receives files via webhooks, parses PDF data, and coordinates agentic reasoning without hardcoding backend flows.
-3️⃣ Gemini API (via Google AI Studio): Used for structured JSON extraction (analyzing candidate profiles, grading strengths, gaps, and JD-matching scores) — running 100% free under the Studio Tier.
-4️⃣ Qdrant (Vector Database): Encodes and stores candidate profile vectors for semantic search.
-5️⃣ RAG Chatbot: Enables natural language queries over the CV database (e.g., "Find me a React Native developer with 2+ years of experience"). n8n retrieves relevant contexts from Qdrant, synthesizes them via Gemini, and replies in real-time.
+How it works:
+1️⃣ Next.js (Vercel): Modern UI for CV/JD uploads, candidate scoring, and RAG chat.
+2️⃣ n8n Workflow (Docker): The "brain" coordinating file parsing and agentic flows without hardcoded backends.
+3️⃣ Gemini API (Google AI Studio): Extracts structured JSON (evaluating strengths, gaps, and match scores) 100% free.
+4️⃣ Qdrant (Vector DB): Stores candidate vectors for semantic RAG search (e.g., "Find a React developer with 2+ years of experience").
 
-Key Technical Lessons:
-💡 LLM output structuring is critical. I utilized n8n's visual debugging to validate the Gemini JSON output format, ensuring seamless integration with the Next.js frontend.
-💡 Leveraging a Vector DB (Qdrant) allows for semantic query matching rather than simple keyword searches, making candidate discovery much more intuitive.
+Key Lessons:
+💡 Visual debugging in n8n makes prompt validation and JSON schema alignment with Next.js super fast.
+💡 Vector DB semantic matching is far superior to keyword search for candidate sourcing.
 
-Check out the code and try the live interactive demo below! 👇
+Full code & live demo in the first comment! 👇
+#AIAgent #n8n #Qdrant #VectorDB #Gemini #NextJS #SystemDesign #OpenSource #HRTech
 
 ---
 
-🚀 Cách Mình Tự Động Hóa Quy Trình Lọc CV Bằng AI Agent & Kiến Trúc RAG (Next.js + n8n + Qdrant + Gemini)
+🚀 Tự Động Hóa Quy Trình Lọc CV Bằng AI Agent & Kiến Trúc RAG (Next.js + n8n + Qdrant + Gemini)
 
-Sàng lọc CV, so khớp với mô tả công việc (JD) và tìm kiếm ứng viên thủ công luôn là nỗi ám ảnh tiêu tốn hàng giờ của HR. Để giải quyết bài toán này, mình đã phát triển recruitPRO — hệ thống tuyển dụng ứng dụng AI tự động hóa hoàn toàn quy trình xử lý, chấm điểm CV và tìm kiếm ngữ nghĩa.
+Sàng lọc CV và tìm kiếm ứng viên thủ công luôn tiêu tốn hàng giờ của HR. Mình đã phát triển recruitPRO — hệ thống tuyển dụng ứng dụng AI tự động hóa hoàn toàn quy trình xử lý, chấm điểm CV và tìm kiếm ngữ nghĩa.
 
-Cách thức hoạt động của hệ thống:
-1️⃣ Next.js App Router (Frontend): Giao diện hiện đại để nhà tuyển dụng upload CV/JD, xem kết quả phân tích và chat truy vấn dữ liệu.
-2️⃣ n8n Workflow Engine (Orchestrator): "Bộ não" điều phối. Tiếp nhận file qua webhook, xử lý văn bản PDF và điều phối tác vụ AI Agent mà không cần viết mã backend cứng nhắc.
-3️⃣ Gemini API (Google AI Studio): Trích xuất dữ liệu JSON có cấu trúc (phân tích thế mạnh, điểm yếu, chấm điểm độ phù hợp CV/JD) — chạy hoàn toàn miễn phí trên gói Studio.
-4️⃣ Qdrant (Vector Database): Mã hóa và lưu trữ vector hồ sơ ứng viên phục vụ tìm kiếm thông minh.
-5️⃣ Chatbot RAG: Cho phép HR tìm ứng viên bằng ngôn ngữ tự nhiên (VD: "Tìm lập trình viên React Native có trên 2 năm kinh nghiệm"). n8n truy vấn dữ liệu tương đồng từ Qdrant, tổng hợp qua Gemini và phản hồi theo thời gian thực.
+Cách thức hoạt động:
+1️⃣ Next.js (Vercel): Giao diện upload CV/JD, xem kết quả chấm điểm và chat RAG.
+2️⃣ n8n Workflow (Docker): "Bộ não" tiếp nhận webhook, xử lý văn bản PDF và điều phối tác vụ AI trực quan.
+3️⃣ Gemini API (Google AI Studio): Trích xuất dữ liệu JSON có cấu trúc (phân tích thế mạnh, điểm yếu, chấm điểm CV/JD) hoàn toàn miễn phí.
+4️⃣ Qdrant (Vector DB): Mã hóa và lưu trữ vector hồ sơ ứng viên phục vụ tìm kiếm thông minh bằng ngôn ngữ tự nhiên.
 
-Bài học kỹ thuật đúc rút:
-💡 Cấu trúc hóa đầu ra LLM rất quan trọng. Mình sử dụng cơ chế debug trực quan của n8n để kiểm soát định dạng JSON trả về từ Gemini, đảm bảo frontend Next.js hiển thị chính xác.
-💡 Việc sử dụng Vector DB (Qdrant) giúp thay thế tìm kiếm từ khóa truyền thống bằng tìm kiếm ngữ nghĩa, giúp việc săn tìm ứng viên thông minh hơn rất nhiều.
+Bài học rút ra:
+💡 Nền tảng Low-code (n8n) giúp rút ngắn 80% thời gian phát triển backend và tối ưu hóa luồng gọi LLM.
+💡 Tìm kiếm ngữ nghĩa (Qdrant) giúp HR tìm kiếm ứng viên thông minh hơn tìm kiếm từ khóa truyền thống.
 
-Toàn bộ mã nguồn mở và link chạy thử demo mình để dưới phần bình luận nhé! 👇
-
+Link mã nguồn & demo ở bình luận đầu tiên nhé! 👇
 #AIAgent #n8n #Qdrant #VectorDatabase #Gemini #NextJS #SystemDesign #OpenSource #HRTech
